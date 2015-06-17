@@ -2,17 +2,19 @@ package aggregators
 
 import (
 	"net/http"
-	"net/http/cookiejar"
-	"net/url"
 	"fmt"
 	"io/ioutil"
-	"os"
-	"regexp"
+	//"os"
 	"encoding/json"
 )
 
-// Cerberus login page.
-const cerberusHome = "https://url.publishedprices.co.il/"
+const (
+	// Cerberus login page.
+	cerberusHome = "https://url.publishedprices.co.il/"
+	
+	// Cerberus user page (with file list).
+	cerberusUser = cerberusHome + "login/user"
+)
 
 // Aggregates data files from the Cerberus server.
 type CerberusAggregator struct {
@@ -25,26 +27,14 @@ func NewCerberusAggregator(username string) *CerberusAggregator {
 }
 
 func (a *CerberusAggregator) Aggregate(dir string) error {
-	// Get login page.
-	// fmt.Println("hi")
-	r, err := http.Get("https://url.publishedprices.co.il/")
-	checkError(err)
-	body, err := ioutil.ReadAll(r.Body)
-	checkError(err)
-	
-	// Parse token and cookie.
-	cookie := find([]byte(r.Header["Set-Cookie"][0]), "cftpSID=(.*?);")
-	token := find(body, "id=\"csrftoken\" value=\"(.*?)\"")
-	fmt.Println("cookie:", string(cookie))
-	fmt.Println("token:", string(token))
-	r.Body.Close()
+	client, err := a.login()
+	if err != nil { return fmt.Errorf("Failed to login: %v", err) }
 	
 	
 	
 	// Request file list.
-	r, err = cl.PostForm("https://url.publishedprices.co.il/file/ajax_dir?sEcho=2&iColumns=5&sColumns=%2C%2C%2C%2C&iDisplayStart=0&iDisplayLength=100000&mDataProp_0=fname&sSearch_0=&bRegex_0=false&bSearchable_0=true&bSortable_0=true&mDataProp_1=type&sSearch_1=&bRegex_1=false&bSearchable_1=true&bSortable_1=false&mDataProp_2=size&sSearch_2=&bRegex_2=false&bSearchable_2=true&bSortable_2=true&mDataProp_3=ftime&sSearch_3=&bRegex_3=false&bSearchable_3=true&bSortable_3=true&mDataProp_4=&sSearch_4=&bRegex_4=false&bSearchable_4=true&bSortable_4=false&sSearch=&bRegex=false&iSortingCols=0&cd=%2F",
-			nil)
-	checkError(err)
+	r, err := client.PostForm("https://url.publishedprices.co.il/file/ajax_dir?sEcho=2&iColumns=5&sColumns=%2C%2C%2C%2C&iDisplayStart=0&iDisplayLength=100000&mDataProp_0=fname&sSearch_0=&bRegex_0=false&bSearchable_0=true&bSortable_0=true&mDataProp_1=type&sSearch_1=&bRegex_1=false&bSearchable_1=true&bSortable_1=false&mDataProp_2=size&sSearch_2=&bRegex_2=false&bSearchable_2=true&bSortable_2=true&mDataProp_3=ftime&sSearch_3=&bRegex_3=false&bSearchable_3=true&bSortable_3=true&mDataProp_4=&sSearch_4=&bRegex_4=false&bSearchable_4=true&bSortable_4=false&sSearch=&bRegex=false&iSortingCols=0&cd=%2F", nil)
+	if err != nil { return err }
 	var files struct {
 		AaData []*struct {
 			Value string
@@ -52,78 +42,76 @@ func (a *CerberusAggregator) Aggregate(dir string) error {
 	}
 	
 	err = json.NewDecoder(r.Body).Decode(&files)
-	checkError(err)
+	if err != nil { return err }
 	fmt.Println(files.AaData)
+	//*/
+	
+	return nil
 }
 
-// Looks up a regular expression in the given sequence and returns the #1
-// captured group. If not found, returns null - which is different from a 0-long
-// array.
-func find(text []byte, exp string) []byte {
-	return regexp.MustCompile(exp).FindSubmatch(text)[1]
-}
-
-// Logs in to Cerberus and returns the login cookie value. The cookie's name is
-// 'cftpSID'.
-func (a *CerberusAggregator) login() (cookie []byte, err error) {
+// Returns a logged-in client.
+func (a *CerberusAggregator) login() (*http.Client, error) {
 	// Get login page.
 	res, err := http.Get(cerberusHome)
-	if err != nil { return }
+	if err != nil { return nil, fmt.Errorf("Failed to get homepage: %v", err) }
 	body, err := ioutil.ReadAll(res.Body)
-	if err != nil { return }
+	if err != nil { return nil, fmt.Errorf("Failed to read homepage: %v", err) }
 	res.Body.Close()
+
+	// Get token and cookie.	
+	token, err := parseCerberusToken(body)
+	if err != nil { return nil, err }
+	cookie, err := parseCerberusCookie(res)
+	if err != nil { return nil, err }
 	
-	// Parse token.
+	// Login!
+	jar, err := singleCookieJar(cerberusHome, "cftpSID", string(cookie))
+	if err != nil { return nil, err }
+	
+	cl := &http.Client{Jar: jar}
+	res, err = cl.PostForm(
+		cerberusUser,
+		map[string][]string{
+			"csrftoken": []string{string(token)},
+			"username": []string{a.username},
+			"password": []string{""},
+			"Submit": []string{"Sign in"},
+		})
+	if err != nil { return nil, fmt.Errorf("Failed to post: %v", err) }
+	
+	// Get second cookie.
+	cookie, err = parseCerberusCookie(res)
+	if err != nil { return nil, err }
+	
+	// Update client with new cookie.
+	cl.Jar, err = singleCookieJar(cerberusHome, "cftpSID", string(cookie))
+	if err != nil { return nil, err }
+	
+	return cl, nil
+}
+
+// Parses the Get-Cookie field of a Cerberus response.
+func parseCerberusCookie(res *http.Response) ([]byte, error) {
+	rawCookie, ok := res.Header["Set-Cookie"]
+	if !ok {
+		return nil, fmt.Errorf("Response does not contain a cookie.")
+	}
+	cookie := find([]byte(rawCookie[0]), "cftpSID=(.*?);")
+	if cookie == nil {
+		return nil, fmt.Errorf("Could not parse cookie value. " +
+				"Cookie: %v", rawCookie)
+	}
+	return cookie, nil
+}
+
+// Parses the login token from a Cerberus response body.
+func parseCerberusToken(body []byte) ([]byte, error) {
 	token := find(body, "id=\"csrftoken\" value=\"(.*?)\"")
 	if token == nil {
 		return nil, fmt.Errorf("Could not parse login token.")
 	}
-	
-	// Parse cookie.
-	rawCookie, ok := res.Header["Set-Cookie"]
-	if !ok {
-		return nil, fmt.Errorf("Login page did not give a cookie.")
-	}
-	cookie := find([]byte(rawCookie[0]), "cftpSID=(.*?);")
-	if cookie == nil {
-		return nil, fmt.Errorf("Could not parse home-page cookie value. " +
-				"Cookie: %v", rawCookie)
-	}
-	
-	// Login.
-	jar, err := singleCookieJar(cerberusHome, "cftpSID", string(cookie))
-	if err != nil { return nil, err }
-	urll, err := url.Parse("https://url.publishedprices.co.il/")
-	checkError(err)
-	cookies := []*http.Cookie{&http.Cookie{Name: "cftpSID",
-			Value: string(cookie)}}
-	jar.SetCookies(urll, cookies)
-	cl := &http.Client{Jar: jar}
-	r, err = cl.PostForm(
-		"https://url.publishedprices.co.il/login/user",
-		map[string][]string{
-			"csrftoken": []string{string(token)},
-			"username": []string{"doralon"},
-			"password": []string{""},
-			"Submit": []string{"Sign in"},
-		})
-	checkError(err)
-	
-	// Get login cookie.
-	loginCookie := find([]byte(r.Header["Set-Cookie"][0]), "cftpSID=(.*?);")
-	cookies = []*http.Cookie{&http.Cookie{Name: "cftpSID",
-			Value: string(loginCookie)}}
-	jar.SetCookies(urll, cookies)
+	return token, nil
 }
 
-// Returns a cookie-jar with a single cookie. Error shouldn't happen unless
-// path is malformed.
-func singleCookieJar(path, name, value string) (http.CookieJar, error) {
-	jar, err := cookiejar.New(nil)
-	if err != nil { return nil, err }
-	pathUrl, err := url.Parse(path)
-	if err != nil { return nil, err }
-	jar.AddCookies(pathUrl, []*http.Cookie{&http.Cookie{
-		Name: name, Value: value}})
-	return jar, nil
-}
+//func (a *CerberusAggregator)
+
