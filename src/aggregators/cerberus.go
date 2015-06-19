@@ -2,9 +2,11 @@ package aggregators
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 )
 
@@ -15,8 +17,11 @@ const (
 	// Cerberus user page (with file list).
 	cerberusUser = cerberusHome + "login/user"
 	
-	// File download address.
+	// File server address.
 	cerberusFile = cerberusHome + "file/"
+	
+	// File download address.
+	cerberusDownload = cerberusFile + "d/"
 )
 
 // Aggregates data files from the Cerberus server.
@@ -30,18 +35,30 @@ func NewCerberusAggregator(username string) *CerberusAggregator {
 }
 
 func (a *CerberusAggregator) Aggregate(dir string) error {
+	// Create output directory.
+	err := os.MkdirAll(dir, 0)
+	if err != nil { return fmt.Errorf("Failed to make directory: %v", err) }
+
+	// Login to Cerberus.
 	client, err := a.login()
 	if err != nil { return fmt.Errorf("Failed to login: %v", err) }
 	
+	// Download file list.
 	files, err := a.getFileList(client)
 	if err != nil { return fmt.Errorf("Failed to get file list: %v", err) }
 	
+	// Filter only data files.
 	files = a.filterFileNames(files)
 	if len(files) == 0 { return fmt.Errorf("Found no files after filtering.") }
 	
-	
-	
-	fmt.Println(files)
+	// Download files!
+	for _, file := range files {
+		outFile := filepath.Join(dir, file)
+		_, err := downloadIfNotExists(cerberusDownload + file, outFile, client)
+		if err != nil {
+			return fmt.Errorf("Failed to download: %v", err)
+		}
+	}
 	
 	return nil
 }
@@ -148,6 +165,7 @@ func (a *CerberusAggregator) getFileList(cl *http.Client) ([]string, error) {
 func (a *CerberusAggregator) filterFileNames(files []string) []string {
 	acceptedPattern := regexp.MustCompile("^((Price|Promo).*gz|Stores.*xml)$")
 	result := []string{}
+	
 	for _, file := range files {
 		if acceptedPattern.MatchString(file) {
 			result = append(result, file)
@@ -156,5 +174,3 @@ func (a *CerberusAggregator) filterFileNames(files []string) []string {
 	
 	return result
 }
-
-
