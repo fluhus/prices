@@ -9,16 +9,19 @@ import (
 	"regexp"
 )
 
+
+// ----- AGGREGATOR TYPE -------------------------------------------------------
+
 // An aggregator downloads data files for a specific chain.
 type Aggregator interface {
 	Aggregate(dir string) error
 }
 
 
-// ----- COMMON UTILITIES ******************************************************
+// ----- COMMON UTILITIES ------------------------------------------------------
 
 // Looks up a regular expression in the given sequence and returns the #1
-// captured group. If not found, returns null - which is different from a 0-long
+// captured group. If not found, returns nil - which is different from a 0-long
 // array.
 func find(text []byte, exp string) []byte {
 	return regexp.MustCompile(exp).FindSubmatch(text)[1]
