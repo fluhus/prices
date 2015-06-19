@@ -3,12 +3,18 @@ package main
 import (
 	"aggregators"
 	"fmt"
+	"time"
+	"runtime"
 )
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	// log.SetFlags(19)
 	fmt.Println("Hi")
-	agg := aggregators.NewCerberusAggregator("doralon")
+	t := time.Now()
+	agg := aggregators.NewCerberusAggregator("osherad")
 	err := agg.Aggregate("./files")
-	fmt.Println(err)
+	if err != nil { fmt.Println(err) } else { fmt.Println("no error") }
+	fmt.Println("took", time.Now().Sub(t))
 }
 

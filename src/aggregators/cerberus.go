@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"runtime"
 )
 
 const (
@@ -52,15 +53,41 @@ func (a *CerberusAggregator) Aggregate(dir string) error {
 	if len(files) == 0 { return fmt.Errorf("Found no files after filtering.") }
 	
 	// Download files!
-	for _, file := range files {
-		outFile := filepath.Join(dir, file)
-		_, err := downloadIfNotExists(cerberusDownload + file, outFile, client)
-		if err != nil {
-			return fmt.Errorf("Failed to download: %v", err)
-		}
+	numberOfThreads := runtime.NumCPU()
+	fileChan := make(chan string, numberOfThreads)
+	done := make(chan error, numberOfThreads)
+	
+	// Start downloader threads.
+	for i := 0; i < numberOfThreads; i++ {
+		go func() {
+			for file := range fileChan {
+				outFile := filepath.Join(dir, file)
+				_, err := downloadIfNotExists(cerberusDownload + file,
+						outFile, client)
+				if err != nil {
+					done <- fmt.Errorf("Failed to download: %v", err)
+					return
+				}
+			}
+			done <- nil
+		}()
 	}
 	
-	return nil
+	// Push file names to channel.
+	for _, file := range files {
+		fileChan <- file
+	}
+	close(fileChan)
+	
+	// Wait for threads to finish.
+	var result error
+	for i := 0; i < numberOfThreads; i++ {
+		err := <-done
+		if err != nil { result = err }
+	}
+	close(done)
+	
+	return result
 }
 
 // Returns a logged-in client.
