@@ -2,6 +2,8 @@
 // configurations for each chain.
 package aggregators
 
+// Common utilities for all aggregators.
+
 import (
 	"bufio"
 	"fmt"

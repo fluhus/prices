@@ -1,5 +1,7 @@
 package aggregators
 
+// An aggregator for Cerberus-based databases.
+
 import (
 	"encoding/json"
 	"path/filepath"
