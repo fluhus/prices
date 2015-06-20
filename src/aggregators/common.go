@@ -14,6 +14,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"runtime"
 	urllib "net/url"
 )
 
@@ -30,6 +31,9 @@ type Aggregator interface {
 
 
 // ----- COMMON UTILITIES ------------------------------------------------------
+
+// Maximal number of threads to execute on.
+var numberOfThreads = runtime.NumCPU()
 
 // Looks up a regular expression in the given sequence and returns the #1
 // captured group. If not found, returns nil - which is different from a 0-long

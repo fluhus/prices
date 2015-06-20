@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"regexp"
 	"path/filepath"
-	"runtime"
 	"log"
 	"os"
 )
@@ -32,77 +31,35 @@ func (a *megaAggregator) Aggregate(dir string) error {
 	}
 	
 	// Start downloader threads.
-	numberOfThreads := runtime.NumCPU()
-	fileChan := make(chan *dirFile, numberOfThreads)
-	doneChan := make(chan error, numberOfThreads)
+	files, filesErr := a.getFilesChannel()
+	done := make(chan error, numberOfThreads)
 	
 	for i := 0; i < numberOfThreads; i++ {
 		go func() {
-			for df := range fileChan {
+			for df := range files {
 				to := filepath.Join(dir, df.file)
 				_, err := downloadIfNotExists(megaHome + df.dir + df.file,
 						to, nil)
 				if err != nil {
-					doneChan <- err
+					done <- err
 					return
 				}
 			}
 			
-			doneChan <- nil
+			done <- nil
 		}()
 	}
 	
-	// Start pusher thread.
-	pusherChan := make(chan error, 1)
-	go func() {
-		// Get files for download.
-		dirs, err := a.getDirectories()
-		if err != nil {
-			pusherChan <- err
-			return
-		}
-		if len(dirs) == 0 {
-			close(fileChan)
-			pusherChan <- fmt.Errorf("Found 0 directories.")
-			return
-		}
-		log.Printf("Found %d directories.", len(dirs))
-		
-		for i := range dirs {
-			// Get file list.
-			log.Printf("Getting file list #%d.", i)
-			files, err := a.getFiles(dirs[i])
-			if err != nil {
-				close(fileChan)
-				pusherChan <- err
-				return
-			}
-			if len(files) == 0 {
-				close(fileChan)
-				pusherChan <- fmt.Errorf("Found 0 files in %s.", dirs[i])
-				return
-			}
-			
-			// Push to downloader threads.
-			for _, file := range files {
-				fileChan <- &dirFile{dirs[i], file}
-			}
-		}
-		
-		close(fileChan)
-		pusherChan <- nil
-	}()
-	
 	// Wait for threads to finish (including pusher thread).
 	for i := 0; i < numberOfThreads; i++ {
-		e := <- doneChan
+		e := <- done
 		if e != nil {
 			err = e
 		}
 	}
 	
-	for range fileChan {}
-	e := <-pusherChan
+	// Check for errors in file getter.
+	e := <-filesErr
 	if e != nil {
 		err = e
 	}
@@ -181,4 +138,90 @@ func (a *megaAggregator) getFiles(dir string) ([]string, error) {
 type dirFile struct {
 	dir string
 	file string
+}
+
+// Returns a channel through which file names for download will be returned,
+// and a channel for error reporting. The error reporting will only report one
+// error, which will be nil if everything went ok.
+//
+// This function was created because going over all directories in a single
+// thread takes too long.
+func (a *megaAggregator) getFilesChannel() (files chan *dirFile,
+		done chan error) {
+	// Initialize channels.
+	files = make(chan *dirFile, numberOfThreads)
+	done = make(chan error, 1)
+		
+	// Get files for download.
+	dirs, err := a.getDirectories()
+	if err != nil {
+		done <- err
+		close(files)
+		return
+	}
+	if len(dirs) == 0 {
+		done <- fmt.Errorf("Found 0 directories.")
+		close(files)
+		return
+	}
+	log.Printf("Found %d directories.", len(dirs))
+	
+	// Create pusher threads.
+	dirChan := make(chan string, numberOfThreads)
+	pushDones := make(chan error, numberOfThreads)
+	
+	for i := 0; i < numberOfThreads; i++ {
+		go func() {
+			for dir := range dirChan {
+				// Download file list.
+				fileList, err := a.getFiles(dir)
+				if err != nil {
+					pushDones <- err
+					return
+				}
+				if len(fileList) == 0 {
+					pushDones <- fmt.Errorf("Found 0 files in directory %s.",
+							dir)
+					return
+				}
+				
+				// Push files into channel.
+				for _, file := range fileList {
+					files <- &dirFile{dir, file}
+				}
+			}
+			
+			pushDones <- nil
+		}()
+	}
+	
+	// Dir pusher thread.
+	go func() {
+		for _, dir := range dirs {
+			dirChan <- dir
+		}
+		close(dirChan)
+	}()
+	
+	// Waiter thread.
+	go func() {
+		// Wait for pusher threads.
+		var err error
+		for i := 0; i < numberOfThreads; i++ {
+			e := <-pushDones
+			if e != nil {
+				err = e
+			}
+		}
+		done <- err
+		close(done)
+		
+		// Drain dir pusher.
+		for range dirChan {}
+		
+		// We're done!
+		close(files)
+	}()
+	
+	return
 }

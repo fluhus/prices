@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"strconv"
 	"path/filepath"
-	"runtime"
 	"log"
 	"os"
 	"html"
@@ -43,7 +42,6 @@ func (a *shufersalAggregator) Aggregate(dir string) error {
 	log.Printf("Parsing %d pages.", numberOfPages)
 	
 	// Download!
-	numberOfThreads := runtime.NumCPU()
 	numChan := make(chan int, numberOfThreads)
 	doneChan := make(chan error, numberOfThreads)
 	

@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"runtime"
 )
 
 const (
@@ -55,7 +54,6 @@ func (a *cerberusAggregator) Aggregate(dir string) error {
 	if len(files) == 0 { return fmt.Errorf("Found no files after filtering.") }
 	
 	// Download files!
-	numberOfThreads := runtime.NumCPU()
 	fileChan := make(chan string, numberOfThreads)
 	done := make(chan error, numberOfThreads)
 	
