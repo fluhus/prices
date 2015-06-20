@@ -22,6 +22,9 @@ import (
 
 // An aggregator downloads data files for a specific chain.
 type Aggregator interface {
+	// Downloads all available data files into the specified directory. An
+	// aggregator may decide to omit downloading already existing files. An
+	// aggregator may use several threads for its work.
 	Aggregate(dir string) error
 }
 
@@ -74,33 +77,22 @@ func responseSize(res *http.Response) int64 {
 	return size
 }
 
-// Downloads a file iff the 'to' path does not exist or their sizes differ (for
-// aborted downloads). Give a client for logged-in sessions, or nil to start a
-// new session. Returns true iff file was downloaded.
+// Downloads a file iff the 'to' path does not exist. Give a client for
+// logged-in sessions, or nil to start a new session. Returns true iff file was
+// downloaded.
 func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 	// Instantiate client.
 	if cl == nil {
 		cl = &http.Client{}
 	}
 	
-	// Request header.
-	res, err := cl.Head(url)
-	if err != nil {
-		return false, fmt.Errorf("Failed to request header: %v", err)
-	}
-	res.Body.Close()
-	if res.StatusCode != http.StatusOK {
-		return false, fmt.Errorf("Got bad response status: %s", res.Status)
-	}
-	
 	// Check if file already exists.
-	if fileExists(to) && responseSize(res) != -1 &&
-			responseSize(res) == fileSize(to) {
+	if fileExists(to) && fileSize(to) != 0 {
 		return false, nil
 	}
 	
 	// Request file.
-	res, err = cl.Get(url)
+	res, err := cl.Get(url)
 	if err != nil {
 		return false, fmt.Errorf("Failed to request file: %v", err)
 	}
