@@ -88,10 +88,10 @@ func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("Failed to request header: %v", err)
 	}
+	res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return false, fmt.Errorf("Got bad response status: %s", res.Status)
 	}
-	res.Body.Close()
 	
 	// Check if file already exists.
 	if fileExists(to) && responseSize(res) != -1 &&
@@ -104,10 +104,10 @@ func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("Failed to request file: %v", err)
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return false, fmt.Errorf("Got bad response status: %s", res.Status)
 	}
-	defer res.Body.Close()
 	
 	log.Printf("Downloading '%s' to '%s'.", url, to)
 	

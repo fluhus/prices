@@ -97,12 +97,12 @@ func (a *CerberusAggregator) login() (*http.Client, error) {
 	// Get login page.
 	res, err := http.Get(cerberusHome)
 	if err != nil { return nil, fmt.Errorf("Failed to get homepage: %v", err) }
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Got bad response status: %s", res.Status)
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil { return nil, fmt.Errorf("Failed to read homepage: %v", err) }
-	res.Body.Close()
 
 	// Get token and cookie.	
 	token, err := a.parseToken(body)
@@ -115,7 +115,7 @@ func (a *CerberusAggregator) login() (*http.Client, error) {
 	if err != nil { return nil, err }
 	
 	cl := &http.Client{Jar: jar}
-	res, err = cl.PostForm(
+	res2, err := cl.PostForm(
 		cerberusUser,
 		map[string][]string{
 			"csrftoken": []string{string(token)},
@@ -124,10 +124,10 @@ func (a *CerberusAggregator) login() (*http.Client, error) {
 			"Submit": []string{"Sign in"},
 		})
 	if err != nil { return nil, fmt.Errorf("Failed to post: %v", err) }
-	res.Body.Close()
+	defer res2.Body.Close()
 	
 	// Get second cookie.
-	cookie, err = a.parseCookie(res)
+	cookie, err = a.parseCookie(res2)
 	if err != nil { return nil, err }
 	
 	// Update client with new cookie.
