@@ -97,6 +97,9 @@ func (a *CerberusAggregator) login() (*http.Client, error) {
 	// Get login page.
 	res, err := http.Get(cerberusHome)
 	if err != nil { return nil, fmt.Errorf("Failed to get homepage: %v", err) }
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Got bad response status: %s", res.Status)
+	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil { return nil, fmt.Errorf("Failed to read homepage: %v", err) }
 	res.Body.Close()
