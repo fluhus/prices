@@ -15,14 +15,15 @@ import (
 	"html"
 )
 
-type ShufersalAggregator struct{}
+// An aggregator for the Shufersal chain.
+type shufersalAggregator struct{}
 
 // Returns a new Shufersal aggregator.
-func NewShufersalAggregator() *ShufersalAggregator {
-	return &ShufersalAggregator{}
+func NewShufersalAggregator() Aggregator {
+	return &shufersalAggregator{}
 }
 
-func (a *ShufersalAggregator) Aggregate(dir string) error {
+func (a *shufersalAggregator) Aggregate(dir string) error {
 	// Create output directory.
 	err := os.MkdirAll(dir, 0)
 	if err != nil {
@@ -97,7 +98,7 @@ func (a *ShufersalAggregator) Aggregate(dir string) error {
 }
 
 // Returns the body of the n'th page in Shufersal's site.
-func (a *ShufersalAggregator) getPage(n int) ([]byte, error) {
+func (a *shufersalAggregator) getPage(n int) ([]byte, error) {
 	res, err := http.Get(fmt.Sprintf("http://prices.shufersal.co.il/?page=%d",
 			n))
 	if err != nil { return nil, err }
@@ -117,7 +118,7 @@ type shufersalEntry struct {
 }
 
 // Parses entries out of the given page body. Returns an error if parsing fails.
-func (a *ShufersalAggregator) parsePage(page []byte) ([]*shufersalEntry,
+func (a *shufersalAggregator) parsePage(page []byte) ([]*shufersalEntry,
 		error) {
 	result := []*shufersalEntry{}
 	
@@ -168,7 +169,7 @@ func (a *ShufersalAggregator) parsePage(page []byte) ([]*shufersalEntry,
 }
 
 // Returns the number of the last page, or -1 if failed to parse.
-func (a *ShufersalAggregator) parseLastPageNumber(page []byte) int {
+func (a *shufersalAggregator) parseLastPageNumber(page []byte) int {
 	// log.Print(string(page))
 	re := regexp.MustCompile("<a [^>]*?href=\"/\\?page=(\\d+)")
 	
