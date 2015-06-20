@@ -8,6 +8,11 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"path/filepath"
+	"runtime"
+	"log"
+	"os"
+	"html"
 )
 
 type ShufersalAggregator struct{}
@@ -18,13 +23,77 @@ func NewShufersalAggregator() *ShufersalAggregator {
 }
 
 func (a *ShufersalAggregator) Aggregate(dir string) error {
-	page, err := a.getPage(1)
-	if err != nil { return err }
-	_, err = a.parsePage(page)
-	if err != nil { return err }
-	// fmt.Println(string(page))
+	// Create output directory.
+	err := os.MkdirAll(dir, 0)
+	if err != nil {
+		return fmt.Errorf("Failed to make dir: %v", err)
+	}
 
-	return nil
+	// Get number of pages from the first page.
+	page, err := a.getPage(1)
+	if err != nil {
+		return fmt.Errorf("Failed to get page 1: %v", err)
+	}
+	
+	numberOfPages := a.parseLastPageNumber(page)
+	if numberOfPages == -1 {
+		return fmt.Errorf("Failed to parse number of pages.")
+	}
+	log.Printf("Parsing %d pages.", numberOfPages)
+	
+	// Download!
+	numberOfThreads := runtime.NumCPU()
+	numChan := make(chan int, numberOfThreads)
+	doneChan := make(chan error, numberOfThreads)
+	
+	for i := 0; i < numberOfThreads; i++ {
+		go func() {
+			for i := range numChan {
+				// Parse page.
+				log.Printf("Parsing page %d.", i)
+				page, err := a.getPage(i)
+				if err != nil {
+					doneChan <- err
+					return
+				}
+				
+				entries, err := a.parsePage(page)
+				if err != nil {
+					doneChan <- err
+					return
+				}
+				log.Printf("Page %d has %d entries.", i, len(entries))
+				
+				// Download entries.
+				for _, entry := range entries {
+					to := filepath.Join(dir, entry.file)
+					_, err := downloadIfNotExists(entry.url, to, nil)
+					if err != nil {
+						doneChan <- err
+						return
+					}
+				}
+			}
+			
+			doneChan <- nil
+		}()
+	}
+	
+	// Give page numbers.
+	for i := 1; i <= numberOfPages; i++ {
+		numChan <- i
+	}
+	close(numChan)
+	
+	// Join threads.
+	for i := 0; i < numberOfThreads; i++ {
+		threadErr := <-doneChan
+		if threadErr != nil {
+			err = threadErr
+		}
+	}
+
+	return err
 }
 
 // Returns the body of the n'th page in Shufersal's site.
@@ -59,6 +128,11 @@ func (a *ShufersalAggregator) parsePage(page []byte) ([]*shufersalEntry,
 	fileGetter := regexp.MustCompile("^[^?]*/([^/?]*)?")
 	
 	rows := pageSplitter.FindAll(page, -1)
+	if len(rows) < 3 {  // Should have at least one entry.
+		return nil, fmt.Errorf("Bad number of rows: %d, expected at least 3.",
+				len(rows))
+	}
+	
 	rows = rows[2:]  // Skip header and footer.
 	for _, row := range rows {
 		// Split row to columns.
@@ -85,10 +159,28 @@ func (a *ShufersalAggregator) parsePage(page []byte) ([]*shufersalEntry,
 		// Append new entry.
 		entry := &shufersalEntry{}
 		entry.index = index
-		entry.url = string(url[1])
+		entry.url = html.UnescapeString(string(url[1]))
 		entry.file = string(file[1])
 		result = append(result, entry)
 	}
 	
 	return result, nil
+}
+
+// Returns the number of the last page, or -1 if failed to parse.
+func (a *ShufersalAggregator) parseLastPageNumber(page []byte) int {
+	// log.Print(string(page))
+	re := regexp.MustCompile("<a [^>]*?href=\"/\\?page=(\\d+)")
+	
+	match := re.FindAllSubmatch(page, -1)
+	if len(match) == 0 {
+		return -1
+	}
+	
+	num, err := strconv.Atoi(string(match[len(match) - 1][1]))
+	if err != nil {
+		return -1
+	}
+	
+	return num
 }
