@@ -39,19 +39,27 @@ func NewCerberusAggregator(username string) Aggregator {
 func (a *cerberusAggregator) Aggregate(dir string) error {
 	// Create output directory.
 	err := os.MkdirAll(dir, 0)
-	if err != nil { return fmt.Errorf("Failed to make directory: %v", err) }
+	if err != nil {
+		return fmt.Errorf("Failed to make directory: %v", err)
+	}
 
 	// Login to Cerberus.
 	client, err := a.login()
-	if err != nil { return fmt.Errorf("Failed to login: %v", err) }
+	if err != nil {
+		return fmt.Errorf("Failed to login: %v", err)
+	}
 	
 	// Download file list.
 	files, err := a.getFileList(client)
-	if err != nil { return fmt.Errorf("Failed to get file list: %v", err) }
+	if err != nil {
+		return fmt.Errorf("Failed to get file list: %v", err)
+	}
 	
 	// Filter only data files.
 	files = a.filterFileNames(files)
-	if len(files) == 0 { return fmt.Errorf("Found no files after filtering.") }
+	if len(files) == 0 {
+		return fmt.Errorf("Found no files after filtering.")
+	}
 	
 	// Download files!
 	fileChan := make(chan string, numberOfThreads)
@@ -94,13 +102,17 @@ func (a *cerberusAggregator) Aggregate(dir string) error {
 func (a *cerberusAggregator) login() (*http.Client, error) {
 	// Get login page.
 	res, err := http.Get(cerberusHome)
-	if err != nil { return nil, fmt.Errorf("Failed to get homepage: %v", err) }
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get homepage: %v", err)
+	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Got bad response status: %s", res.Status)
 	}
 	body, err := ioutil.ReadAll(res.Body)
-	if err != nil { return nil, fmt.Errorf("Failed to read homepage: %v", err) }
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read homepage: %v", err)
+	}
 
 	// Get token and cookie.	
 	token, err := a.parseToken(body)
@@ -121,7 +133,9 @@ func (a *cerberusAggregator) login() (*http.Client, error) {
 			"password": []string{""},
 			"Submit": []string{"Sign in"},
 		})
-	if err != nil { return nil, fmt.Errorf("Failed to post: %v", err) }
+	if err != nil {
+		return nil, fmt.Errorf("Failed to post: %v", err)
+	}
 	defer res2.Body.Close()
 	
 	// Get second cookie.
