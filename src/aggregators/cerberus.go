@@ -82,20 +82,24 @@ func (a *cerberusAggregator) Aggregate(dir string) error {
 	}
 	
 	// Push file names to channel.
-	for _, file := range files {
-		fileChan <- file
-	}
-	close(fileChan)
+	go func() {
+		for _, file := range files {
+			fileChan <- file
+		}
+		close(fileChan)
+	}()
 	
 	// Wait for threads to finish.
-	var result error
 	for i := 0; i < numberOfThreads; i++ {
-		err := <-done
-		if err != nil { result = err }
+		e := <-done
+		if e != nil { err = e }
 	}
 	close(done)
 	
-	return result
+	// Drain file channel.
+	for range fileChan {}
+	
+	return err
 }
 
 // Returns a logged-in client.

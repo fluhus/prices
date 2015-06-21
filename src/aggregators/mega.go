@@ -58,6 +58,9 @@ func (a *megaAggregator) Aggregate(dir string) error {
 		}
 	}
 	
+	// Drain file channel.
+	for range files {}
+	
 	// Check for errors in file getter.
 	e := <-filesErr
 	if e != nil {

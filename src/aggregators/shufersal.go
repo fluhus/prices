@@ -43,7 +43,7 @@ func (a *shufersalAggregator) Aggregate(dir string) error {
 	
 	// Download!
 	numChan := make(chan int, numberOfThreads)
-	doneChan := make(chan error, numberOfThreads)
+	done := make(chan error, numberOfThreads)
 	
 	for i := 0; i < numberOfThreads; i++ {
 		go func() {
@@ -52,13 +52,13 @@ func (a *shufersalAggregator) Aggregate(dir string) error {
 				log.Printf("Parsing page %d.", i)
 				page, err := a.getPage(i)
 				if err != nil {
-					doneChan <- err
+					done <- err
 					return
 				}
 				
 				entries, err := a.parsePage(page)
 				if err != nil {
-					doneChan <- err
+					done <- err
 					return
 				}
 				log.Printf("Page %d has %d entries.", i, len(entries))
@@ -68,29 +68,34 @@ func (a *shufersalAggregator) Aggregate(dir string) error {
 					to := filepath.Join(dir, entry.file)
 					_, err := downloadIfNotExists(entry.url, to, nil)
 					if err != nil {
-						doneChan <- err
+						done <- err
 						return
 					}
 				}
 			}
 			
-			doneChan <- nil
+			done <- nil
 		}()
 	}
 	
 	// Give page numbers.
-	for i := 1; i <= numberOfPages; i++ {
-		numChan <- i
-	}
-	close(numChan)
+	go func() {
+		for i := 1; i <= numberOfPages; i++ {
+			numChan <- i
+		}
+		close(numChan)
+	}()
 	
 	// Join threads.
 	for i := 0; i < numberOfThreads; i++ {
-		threadErr := <-doneChan
-		if threadErr != nil {
-			err = threadErr
+		e := <-done
+		if e != nil {
+			err = e
 		}
 	}
+	
+	// Drain num channel.
+	for range numChan {}
 
 	return err
 }
