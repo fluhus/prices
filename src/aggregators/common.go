@@ -44,14 +44,14 @@ func find(text []byte, exp string) []byte {
 
 // Returns a cookie-jar with a single cookie. Error shouldn't happen unless
 // url is malformed.
-func singleCookieJar(url, name, value string) (http.CookieJar, error) {
+func singleCookieJar(url, name, value string) http.CookieJar {
 	jar, err := cookiejar.New(nil)
-	if err != nil { return nil, err }
+	if err != nil { panic(err.Error()) }
 	pathUrl, err := urllib.Parse(url)
-	if err != nil { return nil, err }
+	if err != nil { panic(err.Error()) }
 	jar.SetCookies(pathUrl, []*http.Cookie{&http.Cookie{
 		Name: name, Value: value}})
-	return jar, nil
+	return jar
 }
 
 // Returns true iff the given file exists.
@@ -124,3 +124,4 @@ func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 	
 	return true, nil
 }
+

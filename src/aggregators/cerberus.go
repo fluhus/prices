@@ -125,8 +125,7 @@ func (a *cerberusAggregator) login() (*http.Client, error) {
 	if err != nil { return nil, err }
 	
 	// Login!
-	jar, err := singleCookieJar(cerberusHome, "cftpSID", string(cookie))
-	if err != nil { return nil, err }
+	jar := singleCookieJar(cerberusHome, "cftpSID", string(cookie))
 	
 	cl := &http.Client{Jar: jar}
 	res2, err := cl.PostForm(
@@ -147,8 +146,7 @@ func (a *cerberusAggregator) login() (*http.Client, error) {
 	if err != nil { return nil, err }
 	
 	// Update client with new cookie.
-	cl.Jar, err = singleCookieJar(cerberusHome, "cftpSID", string(cookie))
-	if err != nil { return nil, err }
+	cl.Jar = singleCookieJar(cerberusHome, "cftpSID", string(cookie))
 	
 	return cl, nil
 }

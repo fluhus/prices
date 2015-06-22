@@ -17,7 +17,7 @@ func NewCoopAggregator() *CoopAggregator {
 }
 
 func (a *CoopAggregator) Aggregate(dir string) error {
-	jar, _ := singleCookieJar("http://coopisrael.coop",
+	jar := singleCookieJar("http://coopisrael.coop",
 			"_gat", "GA1.2.1410125988.1434778651")
 	cl := &http.Client{Jar: jar}
 	// cl := &http.Client{}
