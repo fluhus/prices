@@ -38,7 +38,7 @@ func NewCerberusAggregator(username string) Aggregator {
 
 func (a *cerberusAggregator) Aggregate(dir string) error {
 	// Create output directory.
-	err := os.MkdirAll(dir, 0)
+	err := os.MkdirAll(dir, 0700)
 	if err != nil {
 		return fmt.Errorf("Failed to make directory: %v", err)
 	}

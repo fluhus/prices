@@ -27,7 +27,7 @@ func main() {
 	}
 	
 	// Open logging output file.
-	err = os.MkdirAll(args.dir, 0)
+	err = os.MkdirAll(args.dir, 0700)
 	if err != nil {
 		log.Fatal("Filed to create output dir:", err)
 	}
@@ -74,8 +74,10 @@ type aggTask struct {
 var tasks = []*aggTask {
 	// &aggTask{ aggregators.NewCerberusAggregator("doralon"),
 			// "DorAlon", "doralon" },
-	&aggTask{ aggregators.NewCerberusAggregator("Keshet"),
-			"Keshet", "keshet" },
+	// &aggTask{ aggregators.NewCerberusAggregator("Keshet"),
+			// "Keshet", "keshet" },
+	&aggTask{ aggregators.NewShufersalAggregator(),
+			"Shufersal", "shufersal" },
 }
 
 // Returns the name that should be given to the log file.

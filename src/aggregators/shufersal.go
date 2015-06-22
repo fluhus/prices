@@ -24,7 +24,7 @@ func NewShufersalAggregator() Aggregator {
 
 func (a *shufersalAggregator) Aggregate(dir string) error {
 	// Create output directory.
-	err := os.MkdirAll(dir, 0)
+	err := os.MkdirAll(dir, 0700)
 	if err != nil {
 		return fmt.Errorf("Failed to make dir: %v", err)
 	}
