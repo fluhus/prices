@@ -15,9 +15,17 @@ import (
 	urllib "net/url"
 )
 
-const nibitHome = "http://matrixcatalog.co.il/"
+const (
+	nibitHome = "http://matrixcatalog.co.il/"                // For cookies.
+	nibitPage = nibitHome + "NBCompetitionRegulations.aspx"  // For queries.
+)
 
-const nibitPage = nibitHome + "NBCompetitionRegulations.aspx"
+// Chain ID's for filtering.
+const (
+	Victory = "7290696200003"
+	Hashook = "7290661400001"
+	Lahav   = "7290058179503"
+)
 
 // Aggregates data from Nibit.
 type nibitAggregator struct {
@@ -43,11 +51,14 @@ func (a *nibitAggregator) Aggregate(dir string) error {
 	}
 
 	log.Print("Getting file names.")
-	files, err := a.fileList(cl, time.Now(), "7290696200003")
+	files, err := a.fileList(cl, time.Now())
 	if err != nil {
 		return err
 	}
-	fmt.Println(files)
+	if len(files) == 0 {
+		return fmt.Errorf("Found 0 files.")
+	}
+	fmt.Println(len(files))
 	
 	return nil
 }
@@ -93,8 +104,8 @@ func (a *nibitAggregator) parseSessionCookie(res *http.Response) (name,
 
 // Downloads a file list for the given date and chain. Chain can be -1 for all
 // chains.
-func (a *nibitAggregator) fileList(cl *http.Client, date time.Time,
-		chain string) (files []string, err error) {
+func (a *nibitAggregator) fileList(cl *http.Client, date time.Time) (
+		files []string, err error) {
 	// Get homepage.
 	res, err := cl.Get(nibitPage)
 	if err != nil {
@@ -114,7 +125,7 @@ func (a *nibitAggregator) fileList(cl *http.Client, date time.Time,
 		// Update form values.
 		values := a.formValues(body)
 		a.setFormDate(values, date)
-		a.setFormChain(values, chain)
+		a.setFormChain(values, a.chain)
 		if pageNumber == 1 {
 			a.setFormActionSearch(values)
 		} else {
@@ -134,14 +145,20 @@ func (a *nibitAggregator) fileList(cl *http.Client, date time.Time,
 		}
 		
 		// Parse table.
-		rows := regexp.MustCompile("(?s)<tr>(.*?)</tr>").FindAllSubmatch(
-				body, -1)
+		rowsRe := regexp.MustCompile("(?s)<tr>(.*?)</tr>")
+		colsRe := regexp.MustCompile("(?s)<td>(.*?)</td>")
+		
+		rows := rowsRe.FindAllSubmatch(body, -1)
 		if len(rows) == 0 {
 			return nil, fmt.Errorf("Found 0 files on page %d.", pageNumber)
 		}
 		
 		for _, row := range rows {
-			files = append(files, string(row[1]))
+			// Break into columns.
+			cols := colsRe.FindAllSubmatch(row[1], -1)
+			if len(cols) == 0 { continue }  // Maybe a header.
+			
+			files = append(files, string(cols[0][1]))
 		}
 		
 		// Break if last page.
