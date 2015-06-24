@@ -37,6 +37,11 @@ type nibitAggregator struct {
 // from today it should download. days=1 means today only, days=2 means today
 // and yesterday, etc. A value lesser than 1 will cause a panic.
 func NewNibitAggregator(chain string, days int) Aggregator {
+	// Check days.
+	if days < 1 {
+		panic(fmt.Sprintf("Bad number of days: %d. Must be positive.", days))
+	}
+	
 	return &nibitAggregator{chain, days}
 }
 
@@ -54,7 +59,7 @@ func (a *nibitAggregator) Aggregate(dir string) error {
 	}
 
 	for i := 0; i < a.days; i++ {
-		date := a.formatDate(time.Now().Add(-time.Duration(a.days) * 24 * time.Hour))
+		date := a.formatDate(time.Now().AddDate(0, 0, -i * 1))
 		log.Printf("Downloading files from %s.", date)
 		err = a.download(cl, date, dir)
 		if err != nil {
@@ -152,6 +157,8 @@ func (a *nibitAggregator) download(cl *http.Client, date, dir string) error {
 		if len(rows) == 0 {
 			return fmt.Errorf("Found 0 files on page %d.", pageNumber)
 		}
+		log.Printf("Found %d rows (including header).", len(rows))
+		// (There can be days with no files, so no error for 0 files.)
 		
 		infos := make(chan *nibitFileInfo, numberOfThreads)
 		done  := make(chan error, numberOfThreads)
@@ -256,7 +263,7 @@ func (a *nibitAggregator) formatDate(t time.Time) string {
 
 // Sets the date field of the form.
 func (a *nibitAggregator) setFormDate(values urllib.Values, date string) {
-	values["MainContent$txtDate"] = []string{date}
+	values["ctl00$MainContent$txtDate"] = []string{date}
 }
 
 // Sets action to 'search'.

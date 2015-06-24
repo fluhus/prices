@@ -8,6 +8,6 @@ import (
 
 func main() {
 	fmt.Println("Hi")
-	fmt.Println(aggregators.NewNibitAggregator(aggregators.Victory, 2).Aggregate("try"))
+	fmt.Println(aggregators.NewNibitAggregator(aggregators.Hashook, 2).Aggregate("try"))
 }
 
