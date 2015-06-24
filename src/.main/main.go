@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	a := aggregators.NewNibitAggregator("")
-	fmt.Println(a.Aggregate(""))
+	fmt.Println("Hi")
+	fmt.Println(aggregators.NewNibitAggregator("").Aggregate(""))
 }
 
