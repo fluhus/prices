@@ -1,9 +1,8 @@
 package aggregators
 
-// An aggregator for Eden Teva Market.
+// An aggregator for Yeinot Bitan.
 
 import (
-	"bytes"
 	"net/http"
 	"io/ioutil"
 	"fmt"
@@ -13,20 +12,20 @@ import (
 )
 
 // Homepage for file list.
-const edenHome = "http://operations.edenteva.co.il/Prices/index"
+const bitanHome = "http://www.ybitan.co.il/pirce_update"
 
 // Prefix of download URLs.
-const edenFile = "http://operations.edenteva.co.il/Prices/"
+const bitanFile = "http://www.ybitan.co.il/upload/"
 
-// Aggregates data from Eden Teva Market.
-type edenAggregator struct {}
+// Aggregates data from Yeinot Bitan.
+type bitanAggregator struct {}
 
-// Returns a new Eden Teva Market aggregator.
-func NewEdenAggregator() Aggregator {
-	return &edenAggregator{}
+// Returns a new Yeinot Bitan aggregator.
+func NewBitanAggregator() Aggregator {
+	return &bitanAggregator{}
 }
 
-func (a *edenAggregator) Aggregate(dir string) error {
+func (a *bitanAggregator) Aggregate(dir string) error {
 	// Create output directory.
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
@@ -52,7 +51,7 @@ func (a *edenAggregator) Aggregate(dir string) error {
 	for i := 0; i < numberOfThreads; i++ {
 		go func() {
 			for file := range files {
-				_, err := downloadIfNotExists(edenFile + file,
+				_, err := downloadIfNotExists(bitanFile + file,
 						filepath.Join(dir, file), nil)
 				if err != nil {
 					done <- err
@@ -60,7 +59,7 @@ func (a *edenAggregator) Aggregate(dir string) error {
 				}
 			}
 			
-			done <- err
+			done <- nil
 		}()
 	}
 	
@@ -75,13 +74,13 @@ func (a *edenAggregator) Aggregate(dir string) error {
 	// Drain pusher thread.
 	for range files {}
 	
-	return nil
+	return err
 }
 
-// Returns a list of all files in Eden's page.
-func (a *edenAggregator) fileList() ([]string, error) {
+// Returns a list of all files in Bitan's page.
+func (a *bitanAggregator) fileList() ([]string, error) {
 	// Get homepage.
-	res, err := http.Get(edenHome)
+	res, err := http.Get(bitanHome)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get homepage: %v", err)
 	}
@@ -93,19 +92,13 @@ func (a *edenAggregator) fileList() ([]string, error) {
 	
 	// Parse links.
 	result := []string{}
-	files := regexp.MustCompile("<a href=\"(.*?)\"").FindAllSubmatch(body, -1)
-	if len(files) != 0 {
+	files := regexp.MustCompile(
+			"<a href=\"/upload/(.*?\\.zip)\"").FindAllSubmatch(body, -1)
+	if len(files) == 0 {
 		return nil, fmt.Errorf("Got 0 files.")
 	}
 	
 	for _, file := range files {
-		// All links should end with '.zip'. A change in that condition means
-		// that the homepage had changed.
-		if !bytes.HasSuffix(file[1], []byte(".zip")) {
-			return nil, fmt.Errorf("Found a link that's not a zip file: %s",
-					file[1])
-		}
-		
 		result = append(result, string(file[1]))
 	}
 	

@@ -8,6 +8,6 @@ import (
 
 func main() {
 	fmt.Println("Hi")
-	fmt.Println(aggregators.NewEdenAggregator().Aggregate("/cs/grad/amitlavon/icore/try"))
+	fmt.Println(aggregators.NewBitanAggregator().Aggregate("/cs/grad/amitlavon/icore/try"))
 }
 
