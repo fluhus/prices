@@ -8,6 +8,6 @@ import (
 
 func main() {
 	fmt.Println("Hi")
-	fmt.Println(aggregators.NewNibitAggregator(aggregators.Hashook, 2).Aggregate("try"))
+	fmt.Println(aggregators.NewEdenAggregator().Aggregate("/cs/grad/amitlavon/icore/try"))
 }
 
