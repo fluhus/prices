@@ -125,3 +125,48 @@ func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 	return true, nil
 }
 
+// Downloads a file iff the 'to' path does not exist. Give a client for
+// logged-in sessions, or nil to start a new session. Values will be used as
+// POST form values. Returns true iff file was downloaded.
+func downloadIfNotExistsPost(url, to string, cl *http.Client,
+		values urllib.Values) (bool, error) {
+	// Instantiate client.
+	if cl == nil {
+		cl = &http.Client{}
+	}
+	
+	// Check if file already exists.
+	if fileExists(to) && fileSize(to) != 0 {
+		return false, nil
+	}
+	
+	// Request file.
+	res, err := cl.PostForm(url, values)
+	if err != nil {
+		return false, fmt.Errorf("Failed to request file: %v", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("Got bad response status: %s", res.Status)
+	}
+	
+	log.Printf("Downloading '%s' to '%s'.", url, to)
+	
+	// Open output file.
+	out, err := os.Create(to)
+	if err != nil {
+		return false, fmt.Errorf("Failed to create output file: %v", err)
+	}
+	defer out.Close()
+	buf := bufio.NewWriter(out)
+	defer buf.Flush()
+	
+	// Download!
+	_, err = io.Copy(buf, res.Body)
+	if err != nil {
+		return false, fmt.Errorf("Failed to save file: %v", err)
+	}
+	
+	return true, nil
+}
+

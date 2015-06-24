@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"time"
 	//"io"
-	//"os"
-	//"path/filepath"
+	"os"
+	"path/filepath"
 	"log"
 	urllib "net/url"
 )
@@ -30,19 +30,22 @@ const (
 // Aggregates data from Nibit.
 type nibitAggregator struct {
 	chain string  // Name of chain.
+	days  int     // How many days from now back it should download.
 }
 
-// Returns a new Nibit aggregator.
-func NewNibitAggregator(chain string) Aggregator {
-	return &nibitAggregator{chain}
+// Returns a new Nibit aggregator. Chain is an ID. Days is how many days back
+// from today it should download. days=1 means today only, days=2 means today
+// and yesterday, etc. A value lesser than 1 will cause a panic.
+func NewNibitAggregator(chain string, days int) Aggregator {
+	return &nibitAggregator{chain, days}
 }
 
 func (a *nibitAggregator) Aggregate(dir string) error {
 	// Create output directory.
-	//err := os.MkdirAll(dir, 0700)
-	//if err != nil {
-	//	return fmt.Errorf("Failed to make dir: %v", err)
-	//}
+	err := os.MkdirAll(dir, 0700)
+	if err != nil {
+		return fmt.Errorf("Failed to make dir: %v", err)
+	}
 	
 	log.Print("Starting session.")
 	cl, err := a.startSession()
@@ -50,15 +53,14 @@ func (a *nibitAggregator) Aggregate(dir string) error {
 		return fmt.Errorf("Failed to start session: %v", err)
 	}
 
-	log.Print("Getting file names.")
-	files, err := a.fileList(cl, time.Now())
-	if err != nil {
-		return err
+	for i := 0; i < a.days; i++ {
+		date := a.formatDate(time.Now().Add(-time.Duration(a.days) * 24 * time.Hour))
+		log.Printf("Downloading files from %s.", date)
+		err = a.download(cl, date, dir)
+		if err != nil {
+			return err
+		}
 	}
-	if len(files) == 0 {
-		return fmt.Errorf("Found 0 files.")
-	}
-	fmt.Println(len(files))
 	
 	return nil
 }
@@ -102,19 +104,17 @@ func (a *nibitAggregator) parseSessionCookie(res *http.Response) (name,
 	return match[1], match[2]
 }
 
-// Downloads a file list for the given date and chain. Chain can be -1 for all
-// chains.
-func (a *nibitAggregator) fileList(cl *http.Client, date time.Time) (
-		files []string, err error) {
+// Downloads all available files for the given date.
+func (a *nibitAggregator) download(cl *http.Client, date, dir string) error {
 	// Get homepage.
 	res, err := cl.Get(nibitPage)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read page: %v", err)
+		return fmt.Errorf("Failed to read page: %v", err)
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to read page body: %v", err)
+		return fmt.Errorf("Failed to read page body: %v", err)
 	}
 	
 	// Go over pages.
@@ -136,12 +136,12 @@ func (a *nibitAggregator) fileList(cl *http.Client, date time.Time) (
 		// Send post.
 		res, err = cl.PostForm(nibitPage, values)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to read page: %v", err)
+			return fmt.Errorf("Failed to read page: %v", err)
 		}
 		body, err = ioutil.ReadAll(res.Body)
 		res.Body.Close()
 		if err != nil {
-			return nil, fmt.Errorf("Failed to read page body: %v", err)
+			return fmt.Errorf("Failed to read page body: %v", err)
 		}
 		
 		// Parse table.
@@ -150,15 +150,64 @@ func (a *nibitAggregator) fileList(cl *http.Client, date time.Time) (
 		
 		rows := rowsRe.FindAllSubmatch(body, -1)
 		if len(rows) == 0 {
-			return nil, fmt.Errorf("Found 0 files on page %d.", pageNumber)
+			return fmt.Errorf("Found 0 files on page %d.", pageNumber)
 		}
 		
-		for _, row := range rows {
-			// Break into columns.
-			cols := colsRe.FindAllSubmatch(row[1], -1)
-			if len(cols) == 0 { continue }  // Maybe a header.
+		infos := make(chan *nibitFileInfo, numberOfThreads)
+		done  := make(chan error, numberOfThreads)
+		
+		// Start pusher thread.
+		go func() {
+			fileNumber := 1
+			// Go over table rows.
+			for _, row := range rows {
+				// Break into columns.
+				cols := colsRe.FindAllSubmatch(row[1], -1)
+				if len(cols) == 0 { continue }  // Maybe a header.
+				
+				info := &nibitFileInfo{string(cols[0][1]) + ".xml", fileNumber}
+				fileNumber++
+				
+				infos <- info
+			}
 			
-			files = append(files, string(cols[0][1]))
+			close(infos)
+		}()
+		
+		// Start downloader threads.
+		for i := 0; i < numberOfThreads; i++ {
+			go func() {
+				// New values map to avoid file name collisions.
+				myvalues := a.copyValues(values)
+				
+				for info := range infos {
+					a.setFormTarget(myvalues, info.target)
+					_, err := downloadIfNotExistsPost(nibitPage,
+							filepath.Join(dir, info.name), cl, myvalues)
+					if err != nil {
+						done <- fmt.Errorf("Failed to download '%s': %v",
+								info.name, err)
+						return
+					}
+				}
+				
+				done <- nil
+			}()
+		}
+		
+		// Wait for downloaders.
+		for i := 0; i < numberOfThreads; i++ {
+			e := <- done
+			if e != nil {
+				err = e
+			}
+		}
+		
+		// Drain pusher thread.
+		for range infos {}
+		
+		if err != nil {
+			return err
 		}
 		
 		// Break if last page.
@@ -167,7 +216,13 @@ func (a *nibitAggregator) fileList(cl *http.Client, date time.Time) (
 		}
 	}
 	
-	return
+	return nil
+}
+
+// Information needed to download a file.
+type nibitFileInfo struct {
+	name   string  // Name by which to save on disk.
+	target int     // Event to send to server.
 }
 
 // Parses form values from the given response body. Before using the result for
@@ -200,8 +255,8 @@ func (a *nibitAggregator) formatDate(t time.Time) string {
 }
 
 // Sets the date field of the form.
-func (a *nibitAggregator) setFormDate(values urllib.Values, date time.Time) {
-	values["MainContent$txtDate"] = []string{a.formatDate(date)}
+func (a *nibitAggregator) setFormDate(values urllib.Values, date string) {
+	values["MainContent$txtDate"] = []string{date}
 }
 
 // Sets action to 'search'.
@@ -231,9 +286,25 @@ func (a *nibitAggregator) setFormChain(values urllib.Values,
 	values["ctl00$MainContent$chain"] = []string{chain}
 }
 
+// Sets the target for downloading.
+func (a *nibitAggregator) setFormTarget(values urllib.Values, target int) {
+	values["__EVENTTARGET"] = []string{fmt.Sprintf(
+			"ctl00$MainContent$repeater$ctl%02d$lblDownloadFile", target)}
+}
+
 // Checks whether the 'next' button is enabled.
 func (a *nibitAggregator) pageHasNext(body []byte) bool {
 	re := regexp.MustCompile("<input [^>]* name=\"ctl00\\$MainContent\\$btnNext1\" [^>]* disabled=\"disabled\"")
 	return !re.Match(body)
+}
+
+// Returns a shallow copy of the given values. Keys can be added and removed
+// safely.
+func (a *nibitAggregator) copyValues(values urllib.Values) urllib.Values {
+	result := map[string][]string{}
+	for m := range values {
+		result[m] = values[m]
+	}
+	return urllib.Values(result)
 }
 
