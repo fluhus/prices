@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"regexp"
 	"time"
-	//"io"
 	"os"
 	"path/filepath"
 	"log"
@@ -116,6 +115,10 @@ func (a *nibitAggregator) download(cl *http.Client, date, dir string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to read page: %v", err)
 	}
+	if res.StatusCode != http.StatusOK {
+		res.Body.Close()
+		return fmt.Errorf("Failed to read page: Got status %s.", res.Status)
+	}
 	body, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 	if err != nil {
@@ -142,6 +145,10 @@ func (a *nibitAggregator) download(cl *http.Client, date, dir string) error {
 		res, err = cl.PostForm(nibitPage, values)
 		if err != nil {
 			return fmt.Errorf("Failed to read page: %v", err)
+		}
+		if res.StatusCode != http.StatusOK {
+			res.Body.Close()
+			return fmt.Errorf("Failed to read page: Got status %s.", res.Status)
 		}
 		body, err = ioutil.ReadAll(res.Body)
 		res.Body.Close()
