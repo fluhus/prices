@@ -41,7 +41,7 @@ func main() {
 	log.SetOutput(buf)
 	
 	// --- Perform aggregation tasks. ---
-	log.Print("We have lift off!")
+	logWelcome()
 	t := time.Now()
 	
 	for _, task := range tasks {
@@ -74,8 +74,8 @@ type aggTask struct {
 var tasks = []*aggTask {
 	// &aggTask{ aggregators.NewCerberusAggregator("doralon"),
 			// "DorAlon", "doralon" },
-	// &aggTask{ aggregators.NewCerberusAggregator("Keshet"),
-			// "Keshet", "keshet" },
+	&aggTask{ aggregators.NewCerberusAggregator("Keshet"),
+			"Keshet", "keshet" },
 	&aggTask{ aggregators.NewShufersalAggregator(),
 			"Shufersal", "shufersal" },
 }
@@ -121,3 +121,24 @@ var help = `Downloads price data from stores.
 Usage:
 prices <out dir>
 `
+
+// Prints a welcome message and usage instructions to the log.
+func logWelcome() {
+	log.Print("We have lift off!")
+	
+	// Print chain names.
+	chains := ""
+	for i := range tasks {
+		if i > 0 { chains += ", " }
+		chains += tasks[i].name
+	}
+	
+	log.Print("Chains in this run: ", chains)
+	
+	// Print grep help.
+	log.Print("Each log message is prefixed by its chain name. To search for " +
+			"messages from a specific chain use grep '^chain'. For " +
+			"example: grep '^DorAlon'")
+	log.Print("To search for errors, use grep 'error'.")
+}
+
