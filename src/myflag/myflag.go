@@ -128,7 +128,7 @@ func Bool(name string, shortName string, description string,
 var flagsHelp = bytes.NewBuffer(nil)
 
 // Returns a pretty string representation of the flags.
-func String() string {
+func Help() string {
 	return flagsHelp.String()
 }
 

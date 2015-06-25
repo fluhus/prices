@@ -7,6 +7,7 @@ import (
 	"log"
 	"fmt"
 	"bufio"
+	"myflag"
 	"os"
 	"path/filepath"
 )
@@ -20,6 +21,7 @@ func main() {
 	err := parseArgs()
 	if err == noArgs {
 		fmt.Print(help)
+		fmt.Print(myflag.Help())
 		os.Exit(1)
 	}
 	if err != nil {
@@ -27,19 +29,21 @@ func main() {
 	}
 	
 	// Open logging output file.
-	logsDir := filepath.Join(args.dir, "logs")
-	err = os.MkdirAll(logsDir, 0700)
-	if err != nil {
-		log.Fatal("Filed to create output dir:", err)
+	if !*args.stdout {
+		logsDir := filepath.Join(args.dir, "logs")
+		err = os.MkdirAll(logsDir, 0700)
+		if err != nil {
+			log.Fatal("Filed to create output dir:", err)
+		}
+		out, err := os.Create(filepath.Join(logsDir, logFileName()))
+		if err != nil {
+			log.Fatal("Error creating log file:", err)
+		}
+		defer out.Close()
+		buf := bufio.NewWriter(out)
+		defer buf.Flush()
+		log.SetOutput(buf)
 	}
-	out, err := os.Create(filepath.Join(logsDir, logFileName()))
-	if err != nil {
-		log.Fatal("Error creating log file:", err)
-	}
-	defer out.Close()
-	buf := bufio.NewWriter(out)
-	defer buf.Flush()
-	log.SetOutput(buf)
 	
 	// --- Perform aggregation tasks. ---
 	logWelcome()
@@ -88,7 +92,8 @@ func logFileName() string {
 
 // Holds parsed command-line arguments.
 var args struct {
-	dir string
+	dir    string   // Where to download files.
+	stdout *bool    // Log to stdout?
 }
 
 // Signifies that no args were given.
@@ -97,7 +102,15 @@ var noArgs = fmt.Errorf("")
 // Parses arguments and places their values in the args struct. If an error
 // returns, args are invalid.
 func parseArgs() error {
-	a := os.Args[1:]  // Omit program name.
+	args.stdout = myflag.Bool("stdout", "", "Log to stdout instead of log" +
+		" file.", false)
+	
+	err := myflag.Parse()
+	if err != nil {
+		return err
+	}
+	
+	a := myflag.Args()
 	
 	// No args.
 	if len(a) == 0 {
@@ -119,6 +132,8 @@ var help = `Downloads price data from stores.
 
 Usage:
 prices <out dir>
+
+Flags:
 `
 
 // Prints a welcome message and usage instructions to the log.
