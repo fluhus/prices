@@ -44,13 +44,13 @@ func (a *cerberusAggregator) Aggregate(dir string) error {
 	}
 
 	// Login to Cerberus.
-	client, err := a.login()
+	cl, err := a.login()
 	if err != nil {
 		return fmt.Errorf("Failed to login: %v", err)
 	}
 	
 	// Download file list.
-	files, err := a.getFileList(client)
+	files, err := a.getFileList(cl)
 	if err != nil {
 		return fmt.Errorf("Failed to get file list: %v", err)
 	}
@@ -71,7 +71,7 @@ func (a *cerberusAggregator) Aggregate(dir string) error {
 			for file := range fileChan {
 				outFile := filepath.Join(dir, file)
 				_, err := downloadIfNotExists(cerberusDownload + file,
-						outFile, client)
+						outFile, cl)
 				if err != nil {
 					done <- fmt.Errorf("Failed to download: %v", err)
 					return
