@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"crypto/tls"
 )
 
 const (
@@ -104,8 +105,18 @@ func (a *cerberusAggregator) Aggregate(dir string) error {
 
 // Returns a logged-in client.
 func (a *cerberusAggregator) login() (*http.Client, error) {
+	// NOTE:
+	// THIS IS A TERRIBLE WORKAROUND TO A CERTIFICATE VALIDATION BUG IN THE
+	// SYSTEM. THIS IS BAD AND SHOULD BE FIXED.
+	// cl := &http.Client {}
+	cl := &http.Client {
+		Transport: &http.Transport {
+			TLSClientConfig: &tls.Config{InsecureSkipVerify : true},
+		},
+	}
+
 	// Get login page.
-	res, err := http.Get(cerberusHome)
+	res, err := cl.Get(cerberusHome)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get homepage: %v", err)
 	}
@@ -126,8 +137,8 @@ func (a *cerberusAggregator) login() (*http.Client, error) {
 	
 	// Login!
 	jar := singleCookieJar(cerberusHome, "cftpSID", string(cookie))
+	cl.Jar = jar
 	
-	cl := &http.Client{Jar: jar}
 	res2, err := cl.PostForm(
 		cerberusUser,
 		map[string][]string{
