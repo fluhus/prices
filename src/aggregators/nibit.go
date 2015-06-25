@@ -156,6 +156,8 @@ func (a *nibitAggregator) download(cl *http.Client, date, dir string) error {
 			return fmt.Errorf("Failed to read page body: %v", err)
 		}
 		
+		a.clearFormAction(values)
+		
 		// Parse table.
 		rowsRe := regexp.MustCompile("(?s)<tr>(.*?)</tr>")
 		colsRe := regexp.MustCompile("(?s)<td>(.*?)</td>")
@@ -179,7 +181,8 @@ func (a *nibitAggregator) download(cl *http.Client, date, dir string) error {
 				cols := colsRe.FindAllSubmatch(row[1], -1)
 				if len(cols) == 0 { continue }  // Maybe a header.
 				
-				info := &nibitFileInfo{string(cols[0][1]) + ".xml", fileNumber}
+				info := &nibitFileInfo{string(cols[0][1]) + ".xml.gz",
+						fileNumber}
 				fileNumber++
 				
 				infos <- info
@@ -292,6 +295,13 @@ func (a *nibitAggregator) setFormActionPrev(values urllib.Values) {
 	delete(values, "ctl00$MainContent$btnNext1")
 	delete(values, "ctl00$MainContent$btnSearch")
 	values["ctl00$MainContent$btnPrev1"] = []string{"אחורה"}
+}
+
+// Removes action.
+func (a *nibitAggregator) clearFormAction(values urllib.Values) {
+	delete(values, "ctl00$MainContent$btnNext1")
+	delete(values, "ctl00$MainContent$btnPrev1")
+	delete(values, "ctl00$MainContent$btnSearch")
 }
 
 // Sets the chain field of the form. Give "-1" for all chains.

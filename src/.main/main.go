@@ -8,6 +8,6 @@ import (
 
 func main() {
 	fmt.Println("Hi")
-	fmt.Println(aggregators.NewCerberusAggregator("doralon").Aggregate("/cs/grad/amitlavon/icore/try"))
+	fmt.Println(aggregators.Nibit(aggregators.Victory, 1).Aggregate("/cs/grad/amitlavon/icore/try"))
 }
 
