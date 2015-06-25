@@ -93,10 +93,23 @@ type aggTask struct {
 // Holds tasks to perform by the main program. Tasks will be performed
 // sequentially. Use a nil value to make a placeholder, for chain counting.
 var tasks = []*aggTask {
-	// &aggTask{ aggregators.NewCerberusAggregator("doralon"),
-			// "DorAlon", "doralon" },
-	&aggTask{ aggregators.Cerberus("Keshet"), "Keshet", "keshet" },
+	&aggTask{ aggregators.Cerberus("TivTaam"), "TivTaam", "tivtaam" },
+	nil,  // Placeholder for Co-Op.
 	&aggTask{ aggregators.Shufersal(), "Shufersal", "shufersal" },
+	&aggTask{ aggregators.Cerberus("DorAlon"), "DorAlon", "doralon" },
+	&aggTask{ aggregators.Nibit(aggregators.Victory, 100), "Victory", "victory" },
+	&aggTask{ aggregators.Nibit(aggregators.Hashook, 100), "Hashook", "hashook" },
+	&aggTask{ aggregators.Nibit(aggregators.Lahav, 100), "Lahav", "lahav" },
+	&aggTask{ aggregators.Cerberus("osherad"), "OsherAd", "osherad" },
+	&aggTask{ aggregators.Mega(), "Mega", "mega" },
+	&aggTask{ aggregators.Cerberus("HaziHinam"), "HaziHinam", "hazihinam" },
+	&aggTask{ aggregators.Cerberus("Keshet"), "Keshet", "keshet" },
+	&aggTask{ aggregators.Cerberus("RamiLevi"), "RamiLevi", "ramilevi" },
+	&aggTask{ aggregators.Cerberus("SuperDosh"), "SuperDosh", "superdosh" },
+	&aggTask{ aggregators.Cerberus("Yohananof"), "Yohananof", "yohananof" },
+	&aggTask{ aggregators.Eden(), "Eden", "eden" },
+	&aggTask{ aggregators.Bitan(), "Bitan", "bitan" },
+	nil,  // Placeholder for Freshmarket.
 }
 
 // Returns the name that should be given to the log file.
@@ -164,6 +177,7 @@ func logWelcome() {
 	// Print chain names.
 	chains := ""
 	for i := range tasks {
+		if tasks[i] == nil { continue }
 		if i > 0 { chains += ", " }
 		chains += tasks[i].name
 	}
