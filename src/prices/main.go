@@ -27,11 +27,12 @@ func main() {
 	}
 	
 	// Open logging output file.
-	err = os.MkdirAll(args.dir, 0700)
+	logsDir := filepath.Join(args.dir, "logs")
+	err = os.MkdirAll(logsDir, 0700)
 	if err != nil {
 		log.Fatal("Filed to create output dir:", err)
 	}
-	out, err := os.Create(filepath.Join(args.dir, logFileName()))
+	out, err := os.Create(filepath.Join(logsDir, logFileName()))
 	if err != nil {
 		log.Fatal("Error creating log file:", err)
 	}
