@@ -76,11 +76,11 @@ func main() {
 			log.Printf("Finished successfully.")
 		}
 		
-		log.Println("Took", time.Now().Sub(tt))
+		log.Println("Time took:", time.Now().Sub(tt))
 		log.SetPrefix("")
 	}
 	
-	log.Printf("Operation is complete. Took %v.", time.Now().Sub(t))
+	log.Printf("Operation is complete. Time took: %v", time.Now().Sub(t))
 }
 
 // A single aggregation task.
@@ -172,7 +172,7 @@ func logWelcome() {
 	// Print grep help.
 	log.Print("To search for a specific chain use grep '^ChainName'.")
 	log.Print("To search for errors, use grep 'error'.")
-	log.Print("To search for times, use grep 'Took'.")
+	log.Print("To search for times, use grep 'took'.")
 	
 	// Print chain names.
 	chains := ""
