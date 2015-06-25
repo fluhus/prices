@@ -12,7 +12,7 @@ import (
 type CoopAggregator struct{}
 
 // Returns a new Co-Op aggregator.
-func NewCoopAggregator() *CoopAggregator {
+func Coop() *CoopAggregator {
 	return &CoopAggregator{}
 }
 

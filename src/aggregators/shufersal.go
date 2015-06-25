@@ -18,7 +18,7 @@ import (
 type shufersalAggregator struct{}
 
 // Returns a new Shufersal aggregator.
-func NewShufersalAggregator() Aggregator {
+func Shufersal() Aggregator {
 	return &shufersalAggregator{}
 }
 

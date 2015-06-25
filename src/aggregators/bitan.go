@@ -21,7 +21,7 @@ const bitanFile = "http://www.ybitan.co.il/upload/"
 type bitanAggregator struct {}
 
 // Returns a new Yeinot Bitan aggregator.
-func NewBitanAggregator() Aggregator {
+func Bitan() Aggregator {
 	return &bitanAggregator{}
 }
 

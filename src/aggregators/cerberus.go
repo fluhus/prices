@@ -33,7 +33,7 @@ type cerberusAggregator struct {
 }
 
 // Returns a new Cerberus aggregator with the given user-name.
-func NewCerberusAggregator(username string) Aggregator {
+func Cerberus(username string) Aggregator {
 	return &cerberusAggregator{username}
 }
 

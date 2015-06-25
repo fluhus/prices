@@ -22,7 +22,7 @@ const edenFile = "http://operations.edenteva.co.il/Prices/"
 type edenAggregator struct {}
 
 // Returns a new Eden Teva Market aggregator.
-func NewEdenAggregator() Aggregator {
+func Eden() Aggregator {
 	return &edenAggregator{}
 }
 

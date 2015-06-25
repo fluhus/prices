@@ -75,10 +75,8 @@ type aggTask struct {
 var tasks = []*aggTask {
 	// &aggTask{ aggregators.NewCerberusAggregator("doralon"),
 			// "DorAlon", "doralon" },
-	&aggTask{ aggregators.NewCerberusAggregator("Keshet"),
-			"Keshet", "keshet" },
-	&aggTask{ aggregators.NewShufersalAggregator(),
-			"Shufersal", "shufersal" },
+	&aggTask{ aggregators.Cerberus("Keshet"), "Keshet", "keshet" },
+	&aggTask{ aggregators.Shufersal(), "Shufersal", "shufersal" },
 }
 
 // Returns the name that should be given to the log file.

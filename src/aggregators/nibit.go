@@ -35,7 +35,7 @@ type nibitAggregator struct {
 // Returns a new Nibit aggregator. Chain is an ID. Days is how many days back
 // from today it should download. days=1 means today only, days=2 means today
 // and yesterday, etc. A value lesser than 1 will cause a panic.
-func NewNibitAggregator(chain string, days int) Aggregator {
+func Nibit(chain string, days int) Aggregator {
 	// Check days.
 	if days < 1 {
 		panic(fmt.Sprintf("Bad number of days: %d. Must be positive.", days))

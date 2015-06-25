@@ -19,7 +19,7 @@ const megaHome = "http://publishprice.mega.co.il/"
 type megaAggregator struct{}
 
 // Returns a new Shufersal aggregator.
-func NewMegaAggregator() Aggregator {
+func Mega() Aggregator {
 	return &megaAggregator{}
 }
 
