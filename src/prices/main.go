@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-	// --- Initialization stuff. ---
 	// Set number of CPUs to max.
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	
@@ -45,13 +44,30 @@ func main() {
 		log.SetOutput(buf)
 	}
 	
-	// --- Perform aggregation tasks. ---
 	logWelcome()
+	
+	// Check that number of chains matches number of tasks.
+	chainCount, err := aggregators.CountChains()
+	if err != nil {
+		log.Printf("Chain count error: %v", err)
+	} else {
+		if chainCount != len(tasks) {
+			log.Printf("Chain count error: Found %d chains but there are %d" +
+					" tasks. To silence this error, place a nil placeholder" +
+					" in the task list.", chainCount, len(tasks))
+		}
+	}
+	
+	// Perform aggregation tasks.
 	t := time.Now()
 	
 	for _, task := range tasks {
+		// A task may be nil, to make a placeholder for a future aggregator.
+		if task == nil { continue }
+	
 		tt := time.Now()
 		log.SetPrefix(task.name + " ")
+		log.Printf("Starting %s.", task.name)
 		
 		err := task.agg.Aggregate(filepath.Join(args.dir, task.dir))
 		if err != nil {
@@ -75,7 +91,7 @@ type aggTask struct {
 }
 
 // Holds tasks to perform by the main program. Tasks will be performed
-// sequentially.
+// sequentially. Use a nil value to make a placeholder, for chain counting.
 var tasks = []*aggTask {
 	// &aggTask{ aggregators.NewCerberusAggregator("doralon"),
 			// "DorAlon", "doralon" },
@@ -117,7 +133,7 @@ func parseArgs() error {
 		return noArgs
 	}
 	
-	// To many args.
+	// Too many args.
 	if len(a) > 1 {
 		return fmt.Errorf("To many arguments were given.")
 	}
@@ -140,19 +156,17 @@ Flags:
 func logWelcome() {
 	log.Print("We have lift off!")
 	
+	// Print grep help.
+	log.Print("To search for a specific chain use grep '^ChainName'.")
+	log.Print("To search for errors, use grep 'error'.")
+	log.Print("To search for times, use grep 'Took'.")
+	
 	// Print chain names.
 	chains := ""
 	for i := range tasks {
 		if i > 0 { chains += ", " }
 		chains += tasks[i].name
 	}
-	
 	log.Print("Chains in this run: ", chains)
-	
-	// Print grep help.
-	log.Print("Each log message is prefixed by its chain name. To search for " +
-			"messages from a specific chain use grep '^chain'. For " +
-			"example: grep '^DorAlon'")
-	log.Print("To search for errors, use grep 'error'.")
 }
 
