@@ -94,12 +94,8 @@ type aggTask struct {
 // sequentially. Use a nil value to make a placeholder, for chain counting.
 var tasks = []*aggTask {
 	&aggTask{ aggregators.Cerberus("TivTaam"), "TivTaam", "tivtaam" },
-	nil,  // Placeholder for Co-Op.
 	&aggTask{ aggregators.Shufersal(), "Shufersal", "shufersal" },
 	&aggTask{ aggregators.Cerberus("DorAlon"), "DorAlon", "doralon" },
-	&aggTask{ aggregators.Nibit(aggregators.Victory, 100), "Victory", "victory" },
-	&aggTask{ aggregators.Nibit(aggregators.Hashook, 100), "Hashook", "hashook" },
-	&aggTask{ aggregators.Nibit(aggregators.Lahav, 100), "Lahav", "lahav" },
 	&aggTask{ aggregators.Cerberus("osherad"), "OsherAd", "osherad" },
 	&aggTask{ aggregators.Mega(), "Mega", "mega" },
 	&aggTask{ aggregators.Cerberus("HaziHinam"), "HaziHinam", "hazihinam" },
@@ -109,6 +105,10 @@ var tasks = []*aggTask {
 	&aggTask{ aggregators.Cerberus("Yohananof"), "Yohananof", "yohananof" },
 	&aggTask{ aggregators.Eden(), "Eden", "eden" },
 	&aggTask{ aggregators.Bitan(), "Bitan", "bitan" },
+	&aggTask{ aggregators.Nibit(aggregators.Victory, 3), "Victory", "victory" },
+	&aggTask{ aggregators.Nibit(aggregators.Hashook, 3), "Hashook", "hashook" },
+	&aggTask{ aggregators.Nibit(aggregators.Lahav, 3), "Lahav", "lahav" },
+	nil,  // Placeholder for Co-Op.
 	nil,  // Placeholder for Freshmarket.
 }
 
@@ -171,7 +171,7 @@ func logWelcome() {
 	
 	// Print grep help.
 	log.Print("To search for a specific chain use grep '^ChainName'.")
-	log.Print("To search for errors, use grep 'error'.")
+	log.Print("To search for errors, use grep 'error' (use tail to omit this line).")
 	log.Print("To search for times, use grep 'took'.")
 	
 	// Print chain names.

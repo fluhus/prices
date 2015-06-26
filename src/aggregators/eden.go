@@ -94,7 +94,7 @@ func (a *edenAggregator) fileList() ([]string, error) {
 	// Parse links.
 	result := []string{}
 	files := regexp.MustCompile("<a href=\"(.*?)\"").FindAllSubmatch(body, -1)
-	if len(files) != 0 {
+	if len(files) == 0 {
 		return nil, fmt.Errorf("Got 0 files.")
 	}
 	
