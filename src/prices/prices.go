@@ -108,7 +108,7 @@ var tasks = []*aggTask {
 	&aggTask{ aggregators.Nibit(aggregators.Victory, 3), "Victory", "victory" },
 	&aggTask{ aggregators.Nibit(aggregators.Hashook, 3), "Hashook", "hashook" },
 	&aggTask{ aggregators.Nibit(aggregators.Lahav, 3), "Lahav", "lahav" },
-	nil,  // Placeholder for Co-Op.
+	&aggTask{ aggregators.Coop(), "Coop", "coop" },
 	nil,  // Placeholder for Freshmarket.
 }
 

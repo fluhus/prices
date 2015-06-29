@@ -73,6 +73,8 @@ type coopFileInfo struct {
 	values urllib.Values
 }
 
+// Returns a channel that will yield file-infos for download. The error channel
+// will report when it's finished.
 func (a *coopAggregator) filesForDownload() (chan *coopFileInfo, chan error) {
 	// Instantiate channels.
 	infos := make(chan *coopFileInfo, numberOfThreads)
