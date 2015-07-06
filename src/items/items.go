@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"fmt"
 	"encoding/xml"
+	"bytes"
 )
 
 func main() {
@@ -31,13 +32,13 @@ func main() {
 	items := captureXml("Item").FindAllSubmatch(data, -1)
 	pef("Found %d items.\n", len(items))
 	for i := range items {
-		item := items[i][1]
-		for _, f := range mandatoryFields {
-			value := f.FindSubmatch(item)
-			if value == nil || len(value[1]) == 0 {
-				pef("Error: No value for mandatory field '%s'.\n", f)
-			}
+		item := items[i][2]
+		itemMap, err := parseItem(item)
+		if err != nil {
+			pe("Error:", err)
+			os.Exit(2)
 		}
+		pe(itemMap["ItemName"])
 	}
 }
 
@@ -49,6 +50,30 @@ func pe(a ...interface{}) {
 // Printf to stderr.
 func pef(s string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, s, a...)
+}
+
+func parseItem(item []byte) (map[string]string, error) {
+	result := map[string]string{}
+	
+	// Handle mandatory fields.
+	for _, field := range mandatoryFields {
+		value := field.FindSubmatch(item)
+		if value == nil || len(trim(value[2])) == 0 {
+			return nil, fmt.Errorf("No value for mandatory field '%s'.", field)
+		}
+		result[string(value[1])] = string(trim(value[2]))
+	}
+	
+	// Handle optional fields.
+	for _, field := range optionalFields {
+		value := field.FindSubmatch(item)
+		if value == nil || len(trim(value[2])) == 0 {
+			continue
+		}
+		result[string(value[1])] = string(trim(value[2]))
+	}
+	
+	return result, nil
 }
 
 var mandatoryFields = []*regexp.Regexp {
@@ -73,10 +98,15 @@ var optionalFields = []*regexp.Regexp {
 	captureXml("ItemType"),
 }
 
+// Returns a regex that captures an XML node surrounded by the given tag.
+// Capture group 1 is the tag, and capture group 2 is the content of the node
+// without the surrounding tag.
 func captureXml(tag string) *regexp.Regexp {
-	return regexp.MustCompile("(?si)<" + tag + ">(.*?)</" + tag + ">")
+	return regexp.MustCompile("(?si)<(" + tag + ")>(.*?)</" + tag + ">")
 }
 
-
+func trim(b []byte) []byte {
+	return bytes.Trim(b, " \t\n\r")
+}
 
 

@@ -105,9 +105,9 @@ var tasks = []*aggTask {
 	&aggTask{ aggregators.Cerberus("Yohananof"), "Yohananof", "yohananof" },
 	&aggTask{ aggregators.Eden(), "Eden", "eden" },
 	&aggTask{ aggregators.Bitan(), "Bitan", "bitan" },
-	&aggTask{ aggregators.Nibit(aggregators.Victory, 3), "Victory", "victory" },
-	&aggTask{ aggregators.Nibit(aggregators.Hashook, 3), "Hashook", "hashook" },
-	&aggTask{ aggregators.Nibit(aggregators.Lahav, 3), "Lahav", "lahav" },
+	&aggTask{ aggregators.Nibit(aggregators.Victory, 7), "Victory", "victory" },
+	&aggTask{ aggregators.Nibit(aggregators.Hashook, 7), "Hashook", "hashook" },
+	&aggTask{ aggregators.Nibit(aggregators.Lahav, 7), "Lahav", "lahav" },
 	&aggTask{ aggregators.Coop(), "Coop", "coop" },
 	nil,  // Placeholder for Freshmarket.
 }
