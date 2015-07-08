@@ -1,0 +1,37 @@
+package main
+
+// Concrete parsers for parsing.
+
+// Parsec price files.
+var pricesParser = &parser {
+	newXmlCapturer("(?:Item|Product)", ""),
+	newXmlCapturers(
+		"ChainId", "chain_id",
+		"SubchainId", "subchain_id",
+		"StoreId", "store_id",
+	),
+	newXmlCapturers(
+		"PriceUpdateDate", "update_time",
+		"ItemCode", "item_id", 
+		"ItemName", "item_name", 
+		"ItemPrice", "price",
+	),
+	newXmlCapturers(
+		"ManufacturerName","manufacturer_name",
+		"ManufacturerCountry","manufacturer_country",
+		"ManufacturerItemDescription","manufacturer_item_description",
+		"UnitQty","unit_quantity",
+		"Quantity","quantity",
+		"UnitOfMeasure","unit_of_measure",
+		"b(?:I|l)sWeighted","is_weighted",
+		"QtyInPackage","quantity_in_package",
+		"UnitOfMeasurePrice","unit_of_measure_price",
+		"AllowDiscount","allow_discount",
+		"ItemStatus","item_status",
+		"ItemType","item_type",
+	),
+}
+
+
+
+
