@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"flag"
 	"bytes"
+	"io/ioutil"
 )
 
 func init() {
@@ -18,6 +19,7 @@ var flags *flag.FlagSet
 // Instanciates the flag set.
 func Reset() {
 	flags = flag.NewFlagSet("", flag.ContinueOnError)
+	flags.SetOutput(ioutil.Discard)
 }
 
 // Parses the program's input arguments.
