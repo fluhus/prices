@@ -44,12 +44,15 @@ func pef(s string, a ...interface{}) {
 
 var args struct {
 	file *string
+	typ *string
 	check *bool
 	help bool
 }
 
 func parseArgs() error {
 	args.file = myflag.String("file", "f", "path", "File to read from.", "")
+	args.typ = myflag.String("type", "t", "type",
+			"File type ('prices', 'stores' or 'promos').", "")
 	args.check = myflag.Bool("check", "c",
 			"Only check file, do not print SQL statements.", false)
 	
@@ -73,7 +76,7 @@ var help =
 `Parses XML files for the supermarket prices projects.
 
 Usage:
-items [OPTIONS] -f file
+items [-c] -t file-type -f file
 
 Arguments:`
 

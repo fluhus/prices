@@ -32,6 +32,25 @@ var pricesParser = &parser {
 	),
 }
 
-
+var storesParser = &parser {
+	newXmlCapturer("Store", ""),
+	newXmlCapturers(),
+	newXmlCapturers(
+		"ChainId", "chain_id",
+		"SubchainId", "subchain_id",
+		"StoreId", "store_id",
+		"BikoretNo", "bikoret_no",
+		"StoreType", "store_type",
+		"ChainName", "chain_name",
+		"SubchainName", "subchain_name",
+		"StoreName", "store_name",
+		"Address", "address",
+		"City", "city",
+		"ZipCode", "zip_code",
+		"LastUpdateDate", "last_update_date",
+		"LastUpdateTime", "last_update_time",
+	),
+	newXmlCapturers(),
+}
 
 
