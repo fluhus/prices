@@ -1,5 +1,7 @@
 package main
 
+// Encoding convertion functionality.
+
 import (
 	"fmt"
 	"regexp"
