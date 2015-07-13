@@ -27,6 +27,13 @@ func main() {
 		os.Exit(2)
 	}
 	
+	// Convert to utf-8.
+	data, err = toUtf8(data)
+	if err != nil {
+		pe("Error converting encoding:", err)
+		os.Exit(2)
+	}
+	
 	// Parse items.
 	items, err := pricesParser.parse(data)
 	pe(items, err)
