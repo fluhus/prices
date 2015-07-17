@@ -28,25 +28,25 @@ func main() {
 	// Read input XML.
 	data, err := load(*args.file)
 	if err != nil {
-		pe("Error reading input:", err)
+		pe("Error reading input:", err, *args.file)
 		os.Exit(2)
 	}
 	
 	// Convert to utf-8.
 	data, err = toUtf8(data)
 	if err != nil {
-		pe("Error converting encoding:", err)
+		pe("Error converting encoding:", err, *args.file)
 		os.Exit(2)
 	}
 	
 	// Parse items.
 	items, err := parsers[args.typ].parse(data)
 	if err != nil {
-		pe("Error parsing file:", err)
+		pe("Error parsing file:", err, *args.file)
 		os.Exit(2)
 	}
 	if len(items) == 0 {
-		pe("Error parsing file: 0 items found.")
+		pe("Error parsing file: 0 items found.", *args.file)
 		os.Exit(2)
 	}
 	
@@ -57,7 +57,7 @@ func main() {
 
 // Println to stderr.
 func pe(a ...interface{}) {
-	fmt.Println(a...)
+	fmt.Fprintln(os.Stderr, a...)
 }
 
 // Printf to stderr.
@@ -102,14 +102,15 @@ func parseArgs() error {
 	case strings.HasPrefix(base, "Promo"):
 		args.typ = "promos"
 	default:
-		return fmt.Errorf("Could not infer data type (stores/prices/promos).")
+		return fmt.Errorf("Could not infer data type (stores/prices/promos)." +
+				" %s", *args.file)
 	}
 	
 	// Infer timestamp.
-	match := regexp.MustCompile("\\d+-\\d+-(\\d+)").FindStringSubmatch(
+	match := regexp.MustCompile("\\D(\\d+)\\D*$").FindStringSubmatch(
 			*args.file)
 	if match == nil || len(match[1]) != 12 {
-		return fmt.Errorf("Could not infer timestamp.")
+		return fmt.Errorf("Could not infer timestamp. %s", *args.file)
 	}
 	year, _ := strconv.ParseInt(match[1][0:4], 10, 64)
 	month, _ := strconv.ParseInt(match[1][4:6], 10, 64)
