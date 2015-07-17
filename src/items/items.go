@@ -5,6 +5,8 @@ import (
 	"os"
 	"fmt"
 	"myflag"
+	"strings"
+	"path/filepath"
 )
 
 func main() {
@@ -35,7 +37,7 @@ func main() {
 	}
 	
 	// Parse items.
-	items, err := parsers[*args.typ].parse(data)
+	items, err := parsers[args.typ].parse(data)
 	if err != nil {
 		pe("Error parsing file:", err)
 		os.Exit(2)
@@ -46,7 +48,7 @@ func main() {
 	}
 	
 	if !*args.check {
-		fmt.Printf("%s", sqlers[*args.typ].toSql(items))
+		fmt.Printf("%s", sqlers[args.typ].toSql(items))
 	}
 }
 
@@ -62,15 +64,13 @@ func pef(s string, a ...interface{}) {
 
 var args struct {
 	file *string
-	typ *string
+	typ string
 	check *bool
 	help bool
 }
 
 func parseArgs() error {
 	args.file = myflag.String("file", "f", "path", "File to read from.", "")
-	args.typ = myflag.String("type", "t", "type",
-			"File type ('prices', 'stores' or 'promos').", "")
 	args.check = myflag.Bool("check", "c",
 			"Only check file, do not print SQL statements.", false)
 	
@@ -82,15 +82,21 @@ func parseArgs() error {
 		args.help = true
 		return nil
 	}
-	
 	if *args.file == "" {
 		return fmt.Errorf("No input file supplied.")
 	}
-	if *args.typ == "" {
-		return fmt.Errorf("No file type supplied.")
-	}
-	if _, ok := parsers[*args.typ]; !ok {
-		return fmt.Errorf("Bad type: '%s'", *args.typ)
+	
+	// Infer data type.
+	base := filepath.Base(*args.file)
+	switch {
+	case strings.HasPrefix(base, "Price"):
+		args.typ = "prices"
+	case strings.HasPrefix(base, "Store"):
+		args.typ = "stores"
+	case strings.HasPrefix(base, "Promo"):
+		args.typ = "promos"
+	default:
+		return fmt.Errorf("Could not infer data type (stores, prices, promos).")
 	}
 	
 	return nil
@@ -100,7 +106,7 @@ var help =
 `Parses XML files for the supermarket prices projects.
 
 Usage:
-items [-c] -t file-type -f file
+items [-c] -f file
 
 Arguments:`
 
