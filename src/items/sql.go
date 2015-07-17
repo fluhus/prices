@@ -7,8 +7,10 @@ import (
 )
 
 // Takes parsed entries from the XMLs and generates SQL queries for them.
+// The time argument is used for creating timestamps. It should hold the time
+// the data was published, in seconds since 1/1/1970 (Unix time).
 type sqler interface {
-	toSql(data []map[string]string) []byte
+	toSql(data []map[string]string, time int64) []byte
 }
 
 // All available sqlers.
@@ -19,7 +21,7 @@ var sqlers = map[string]sqler {
 // Creates SQL statements for stores.
 type storesSqler struct{}
 
-func (s *storesSqler) toSql(data []map[string]string) []byte {
+func (s *storesSqler) toSql(data []map[string]string, time int64) []byte {
 	buf := bytes.NewBuffer(nil)
 	data = escapeQuotes(data)
 	
@@ -39,9 +41,10 @@ func (s *storesSqler) toSql(data []map[string]string) []byte {
 		if i > 0 {
 			fmt.Fprintf(buf, ",")
 		}
-		fmt.Fprintf(buf, "(0,(SELECT id FROM stores_id WHERE chain_id='%s'" +
+		fmt.Fprintf(buf, "(%d,(SELECT id FROM stores_id WHERE chain_id='%s'" +
 				" AND subchain_id='%s' AND store_id='%s'),%s,%s,'%s','%s'," +
 				"'%s','%s','%s','%s','%s','%s')\n",
+				time,
 				d["chain_id"], d["subchain_id"], d["store_id"], d["bikoret_no"],
 				d["store_type"], d["chain_name"], d["subchain_name"],
 				d["store_name"], d["address"], d["city"], d["zip_code"],

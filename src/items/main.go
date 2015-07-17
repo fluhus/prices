@@ -7,6 +7,9 @@ import (
 	"myflag"
 	"strings"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"time"
 )
 
 func main() {
@@ -48,7 +51,7 @@ func main() {
 	}
 	
 	if !*args.check {
-		fmt.Printf("%s", sqlers[args.typ].toSql(items))
+		fmt.Printf("%s", sqlers[args.typ].toSql(items, args.time))
 	}
 }
 
@@ -65,15 +68,18 @@ func pef(s string, a ...interface{}) {
 var args struct {
 	file *string
 	typ string
+	time int64
 	check *bool
 	help bool
 }
 
 func parseArgs() error {
+	// Set flags.
 	args.file = myflag.String("file", "f", "path", "File to read from.", "")
 	args.check = myflag.Bool("check", "c",
 			"Only check file, do not print SQL statements.", false)
 	
+	// Parse flags.
 	err := myflag.Parse()
 	if err != nil {
 		return err
@@ -96,8 +102,23 @@ func parseArgs() error {
 	case strings.HasPrefix(base, "Promo"):
 		args.typ = "promos"
 	default:
-		return fmt.Errorf("Could not infer data type (stores, prices, promos).")
+		return fmt.Errorf("Could not infer data type (stores/prices/promos).")
 	}
+	
+	// Infer timestamp.
+	match := regexp.MustCompile("\\d+-\\d+-(\\d+)").FindStringSubmatch(
+			*args.file)
+	if match == nil || len(match[1]) != 12 {
+		return fmt.Errorf("Could not infer timestamp.")
+	}
+	year, _ := strconv.ParseInt(match[1][0:4], 10, 64)
+	month, _ := strconv.ParseInt(match[1][4:6], 10, 64)
+	day, _ := strconv.ParseInt(match[1][6:8], 10, 64)
+	hour, _ := strconv.ParseInt(match[1][8:10], 10, 64)
+	minute, _ := strconv.ParseInt(match[1][10:12], 10, 64)
+	t := time.Date(int(year), time.Month(month), int(day), int(hour),
+			int(minute), 0, 0, time.UTC)
+	args.time = t.Unix()
 	
 	return nil
 }
