@@ -40,9 +40,10 @@ var pricesParser = &parser {
 
 var storesParser = &parser {
 	newXmlCapturer("Store", ""),
-	newXmlCapturers(),
 	newXmlCapturers(
 		"ChainId", "chain_id",
+	),
+	newXmlCapturers(
 		"SubchainId", "subchain_id",
 		"StoreId", "store_id",
 		"BikoretNo", "bikoret_no",
@@ -50,13 +51,13 @@ var storesParser = &parser {
 		"ChainName", "chain_name",
 		"SubchainName", "subchain_name",
 		"StoreName", "store_name",
-		"Address", "address",
-		"LastUpdateDate", "last_update_date",
-		"LastUpdateTime", "last_update_time",
 	),
 	newXmlCapturers(
+		"Address", "address",
 		"City", "city",
 		"ZipCode", "zip_code",
+		"LastUpdateTime", "last_update_time",
+		"LastUpdateDate", "last_update_date",
 	),
 }
 
