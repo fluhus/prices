@@ -2,6 +2,12 @@ package main
 
 // Concrete parsers for parsing.
 
+// Maps a textual parser type to a parser.
+var parsers = map[string]*parser {
+	"prices": pricesParser,
+	"stores": storesParser,
+}
+
 // Parsec price files.
 var pricesParser = &parser {
 	newXmlCapturer("(?:Item|Product)", ""),
@@ -45,12 +51,12 @@ var storesParser = &parser {
 		"SubchainName", "subchain_name",
 		"StoreName", "store_name",
 		"Address", "address",
-		"City", "city",
-		"ZipCode", "zip_code",
 		"LastUpdateDate", "last_update_date",
 		"LastUpdateTime", "last_update_time",
 	),
-	newXmlCapturers(),
+	newXmlCapturers(
+		"City", "city",
+		"ZipCode", "zip_code",
+	),
 }
-
 

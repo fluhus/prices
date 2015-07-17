@@ -35,8 +35,19 @@ func main() {
 	}
 	
 	// Parse items.
-	items, err := pricesParser.parse(data)
-	pe(items, err)
+	items, err := parsers[*args.typ].parse(data)
+	if err != nil {
+		pe("Error parsing file:", err)
+		os.Exit(2)
+	}
+	if len(items) == 0 {
+		pe("Error parsing file: 0 items found.")
+		os.Exit(2)
+	}
+	
+	if !*args.check {
+		fmt.Printf("%s", sqlers[*args.typ].toSql(items))
+	}
 }
 
 // Println to stderr.
@@ -74,6 +85,12 @@ func parseArgs() error {
 	
 	if *args.file == "" {
 		return fmt.Errorf("No input file supplied.")
+	}
+	if *args.typ == "" {
+		return fmt.Errorf("No file type supplied.")
+	}
+	if _, ok := parsers[*args.typ]; !ok {
+		return fmt.Errorf("Bad type: '%s'", *args.typ)
 	}
 	
 	return nil
