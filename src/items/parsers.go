@@ -18,9 +18,10 @@ var pricesParser = &parser {
 	),
 	newXmlCapturers(
 		"PriceUpdateDate", "update_time",
-		"ItemCode", "item_id", 
+		"ItemCode", "item_code",
 		"ItemName", "item_name", 
 		"ItemPrice", "price",
+		"ItemType","item_type",
 	),
 	newXmlCapturers(
 		"ManufacturerName","manufacturer_name",
@@ -34,7 +35,6 @@ var pricesParser = &parser {
 		"UnitOfMeasurePrice","unit_of_measure_price",
 		"AllowDiscount","allow_discount",
 		"ItemStatus","item_status",
-		"ItemType","item_type",
 	),
 }
 

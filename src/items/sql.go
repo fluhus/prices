@@ -1,5 +1,7 @@
 package main
 
+// Handles transforming data into SQL queries.
+
 import (
 	"fmt"
 	"bytes"
@@ -9,19 +11,16 @@ import (
 // Takes parsed entries from the XMLs and generates SQL queries for them.
 // The time argument is used for creating timestamps. It should hold the time
 // the data was published, in seconds since 1/1/1970 (Unix time).
-type sqler interface {
-	toSql(data []map[string]string, time int64) []byte
-}
+type sqler func(data []map[string]string, time int64) []byte
 
 // All available sqlers.
 var sqlers = map[string]sqler {
-	"stores": &storesSqler{},
+	"stores": storeSqler,
+	"prices": priceSqler,
 }
 
 // Creates SQL statements for stores.
-type storesSqler struct{}
-
-func (s *storesSqler) toSql(data []map[string]string, time int64) []byte {
+func storeSqler(data []map[string]string, time int64) []byte {
 	buf := bytes.NewBuffer(nil)
 	data = escapeQuotes(data)
 	
@@ -55,6 +54,31 @@ func (s *storesSqler) toSql(data []map[string]string, time int64) []byte {
 	return buf.Bytes()
 }
 
+// Creates SQL statements for prices.
+func priceSqler(data []map[string]string, time int64) []byte {
+	buf := bytes.NewBuffer(nil)
+	data = escapeQuotes(data)
+	
+	// Insert into items_id.
+	fmt.Fprintf(buf, "INSERT OR IGNORE INTO items_id VALUES\n")
+	for i := range data {
+		if i > 0 {
+			fmt.Fprintf(buf, ",")
+		}
+		if data[i]["item_type"] == "0" {
+			fmt.Fprintf(buf, "(NULL,'%s','%s','%s')\n", data[i]["item_type"],
+					data[i]["item_code"], data[i]["chain_id"])
+		} else {
+			fmt.Fprintf(buf, "(NULL,'%s','%s','')\n", data[i]["item_type"],
+					data[i]["item_code"])
+		}
+	}
+	fmt.Fprintf(buf, ";\n")
+	
+	return buf.Bytes()
+}
+
+// Escapes quotation characters in parsed data. Input data is unchanged.
 func escapeQuotes(maps []map[string]string) []map[string]string {
 	result := make([]map[string]string, len(maps))
 	for i := range maps {

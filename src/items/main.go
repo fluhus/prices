@@ -40,7 +40,11 @@ func main() {
 	}
 	
 	// Parse items.
-	items, err := parsers[args.typ].parse(data)
+	prsr := parsers[args.typ]
+	if prsr == nil {
+		panic("Nil parser for type '" + args.typ + "'.")
+	}
+	items, err := prsr.parse(data)
 	if err != nil {
 		pe("Error parsing file:", err, *args.file)
 		os.Exit(2)
@@ -51,7 +55,7 @@ func main() {
 	}
 	
 	if !*args.check {
-		fmt.Printf("%s", sqlers[args.typ].toSql(items, args.time))
+		fmt.Printf("%s", sqlers[args.typ](items, args.time))
 	}
 }
 
