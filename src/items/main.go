@@ -107,7 +107,7 @@ func parseArgs() error {
 	}
 	
 	// Infer timestamp.
-	match := regexp.MustCompile("\\D(\\d+)\\D*$").FindStringSubmatch(
+	match := regexp.MustCompile("\\D(201\\d+)").FindStringSubmatch(
 			*args.file)
 	if match == nil || len(match[1]) != 12 {
 		return fmt.Errorf("Could not infer timestamp. %s", *args.file)
