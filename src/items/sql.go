@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+// Insert commands should be performed in batches, since there is a limit
+// on the maximal command length in SQLite.
+const batchSize = 500
+
 // Takes parsed entries from the XMLs and generates SQL queries for them.
 // The time argument is used for creating timestamps. It should hold the time
 // the data was published, in seconds since 1/1/1970 (Unix time).
@@ -60,20 +64,26 @@ func priceSqler(data []map[string]string, time int64) []byte {
 	data = escapeQuotes(data)
 	
 	// Insert into items_id.
-	fmt.Fprintf(buf, "INSERT OR IGNORE INTO items_id VALUES\n")
-	for i := range data {
-		if i > 0 {
-			fmt.Fprintf(buf, ",")
+	for i := 0; i < len(data); i += batchSize {
+		fmt.Fprintf(buf, "INSERT OR IGNORE INTO items_id VALUES\n")
+		for j := i; j < len(data) && j < i+batchSize; j++ {
+			if j > i {
+				fmt.Fprintf(buf, ",")
+			}
+			
+			// Item-type=0 means an internal code, hence we identify by chain
+			// ID.
+			if data[j]["item_type"] == "0" {
+				fmt.Fprintf(buf, "(NULL,'%s','%s','%s')\n",
+						data[j]["item_type"], data[j]["item_code"],
+						data[j]["chain_id"])
+			} else {
+				fmt.Fprintf(buf, "(NULL,'%s','%s','')\n", data[j]["item_type"],
+						data[j]["item_code"])
+			}
 		}
-		if data[i]["item_type"] == "0" {
-			fmt.Fprintf(buf, "(NULL,'%s','%s','%s')\n", data[i]["item_type"],
-					data[i]["item_code"], data[i]["chain_id"])
-		} else {
-			fmt.Fprintf(buf, "(NULL,'%s','%s','')\n", data[i]["item_type"],
-					data[i]["item_code"])
-		}
+		fmt.Fprintf(buf, ";\n")
 	}
-	fmt.Fprintf(buf, ";\n")
 	
 	return buf.Bytes()
 }
