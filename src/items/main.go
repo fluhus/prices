@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+	"runtime"
 )
 
 func main() {
@@ -25,15 +26,64 @@ func main() {
 		os.Exit(1)
 	}
 	
-	sql, err := parseFile(*args.file)
-	if err != nil {
-		pe(err)
-		os.Exit(2)
+	// Prepare threads.
+	numOfThreads := runtime.NumCPU()
+	runtime.GOMAXPROCS(numOfThreads)
+	fileChan := make(chan string, numOfThreads)
+	doneChan := make(chan int, numOfThreads)
+	errChan := make(chan error, numOfThreads)
+	sqlChan := make(chan []byte, numOfThreads)
+	
+	go func() {  // Pushes file names for parsers.
+		for _, file := range args.files {
+			fileChan <- file
+		}
+		close(fileChan)
+	}()
+	
+	go func() {  // Prints generated SQL to stdout.
+		for sql := range sqlChan {
+			fmt.Printf("%s", sql)
+		}
+		doneChan <- 0
+	}()
+	
+	go func() {  // Prints errors to stderr.
+		for err := range errChan {
+			pe(err)
+		}
+		doneChan <- 0
+	}()
+	
+	// Parse files.
+	for i := 0; i < numOfThreads; i++ {
+		go func() {
+			for file := range fileChan {
+				sql, err := parseFile(file)
+				if err != nil {
+					errChan <- err
+					continue;
+				}
+				
+				if !*args.check {
+					sqlChan <- sql
+				}
+			}
+			
+			doneChan <- 0
+		}()
 	}
 	
-	if !*args.check {
-		fmt.Printf("%s", sql)
+	// Wait for parser threads to finish.
+	for i := 0; i < numOfThreads; i++ {
+		<-doneChan
 	}
+
+	// Wait for printer threads.
+	close(sqlChan)
+	close(errChan)
+	<-doneChan
+	<-doneChan
 }
 
 // Println to stderr.
@@ -47,14 +97,13 @@ func pef(s string, a ...interface{}) {
 }
 
 var args struct {
-	file *string
+	files []string
 	check *bool
 	help bool
 }
 
 func parseArgs() error {
 	// Set flags.
-	args.file = myflag.String("file", "f", "path", "File to read from.", "")
 	args.check = myflag.Bool("check", "c",
 			"Only check file, do not print SQL statements.", false)
 	
@@ -67,13 +116,16 @@ func parseArgs() error {
 		args.help = true
 		return nil
 	}
-	if *args.file == "" {
-		return fmt.Errorf("No input file supplied.")
+	args.files = myflag.Args()
+	if len(args.files) == 0 {
+		return fmt.Errorf("No input files supplied.")
 	}
 	
 	return nil
 }
 
+// Does the entire processing for a single file. Returns the SQL that should be
+// passed to the database program.
 func parseFile(file string) ([]byte, error) {
 	// Extract data-type and timestamp.
 	typ := fileType(file)
@@ -90,13 +142,13 @@ func parseFile(file string) ([]byte, error) {
 	// Read input XML.
 	data, err := load(file)
 	if err != nil {
-		return nil, fmt.Errorf("Error reading input:", err)
+		return nil, fmt.Errorf("Error reading input: %v", err)
 	}
 	
 	// Convert to utf-8.
 	data, err = toUtf8(data)
 	if err != nil {
-		return nil, fmt.Errorf("Error converting encoding:", err)
+		return nil, fmt.Errorf("Error converting encoding: %v", err)
 	}
 	
 	// Parse items.
@@ -106,7 +158,7 @@ func parseFile(file string) ([]byte, error) {
 	}
 	items, err := prsr.parse(data)
 	if err != nil {
-		return nil, fmt.Errorf("Error parsing file:", err)
+		return nil, fmt.Errorf("Error parsing file: %v", err)
 	}
 	if len(items) == 0 {
 		return nil, fmt.Errorf("Error parsing file: 0 items found.")
