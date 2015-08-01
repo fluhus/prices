@@ -25,37 +25,14 @@ func main() {
 		os.Exit(1)
 	}
 	
-	// Read input XML.
-	data, err := load(*args.file)
+	sql, err := parseFile(*args.file)
 	if err != nil {
-		pe("Error reading input:", err, *args.file)
-		os.Exit(2)
-	}
-	
-	// Convert to utf-8.
-	data, err = toUtf8(data)
-	if err != nil {
-		pe("Error converting encoding:", err, *args.file)
-		os.Exit(2)
-	}
-	
-	// Parse items.
-	prsr := parsers[args.typ]
-	if prsr == nil {
-		panic("Nil parser for type '" + args.typ + "'.")
-	}
-	items, err := prsr.parse(data)
-	if err != nil {
-		pe("Error parsing file:", err, *args.file)
-		os.Exit(2)
-	}
-	if len(items) == 0 {
-		pe("Error parsing file: 0 items found.", *args.file)
+		pe(err)
 		os.Exit(2)
 	}
 	
 	if !*args.check {
-		fmt.Printf("%s", sqlers[args.typ](items, args.time))
+		fmt.Printf("%s", sql)
 	}
 }
 
@@ -71,8 +48,6 @@ func pef(s string, a ...interface{}) {
 
 var args struct {
 	file *string
-	typ string
-	time int64
 	check *bool
 	help bool
 }
@@ -96,25 +71,71 @@ func parseArgs() error {
 		return fmt.Errorf("No input file supplied.")
 	}
 	
-	// Infer data type.
-	base := filepath.Base(*args.file)
-	switch {
-	case strings.HasPrefix(base, "Price"):
-		args.typ = "prices"
-	case strings.HasPrefix(base, "Store"):
-		args.typ = "stores"
-	case strings.HasPrefix(base, "Promo"):
-		args.typ = "promos"
-	default:
-		return fmt.Errorf("Could not infer data type (stores/prices/promos)." +
-				" %s", *args.file)
+	return nil
+}
+
+func parseFile(file string) ([]byte, error) {
+	// Extract data-type and timestamp.
+	typ := fileType(file)
+	if typ == "" {
+		return nil,
+				fmt.Errorf("Could not infer data type (stores/prices/promos).")
 	}
 	
-	// Infer timestamp.
-	match := regexp.MustCompile("\\D(201\\d+)").FindStringSubmatch(
-			*args.file)
+	tim := fileTimestamp(file)
+	if tim == -1 {
+		return nil, fmt.Errorf("Could not infer timestamp.")
+	}
+	
+	// Read input XML.
+	data, err := load(file)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading input:", err)
+	}
+	
+	// Convert to utf-8.
+	data, err = toUtf8(data)
+	if err != nil {
+		return nil, fmt.Errorf("Error converting encoding:", err)
+	}
+	
+	// Parse items.
+	prsr := parsers[typ]
+	if prsr == nil {
+		panic("Nil parser for type '" + typ + "'.")
+	}
+	items, err := prsr.parse(data)
+	if err != nil {
+		return nil, fmt.Errorf("Error parsing file:", err)
+	}
+	if len(items) == 0 {
+		return nil, fmt.Errorf("Error parsing file: 0 items found.")
+	}
+	
+	return sqlers[typ](items, tim), nil
+}
+
+// Infers the type of data in the given file. Can be a full path. Returns either
+// "prices", "stores", "promos", or an empty string if cannot infer.
+func fileType(file string) string {
+	base := filepath.Base(file)
+	switch {
+	case strings.HasPrefix(base, "Price"):
+		return "prices"
+	case strings.HasPrefix(base, "Store"):
+		return "stores"
+	case strings.HasPrefix(base, "Promo"):
+		return "promos"
+	default:
+		return ""
+	}
+}
+
+// Infers the timestamp of a file according to its name. Returns -1 if failed.
+func fileTimestamp(file string) int64 {
+	match := regexp.MustCompile("\\D(201\\d+)").FindStringSubmatch(file)
 	if match == nil || len(match[1]) != 12 {
-		return fmt.Errorf("Could not infer timestamp. %s", *args.file)
+		return -1
 	}
 	year, _ := strconv.ParseInt(match[1][0:4], 10, 64)
 	month, _ := strconv.ParseInt(match[1][4:6], 10, 64)
@@ -123,9 +144,8 @@ func parseArgs() error {
 	minute, _ := strconv.ParseInt(match[1][10:12], 10, 64)
 	t := time.Date(int(year), time.Month(month), int(day), int(hour),
 			int(minute), 0, 0, time.UTC)
-	args.time = t.Unix()
 	
-	return nil
+	return t.Unix()
 }
 
 var help =
