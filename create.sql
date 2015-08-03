@@ -11,7 +11,7 @@ CREATE TABLE stores_id (
 CREATE TABLE stores_meta (
 -- Metadata about stores.
 	timestamp int,  -- Unix time (seconds since 1/1/1970).
-	id               int  REFERENCES stores_id(id),
+	id               int NOT NULL REFERENCES stores_id(id),
 	bikoret_no       int,
 	store_type       int,
 	chain_name       text,
@@ -35,11 +35,32 @@ CREATE TABLE items_id (
 	UNIQUE (item_type, item_code, chain_id)
 );
 
+CREATE TABLE items_meta (
+-- Contains the latest report of each store on each item.
+	timestamp int,   -- Unix time (seconds since 1/1/1970).
+	item_id                       int NOT NULL REFERENCES items_id(id),
+	store_id                      int NOT NULL REFERENCES stores_id(id),
+	update_time                   text,
+	item_name                     text,
+	manufacturer_name             text,
+	manufacturer_country          text,
+	manufacturer_item_description text,
+	unit_quantity                 text,
+	quantity                      text,
+	unit_of_measure               text,
+	is_weighted                   text,
+	quantity_in_package           text,
+	unit_of_measure_price         text,
+	allow_discount                text,
+	item_status                   text,
+	UNIQUE (item_id, store_id)
+);
+
 CREATE TABLE prices (
 -- Contains all reported prices for all items.
 	timestamp int,   -- Unix time (seconds since 1/1/1970).
-	item_id   int REFERENCES items_id(id),
-	store_id  int REFERENCES stores_id(id),
+	item_id   int NOT NULL REFERENCES items_id(id),
+	store_id  int NOT NULL REFERENCES stores_id(id),
 	price     real,  -- Price in shekels as reported in raw data.
 	CHECK (price >= 0)
 );

@@ -29,32 +29,37 @@ func storeSqler(data []map[string]string, time int64) []byte {
 	data = escapeQuotes(data)
 	
 	// Insert into stores_id.
-	fmt.Fprintf(buf, "INSERT OR IGNORE INTO stores_id VALUES\n")
-	for i := range data {
-		if i > 0 {
-			fmt.Fprintf(buf, ",")
+	for i := 0; i < len(data); i += batchSize {
+		fmt.Fprintf(buf, "INSERT OR IGNORE INTO stores_id VALUES\n")
+		for j := i; j < len(data) && j < i+batchSize; j++ {
+			if j > i {
+				fmt.Fprintf(buf, ",")
+			}
+			fmt.Fprintf(buf, "(NULL,'%s','%s','%s')\n", data[j]["chain_id"],
+					data[j]["subchain_id"], data[j]["store_id"])
 		}
-		fmt.Fprintf(buf, "(NULL,'%s','%s','%s')\n", data[i]["chain_id"],
-				data[i]["subchain_id"], data[i]["store_id"])
+		fmt.Fprintf(buf, ";\n")
 	}
-	fmt.Fprintf(buf, ";\n")
 	
 	// Insert into stores_meta.
-	fmt.Fprintf(buf, "INSERT INTO stores_meta VALUES\n")
-	for i, d := range data {
-		if i > 0 {
-			fmt.Fprintf(buf, ",")
+	for i := 0; i < len(data); i += batchSize {
+		fmt.Fprintf(buf, "INSERT INTO stores_meta VALUES\n")
+		for j := i; j < len(data) && j < i+batchSize; j++ {
+			if j > i {
+				fmt.Fprintf(buf, ",")
+			}
+			fmt.Fprintf(buf, "(%d,(SELECT id FROM stores_id WHERE chain_id=" +
+					"'%s' AND subchain_id='%s' AND store_id='%s'),%s,%s,'%s'," +
+					"'%s','%s','%s','%s','%s','%s','%s')\n",
+					time, data[j]["chain_id"], data[j]["subchain_id"],
+					data[j]["store_id"], data[j]["bikoret_no"],
+					data[j]["store_type"], data[j]["chain_name"],
+					data[j]["subchain_name"], data[j]["store_name"],
+					data[j]["address"], data[j]["city"], data[j]["zip_code"],
+					data[j]["last_update_date"], data[j]["last_update_time"])
 		}
-		fmt.Fprintf(buf, "(%d,(SELECT id FROM stores_id WHERE chain_id='%s'" +
-				" AND subchain_id='%s' AND store_id='%s'),%s,%s,'%s','%s'," +
-				"'%s','%s','%s','%s','%s','%s')\n",
-				time,
-				d["chain_id"], d["subchain_id"], d["store_id"], d["bikoret_no"],
-				d["store_type"], d["chain_name"], d["subchain_name"],
-				d["store_name"], d["address"], d["city"], d["zip_code"],
-				d["last_update_date"], d["last_update_time"])
+		fmt.Fprintf(buf, ";\n")
 	}
-	fmt.Fprintf(buf, ";\n")
 	
 	return buf.Bytes()
 }
@@ -63,6 +68,13 @@ func storeSqler(data []map[string]string, time int64) []byte {
 func priceSqler(data []map[string]string, time int64) []byte {
 	buf := bytes.NewBuffer(nil)
 	data = escapeQuotes(data)
+	
+	// Make sure store is in stores_id (sometimes it isn't on the stores file).
+	if len(data) > 0 {
+		fmt.Fprintf(buf, "INSERT OR IGNORE INTO stores_id VALUES (NULL,'%s'" +
+				",'%s','%s');\n", data[0]["chain_id"], data[0]["subchain_id"],
+				data[0]["store_id"])
+	}
 	
 	// Insert into items_id.
 	for i := 0; i < len(data); i += batchSize {
@@ -80,6 +92,46 @@ func priceSqler(data []map[string]string, time int64) []byte {
 			} else {
 				fmt.Fprintf(buf, "(NULL,1,'%s','')\n", data[j]["item_code"])
 			}
+		}
+		fmt.Fprintf(buf, ";\n")
+	}
+	
+	// Insert into items_meta.
+	for i := 0; i < len(data); i += batchSize {
+		fmt.Fprintf(buf, "INSERT OR REPLACE INTO items_meta VALUES\n")
+		for j := i; j < len(data) && j < i+batchSize; j++ {
+			if j > i {
+				fmt.Fprintf(buf, ",")
+			}
+			
+			// Items of type 0 (internal barcode) are identified with chain_id.
+			selectItem := ""
+			if data[j]["item_type"] == "0" {
+				selectItem = "SELECT id FROM items_id WHERE item_type=0 AND " +
+						"item_code='" + data[j]["item_code"] + "' AND " +
+						"chain_id='" + data[j]["chain_id"] + "'"
+			} else {
+				selectItem = "SELECT id FROM items_id WHERE item_type=1 AND " +
+						"item_code='" + data[j]["item_code"] + "' AND " +
+						"chain_id=''"
+			}
+			
+			selectStore := "SELECT id FROM stores_id WHERE chain_id='" +
+					data[j]["chain_id"] + "' AND subchain_id='" +
+					data[j]["subchain_id"] + "' AND store_id='" +
+					data[j]["store_id"] + "'"
+			
+			fmt.Fprintf(buf, "(%d,(%s),(%s),'%s','%s','%s','%s','%s','%s'," +
+					"'%s','%s','%s','%s','%s','%s','%s')\n", time, selectItem,
+					selectStore, data[j]["update_time"], data[j]["item_name"],
+					data[j]["manufacturer_name"],
+					data[j]["manufacturer_country"],
+					data[j]["manufacturer_item_description"],
+					data[j]["unit_quantity"], data[j]["quantity"],
+					data[j]["unit_of_measure"], data[j]["is_weighted"],
+					data[j]["quantity_in_package"],
+					data[j]["unit_of_measure_price"],
+					data[j]["allow_discount"], data[j]["item_status"])
 		}
 		fmt.Fprintf(buf, ";\n")
 	}

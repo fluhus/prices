@@ -61,9 +61,10 @@ func main() {
 			for file := range fileChan {
 				sql, err := parseFile(file)
 				if err != nil {
-					errChan <- err
+					errChan <- fmt.Errorf("%v %s", err, file)
 					continue;
 				}
+				pe("Success", file)
 				
 				if !*args.check {
 					sqlChan <- sql
