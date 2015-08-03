@@ -1,6 +1,6 @@
 package main
 
-// Handles transforming data into SQL queries.
+// Handles transforming parsed data into SQL queries.
 
 import (
 	"fmt"
@@ -39,6 +39,7 @@ func storeSqler(data []map[string]string, time int64) []byte {
 	}
 	fmt.Fprintf(buf, ";\n")
 	
+	// Insert into stores_meta.
 	fmt.Fprintf(buf, "INSERT INTO stores_meta VALUES\n")
 	for i, d := range data {
 		if i > 0 {
@@ -74,13 +75,42 @@ func priceSqler(data []map[string]string, time int64) []byte {
 			// Item-type=0 means an internal code, hence we identify by chain
 			// ID.
 			if data[j]["item_type"] == "0" {
-				fmt.Fprintf(buf, "(NULL,'%s','%s','%s')\n",
-						data[j]["item_type"], data[j]["item_code"],
-						data[j]["chain_id"])
+				fmt.Fprintf(buf, "(NULL,0,'%s','%s')\n",
+						data[j]["item_code"], data[j]["chain_id"])
 			} else {
-				fmt.Fprintf(buf, "(NULL,'%s','%s','')\n", data[j]["item_type"],
-						data[j]["item_code"])
+				fmt.Fprintf(buf, "(NULL,1,'%s','')\n", data[j]["item_code"])
 			}
+		}
+		fmt.Fprintf(buf, ";\n")
+	}
+	
+	// Insert into prices.
+	for i := 0; i < len(data); i += batchSize {
+		fmt.Fprintf(buf, "INSERT INTO prices VALUES\n")
+		for j := i; j < len(data) && j < i+batchSize; j++ {
+			if j > i {
+				fmt.Fprintf(buf, ",")
+			}
+			
+			// Items of type 0 (internal barcode) are identified with chain_id.
+			selectItem := ""
+			if data[j]["item_type"] == "0" {
+				selectItem = "SELECT id FROM items_id WHERE item_type=0 AND " +
+						"item_code='" + data[j]["item_code"] + "' AND " +
+						"chain_id='" + data[j]["chain_id"] + "'"
+			} else {
+				selectItem = "SELECT id FROM items_id WHERE item_type=1 AND " +
+						"item_code='" + data[j]["item_code"] + "' AND " +
+						"chain_id=''"
+			}
+			
+			selectStore := "SELECT id FROM stores_id WHERE chain_id='" +
+					data[j]["chain_id"] + "' AND subchain_id='" +
+					data[j]["subchain_id"] + "' AND store_id='" +
+					data[j]["store_id"] + "'"
+			
+			fmt.Fprintf(buf, "(%d,(%s),(%s),%s)\n", time, selectItem,
+					selectStore, data[j]["price"])
 		}
 		fmt.Fprintf(buf, ";\n")
 	}

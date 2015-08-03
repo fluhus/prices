@@ -204,7 +204,7 @@ var help =
 `Parses XML files for the supermarket prices projects.
 
 Usage:
-items [-c] -f file
+items [-c] file1 file2 file3 ...
 
 Arguments:`
 

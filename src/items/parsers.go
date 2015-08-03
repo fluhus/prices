@@ -1,6 +1,6 @@
 package main
 
-// Concrete parsers for parsing.
+// Concrete parsers for parsing XML files.
 
 // Maps a textual parser type to a parser.
 var parsers = map[string]*parser {

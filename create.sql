@@ -27,11 +27,20 @@ CREATE TABLE stores_meta (
 CREATE TABLE items_id (
 -- Identifies every commodity item in the data.
 	id         integer PRIMARY KEY,
-	item_type  text  NOT NULL,  -- 0 for internal barcodes, 1 for universal.
+	item_type  int   NOT NULL,  -- 0 for internal barcodes, 1 for universal.
 	item_code  text  NOT NULL,
-	chain_id   text  NOT NULL,  -- Empty for universal.
+	chain_id   text  NOT NULL,  -- Empty string for universal.
 	CHECK  (item_code <> '' AND ((item_type = '0' AND chain_id <> '') OR
 			(item_type = '1' AND chain_id = ''))),
 	UNIQUE (item_type, item_code, chain_id)
+);
+
+CREATE TABLE prices (
+-- Contains all reported prices for all items.
+	timestamp int,   -- Unix time (seconds since 1/1/1970).
+	item_id   int REFERENCES items_id(id),
+	store_id  int REFERENCES stores_id(id),
+	price     real,  -- Price in shekels as reported in raw data.
+	CHECK (price >= 0)
 );
 
