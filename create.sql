@@ -52,8 +52,7 @@ CREATE TABLE items_meta (
 	quantity_in_package           text,
 	unit_of_measure_price         text,
 	allow_discount                text,
-	item_status                   text,
-	UNIQUE (item_id, store_id)
+	item_status                   text
 );
 
 CREATE TABLE prices (

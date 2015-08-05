@@ -98,7 +98,7 @@ func priceSqler(data []map[string]string, time int64) []byte {
 	
 	// Insert into items_meta.
 	for i := 0; i < len(data); i += batchSize {
-		fmt.Fprintf(buf, "INSERT OR REPLACE INTO items_meta VALUES\n")
+		fmt.Fprintf(buf, "INSERT INTO items_meta VALUES\n")
 		for j := i; j < len(data) && j < i+batchSize; j++ {
 			if j > i {
 				fmt.Fprintf(buf, ",")
