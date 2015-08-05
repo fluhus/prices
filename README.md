@@ -4,8 +4,8 @@ Israeli Supermarket Price Project
 This is a collection of tools and scripts to download and manage price data
 from Israeli vendors.
 
-[1. License](#license)
-[2. What's in the Box](#whats-in-the-box)
+[1. License](#license)  
+[2. What's in the Box](#whats-in-the-box)  
 [3. How to Build](#how-to-build)
 
 License
@@ -44,10 +44,8 @@ How to Build
 
 1. Get the [Go](http://golang.org/) compiler and add it to your path.
 2. Update GOPATH:
-   * **Linux**:
-     `export GOPATH=/path/to/project`
-   * **Windows**:
-     `set GOPATH=\path\to\project`
+   * **Linux** - `export GOPATH=/path/to/project`
+   * **Windows** - `set GOPATH=\path\to\project`
 3. Compile everything. `cd` into project/src folder and execute:
    `go install ./...`
 4. A `bin` folder will be created in the project's folder, containing all
