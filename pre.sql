@@ -36,10 +36,10 @@ CREATE TABLE items_id (
 );
 
 CREATE TABLE items_meta (
--- Contains the latest report of each store on each item.
+-- Contains all metadata about each item.
 	timestamp int,   -- Unix time (seconds since 1/1/1970).
 	item_id                       int NOT NULL REFERENCES items_id(id),
-	store_id                      int NOT NULL REFERENCES stores_id(id),
+	chain_id                      NOT NULL,
 	update_time                   text,
 	item_name                     text,
 	manufacturer_name             text,
@@ -63,4 +63,65 @@ CREATE TABLE prices (
 	price     real,  -- Price in shekels as reported in raw data.
 	CHECK (price >= 0)
 );
+
+
+CREATE INDEX prices_index ON prices(item_id, store_id, timestamp);
+
+CREATE TRIGGER prices_sparser
+-- Prevents redundant rows from being added to the price table.
+BEFORE INSERT ON prices FOR EACH ROW
+WHEN new.price = (
+	SELECT price FROM prices prices2 WHERE
+	prices2.item_id = new.item_id AND
+	prices2.store_id = new.store_id AND
+	prices2.timestamp < new.timestamp
+	ORDER BY prices2.timestamp DESC LIMIT 1
+)
+BEGIN
+	SELECT raise(ignore);
+END;
+
+CREATE INDEX items_meta_index ON items_meta(item_id, chain_id, timestamp);
+
+CREATE TRIGGER items_sparser
+-- Prevents redundant rows from being added to the item table.
+BEFORE INSERT ON items_meta FOR EACH ROW
+WHEN
+	new.item_name
+	|| new.manufacturer_name
+	|| new.manufacturer_country
+	|| new.manufacturer_item_description
+	|| new.unit_quantity
+	|| new.quantity
+	|| new.unit_of_measure
+	|| new.is_weighted
+	|| new.quantity_in_package
+	|| new.unit_of_measure_price
+	|| new.allow_discount
+	|| new.item_status = (
+SELECT item_name
+	|| manufacturer_name
+	|| manufacturer_country
+	|| manufacturer_item_description
+	|| unit_quantity
+	|| quantity
+	|| unit_of_measure
+	|| is_weighted
+	|| quantity_in_package
+	|| unit_of_measure_price
+	|| allow_discount
+	|| item_status
+	FROM items_meta items_meta2	WHERE
+	items_meta2.item_id = new.item_id AND
+	items_meta2.chain_id = new.chain_id AND
+	items_meta2.timestamp < new.timestamp
+	ORDER BY items_meta2.timestamp DESC LIMIT 1
+)
+BEGIN
+	SELECT raise(ignore);
+END;
+--*/
+
+
+
 
