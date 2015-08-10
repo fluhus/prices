@@ -7,6 +7,7 @@ from Israeli vendors.
 [1. License](#license)  
 [2. What's in the Box](#whats-in-the-box)  
 [3. How to Build](#how-to-build)
+[4. TODOs](#todos)
 
 License
 -------
@@ -50,4 +51,14 @@ How to Build
    `go install ./...`
 4. A `bin` folder will be created in the project's folder, containing all
    generated binaries.
+
+TODOs
+-----
+
+Things to do in no particular order.
+
+* Change binary names from 'prices' and 'items' to something more informative.
+* Port SQL syntax to postgres.
+* Embed SQL scripts in 'items' binary.
+* Handle promos.
 
