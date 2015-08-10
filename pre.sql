@@ -67,7 +67,7 @@ CREATE TABLE prices (
 
 CREATE INDEX prices_index ON prices(item_id, store_id, timestamp);
 
-CREATE TRIGGER prices_sparser
+CREATE TRIGGER prices_bouncer
 -- Prevents redundant rows from being added to the price table.
 BEFORE INSERT ON prices FOR EACH ROW
 WHEN new.price = (
@@ -83,7 +83,7 @@ END;
 
 CREATE INDEX items_meta_index ON items_meta(item_id, chain_id, timestamp);
 
-CREATE TRIGGER items_sparser
+CREATE TRIGGER items_bouncer
 -- Prevents redundant rows from being added to the item table.
 BEFORE INSERT ON items_meta FOR EACH ROW
 WHEN
