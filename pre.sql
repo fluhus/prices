@@ -14,8 +14,8 @@ CREATE TABLE stores_id (
 
 CREATE TABLE stores_meta (
 -- Metadata about stores.
-	timestamp int,  -- Unix time (seconds since 1/1/1970).
-	id               int NOT NULL REFERENCES stores_id(id),
+	timestamp        int, -- Unix time (seconds since 1/1/1970).
+	id               int  NOT NULL REFERENCES stores_id(id),
 	bikoret_no       int,
 	store_type       int,
 	chain_name       text,
@@ -41,31 +41,29 @@ CREATE TABLE items_id (
 
 CREATE TABLE items_meta (
 -- Contains all metadata about each item.
-	timestamp int,   -- Unix time (seconds since 1/1/1970).
-	item_id                       int NOT NULL REFERENCES items_id(id),
+	timestamp                     int, -- Unix time (seconds since 1/1/1970).
+	item_id                       int  NOT NULL REFERENCES items_id(id),
 	chain_id                      text NOT NULL,
 	update_time                   text,
 	item_name                     text,
-	manufacturer_name             text,
-	manufacturer_country          text,
 	manufacturer_item_description text,
 	unit_quantity                 text,
 	quantity                      text,
 	unit_of_measure               text,
 	is_weighted                   text,
 	quantity_in_package           text,
-	unit_of_measure_price         text,
 	allow_discount                text,
 	item_status                   text
 );
 
 CREATE TABLE prices (
 -- Contains all reported prices for all items.
-	timestamp int,   -- Unix time (seconds since 1/1/1970).
-	item_id   int NOT NULL REFERENCES items_id(id),
-	store_id  int NOT NULL REFERENCES stores_id(id),
-	price     real,  -- Price in shekels as reported in raw data.
-	CHECK (price >= 0)
+	timestamp             int,   -- Unix time (seconds since 1/1/1970).
+	item_id               int NOT NULL REFERENCES items_id(id),
+	store_id              int NOT NULL REFERENCES stores_id(id),
+	price                 real,  -- Price in shekels as reported in raw data.
+	unit_of_measure_price real,  -- Price in shekels as reported in raw data.
+	CHECK (price >= 0 AND unit_of_measure_price >= 0)
 );
 
 CREATE INDEX prices_index ON prices(item_id, store_id, timestamp);
@@ -73,8 +71,8 @@ CREATE INDEX prices_index ON prices(item_id, store_id, timestamp);
 CREATE TRIGGER prices_bouncer
 -- Prevents redundant rows from being added to the price table.
 BEFORE INSERT ON prices FOR EACH ROW
-WHEN new.price = (
-	SELECT price FROM prices prices2 WHERE
+WHEN new.price || new.unit_of_measure_price = (
+	SELECT price || unit_of_measure_price FROM prices prices2 WHERE
 	prices2.item_id = new.item_id AND
 	prices2.store_id = new.store_id AND
 	prices2.timestamp <= new.timestamp

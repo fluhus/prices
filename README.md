@@ -57,11 +57,10 @@ TODOs
 
 Things to do in no particular order.
 
+* Create a table for manufacturers.
+* Handle promos.
 * Change binary names from 'prices' and 'items' to something more informative.
-* Split manufacturer data from `items_meta` table.
-* Add price per unit to `prices` table.
+* Embed SQL scripts in 'items' binary.
 * <s>Port SQL syntax to postgres.</s> Postgres is annoying; sticking with
   SQLite for now.
-* Embed SQL scripts in 'items' binary.
-* Handle promos.
 

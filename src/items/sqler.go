@@ -116,23 +116,15 @@ func priceSqler(data []map[string]string, time int64) []byte {
 						"chain_id=''"
 			}
 			
-			/*selectStore := "SELECT id FROM stores_id WHERE chain_id='" +
-					data[j]["chain_id"] + "' AND subchain_id='" +
-					data[j]["subchain_id"] + "' AND store_id='" +
-					data[j]["store_id"] + "'"*/
-			
 			fmt.Fprintf(buf, "(%d,(%s),'%s','%s','%s','%s','%s','%s','%s'," +
-					"'%s','%s','%s','%s','%s','%s','%s')\n", time, selectItem,
+					"'%s','%s','%s','%s')\n", time, selectItem,
 					data[j]["chain_id"],
 					data[j]["update_time"],
 					data[j]["item_name"],
-					data[j]["manufacturer_name"],
-					data[j]["manufacturer_country"],
 					data[j]["manufacturer_item_description"],
 					data[j]["unit_quantity"], data[j]["quantity"],
 					data[j]["unit_of_measure"], data[j]["is_weighted"],
 					data[j]["quantity_in_package"],
-					data[j]["unit_of_measure_price"],
 					data[j]["allow_discount"], data[j]["item_status"])
 		}
 		fmt.Fprintf(buf, ";\n")
@@ -163,8 +155,9 @@ func priceSqler(data []map[string]string, time int64) []byte {
 					data[j]["subchain_id"] + "' AND store_id='" +
 					data[j]["store_id"] + "'"
 			
-			fmt.Fprintf(buf, "(%d,(%s),(%s),%s)\n", time, selectItem,
-					selectStore, data[j]["price"])
+			fmt.Fprintf(buf, "(%d,(%s),(%s),%s,%s)\n", time, selectItem,
+					selectStore, data[j]["price"],
+					data[j]["unit_of_measure_price"])
 		}
 		fmt.Fprintf(buf, ";\n")
 	}
