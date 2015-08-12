@@ -1,6 +1,10 @@
+-- Set cache size to 1 GB.
+PRAGMA page_size = 4096;
+PRAGMA cache_size = 262144;
+
 CREATE TABLE stores_id (
 -- Identifies every store in the data.
-	id           integer PRIMARY KEY,
+	id           integer PRIMARY KEY AUTOINCREMENT,
 	chain_id     text  NOT NULL,
 	subchain_id  text  NOT NULL,
 	store_id     text  NOT NULL,
@@ -26,7 +30,7 @@ CREATE TABLE stores_meta (
 
 CREATE TABLE items_id (
 -- Identifies every commodity item in the data.
-	id         integer PRIMARY KEY,
+	id         integer PRIMARY KEY AUTOINCREMENT,
 	item_type  int   NOT NULL,  -- 0 for internal barcodes, 1 for universal.
 	item_code  text  NOT NULL,
 	chain_id   text  NOT NULL,  -- Empty string for universal.
@@ -39,7 +43,7 @@ CREATE TABLE items_meta (
 -- Contains all metadata about each item.
 	timestamp int,   -- Unix time (seconds since 1/1/1970).
 	item_id                       int NOT NULL REFERENCES items_id(id),
-	chain_id                      NOT NULL,
+	chain_id                      text NOT NULL,
 	update_time                   text,
 	item_name                     text,
 	manufacturer_name             text,
@@ -64,7 +68,6 @@ CREATE TABLE prices (
 	CHECK (price >= 0)
 );
 
-
 CREATE INDEX prices_index ON prices(item_id, store_id, timestamp);
 
 CREATE TRIGGER prices_bouncer
@@ -74,7 +77,7 @@ WHEN new.price = (
 	SELECT price FROM prices prices2 WHERE
 	prices2.item_id = new.item_id AND
 	prices2.store_id = new.store_id AND
-	prices2.timestamp < new.timestamp
+	prices2.timestamp <= new.timestamp
 	ORDER BY prices2.timestamp DESC LIMIT 1
 )
 BEGIN
@@ -88,40 +91,32 @@ CREATE TRIGGER items_bouncer
 BEFORE INSERT ON items_meta FOR EACH ROW
 WHEN
 	new.item_name
-	|| new.manufacturer_name
-	|| new.manufacturer_country
 	|| new.manufacturer_item_description
 	|| new.unit_quantity
 	|| new.quantity
 	|| new.unit_of_measure
 	|| new.is_weighted
 	|| new.quantity_in_package
-	|| new.unit_of_measure_price
 	|| new.allow_discount
 	|| new.item_status = (
 SELECT item_name
-	|| manufacturer_name
-	|| manufacturer_country
 	|| manufacturer_item_description
 	|| unit_quantity
 	|| quantity
 	|| unit_of_measure
 	|| is_weighted
 	|| quantity_in_package
-	|| unit_of_measure_price
 	|| allow_discount
 	|| item_status
 	FROM items_meta items_meta2	WHERE
 	items_meta2.item_id = new.item_id AND
 	items_meta2.chain_id = new.chain_id AND
-	items_meta2.timestamp < new.timestamp
+	items_meta2.timestamp <= new.timestamp
 	ORDER BY items_meta2.timestamp DESC LIMIT 1
 )
 BEGIN
 	SELECT raise(ignore);
 END;
---*/
-
 
 
 
