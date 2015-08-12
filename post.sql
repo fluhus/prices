@@ -1,5 +1,3 @@
-select * from items_meta_count;
-
 select 'prices:      ' || count(*) from prices;
 select 'items_id:    ' || count(*) from items_id;
 select 'items_meta:  ' || count(*) from items_meta;

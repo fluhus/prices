@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 	"runtime"
+	"io/ioutil"
 )
 
 func main() {
@@ -107,6 +108,8 @@ func parseArgs() error {
 	// Set flags.
 	args.check = myflag.Bool("check", "c",
 			"Only check file, do not print SQL statements.", false)
+	filesFile := myflag.String("files", "f", "path",
+			"A file that contains a list of files, one per line.", "")
 	
 	// Parse flags.
 	err := myflag.Parse()
@@ -117,7 +120,21 @@ func parseArgs() error {
 		args.help = true
 		return nil
 	}
+	
 	args.files = myflag.Args()
+	
+	// Get file list from file.
+	if *filesFile != "" {
+		text, err := ioutil.ReadFile(*filesFile)
+		if err != nil {
+			return fmt.Errorf("Error reading file-list: %v", err)
+		}
+		
+		if len(text) > 0 {
+			args.files = strings.Split(string(text), "\n")
+		}
+	}
+	
 	if len(args.files) == 0 {
 		return fmt.Errorf("No input files supplied.")
 	}
