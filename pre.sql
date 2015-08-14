@@ -1,6 +1,9 @@
--- Set cache size to 1 GB.
+-- Set cache size to 2 GB.
 PRAGMA page_size = 4096;
-PRAGMA cache_size = 262144;
+PRAGMA cache_size = 524288;
+
+
+----- TABLES -------------------------------------------------------------------
 
 CREATE TABLE stores_id (
 -- Identifies every store in the data.
@@ -66,6 +69,9 @@ CREATE TABLE prices (
 	CHECK (price >= 0 AND unit_of_measure_price >= 0)
 );
 
+
+----- INDEXES & TRIGGERS -------------------------------------------------------
+
 CREATE INDEX prices_index ON prices(item_id, store_id, timestamp);
 
 CREATE TRIGGER prices_bouncer
@@ -81,6 +87,7 @@ WHEN new.price || new.unit_of_measure_price = (
 BEGIN
 	SELECT raise(ignore);
 END;
+
 
 CREATE INDEX items_meta_index ON items_meta(item_id, chain_id, timestamp);
 
@@ -106,7 +113,7 @@ SELECT item_name
 	|| quantity_in_package
 	|| allow_discount
 	|| item_status
-	FROM items_meta items_meta2	WHERE
+	FROM items_meta items_meta2 WHERE
 	items_meta2.item_id = new.item_id AND
 	items_meta2.chain_id = new.chain_id AND
 	items_meta2.timestamp <= new.timestamp
