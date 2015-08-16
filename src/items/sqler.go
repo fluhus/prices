@@ -9,9 +9,8 @@ import (
 	"hash/crc64"
 )
 
-// Insert commands should be performed in batches, since there is a limit
-// on the maximal command length in SQLite.
-const batchSize = 500
+
+// ----- SQLER TYPE ------------------------------------------------------------
 
 // Takes parsed entries from the XMLs and generates SQL queries for them.
 // The time argument is used for creating timestamps. It should hold the time
@@ -20,12 +19,20 @@ type sqler func(data []map[string]string, time int64) []byte
 
 // All available sqlers.
 var sqlers = map[string]sqler {
-	"stores": storeSqler,
-	"prices": priceSqler,
+	"stores": storesSqler,
+	"prices": pricesSqler,
+	"promos": promosSqler,
 }
 
+
+// ----- CONCRETE SQLERS -------------------------------------------------------
+
+// Insert commands should be performed in batches, since there is a limit
+// on the maximal insert size in SQLite.
+const batchSize = 500
+
 // Creates SQL statements for stores.
-func storeSqler(data []map[string]string, time int64) []byte {
+func storesSqler(data []map[string]string, time int64) []byte {
 	buf := bytes.NewBuffer(nil)
 	data = escapeQuotes(data)
 	
@@ -66,7 +73,7 @@ func storeSqler(data []map[string]string, time int64) []byte {
 }
 
 // Creates SQL statements for prices.
-func priceSqler(data []map[string]string, time int64) []byte {
+func pricesSqler(data []map[string]string, time int64) []byte {
 	buf := bytes.NewBuffer(nil)
 	data = escapeQuotes(data)
 	
@@ -166,6 +173,45 @@ func priceSqler(data []map[string]string, time int64) []byte {
 	
 	return buf.Bytes()
 }
+
+// Creates SQL statements for promos.
+func promosSqler(data []map[string]string, time int64) []byte {
+	// TODO(amit): This sqler is not ready!
+	buf := bytes.NewBuffer(nil)
+	data = escapeQuotes(data)
+	
+	// Make sure store is in stores_id (sometimes it isn't on the stores file).
+	if len(data) > 0 {
+		fmt.Fprintf(buf, "INSERT OR IGNORE INTO stores_id VALUES (NULL,'%s'" +
+				",'%s','%s');\n", data[0]["chain_id"], data[0]["subchain_id"],
+				data[0]["store_id"])
+	}
+	
+	// Insert into items_id.
+	for i := 0; i < len(data); i += batchSize {
+		fmt.Fprintf(buf, "INSERT OR IGNORE INTO items_id VALUES\n")
+		for j := i; j < len(data) && j < i+batchSize; j++ {
+			if j > i {
+				fmt.Fprintf(buf, ",")
+			}
+			
+			// Item-type=0 means an internal code, hence we identify by chain
+			// ID.
+			if data[j]["item_type"] == "0" {
+				fmt.Fprintf(buf, "(NULL,0,'%s','%s')\n",
+						data[j]["item_code"], data[j]["chain_id"])
+			} else {
+				fmt.Fprintf(buf, "(NULL,1,'%s','')\n", data[j]["item_code"])
+			}
+		}
+		fmt.Fprintf(buf, ";\n")
+	}
+	
+	return buf.Bytes()
+}
+
+
+// ----- HELPERS ---------------------------------------------------------------
 
 // Escapes quotation characters in parsed data. Input data is unchanged.
 func escapeQuotes(maps []map[string]string) []map[string]string {

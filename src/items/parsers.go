@@ -6,6 +6,7 @@ package main
 var parsers = map[string]*parser {
 	"prices": pricesParser,
 	"stores": storesParser,
+	"promos": promosParser,
 }
 
 // Parsec price files.
@@ -58,6 +59,38 @@ var storesParser = &parser {
 		"ZipCode", "zip_code",
 		"LastUpdateTime", "last_update_time",
 		"LastUpdateDate", "last_update_date",
+	),
+}
+
+var promosParser = &parser {
+	newXmlCapturer("Promotion", ""),
+	newXmlCapturers(
+		"ChainId", "chain_id",
+		"SubchainId", "subchain_id",
+		"StoreId", "store_id",
+	),
+	newXmlCapturers(
+		"RewardType", "reward_type",
+		"AllowMultipleDiscounts", "allow_multiple_discounts",
+		"PromotionId", "promotion_id",
+		"PromotionDescription", "promotion_description",
+		"PromotionStartDate", "promotion_start_date",
+		"PromotionStartHour", "promotion_start_hour",
+		"PromotionEndDate", "promotion_end_date",
+		"PromotionEndHour", "promotion_end_hour",
+		"MinQty", "min_qty",
+		"MaxQty", "max_qty",
+		"DiscountRate", "discount_rate",
+		"DiscountType", "discount_type",
+		"MinPurchaseAmnt", "min_purchase_amnt",
+		"MinNoOfItemOfered", "min_no_of_item_offered",
+	),
+	newXmlCapturers(
+		"PriceUpdateDate", "price_update_date",
+		"DiscountedPrice",
+		"DiscountedPricePerMida",
+		"AdditionalRestrictions",
+		"Remarks",
 	),
 }
 
