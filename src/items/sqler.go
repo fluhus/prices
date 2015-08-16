@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"bytes"
 	"strings"
+	"hash/crc64"
 )
 
 // Insert commands should be performed in batches, since there is a limit
@@ -117,7 +118,7 @@ func priceSqler(data []map[string]string, time int64) []byte {
 			}
 			
 			fmt.Fprintf(buf, "(%d,(%s),'%s','%s','%s','%s','%s','%s','%s'," +
-					"'%s','%s','%s','%s')\n", time, selectItem,
+					"'%s','%s','%s','%s',%d)\n", time, selectItem,
 					data[j]["chain_id"],
 					data[j]["update_time"],
 					data[j]["item_name"],
@@ -125,7 +126,8 @@ func priceSqler(data []map[string]string, time int64) []byte {
 					data[j]["unit_quantity"], data[j]["quantity"],
 					data[j]["unit_of_measure"], data[j]["is_weighted"],
 					data[j]["quantity_in_package"],
-					data[j]["allow_discount"], data[j]["item_status"])
+					data[j]["allow_discount"], data[j]["item_status"],
+					rowCrc(data[j], itemsMetaCrc))
 		}
 		fmt.Fprintf(buf, ";\n")
 	}
@@ -175,5 +177,32 @@ func escapeQuotes(maps []map[string]string) []map[string]string {
 		}
 	}
 	return result
+}
+
+// Calculates CRC from a given row's fields.
+func rowCrc(data map[string]string, fields []string) int64 {
+	crc := crc64.New(crcTable)
+	
+	for _, field := range fields {
+		fmt.Fprint(crc, data[field])
+	}
+	
+	return int64(crc.Sum64())
+}
+
+// Default table for CRC.
+var crcTable = crc64.MakeTable(crc64.ECMA)
+
+// Fields to include in CRC for items_meta table.
+var itemsMetaCrc = []string {
+	"item_name",
+	"manufacturer_item_description",
+	"unit_quantity",
+	"quantity",
+	"unit_of_measure",
+	"is_weighted",
+	"quantity_in_package",
+	"allow_discount",
+	"item_status",
 }
 

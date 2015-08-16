@@ -56,7 +56,8 @@ CREATE TABLE items_meta (
 	is_weighted                   text,
 	quantity_in_package           text,
 	allow_discount                text,
-	item_status                   text
+	item_status                   text,
+	crc                           int
 );
 
 CREATE TABLE prices (
@@ -94,25 +95,8 @@ CREATE INDEX items_meta_index ON items_meta(item_id, chain_id, timestamp);
 CREATE TRIGGER items_bouncer
 -- Prevents redundant rows from being added to the item table.
 BEFORE INSERT ON items_meta FOR EACH ROW
-WHEN
-	new.item_name
-	|| new.manufacturer_item_description
-	|| new.unit_quantity
-	|| new.quantity
-	|| new.unit_of_measure
-	|| new.is_weighted
-	|| new.quantity_in_package
-	|| new.allow_discount
-	|| new.item_status = (
-SELECT item_name
-	|| manufacturer_item_description
-	|| unit_quantity
-	|| quantity
-	|| unit_of_measure
-	|| is_weighted
-	|| quantity_in_package
-	|| allow_discount
-	|| item_status
+WHEN new.crc = (
+SELECT crc
 	FROM items_meta items_meta2 WHERE
 	items_meta2.item_id = new.item_id AND
 	items_meta2.chain_id = new.chain_id AND
