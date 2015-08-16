@@ -57,7 +57,10 @@ CREATE TABLE items_meta (
 	quantity_in_package           text,
 	allow_discount                text,
 	item_status                   text,
-	crc                           int
+	crc                           int  -- Hash of all fields that need to be
+	                                   -- compared for bouncing, to simplify
+	                                   -- the trigger.
+	                                   -- DO NOT USE FOR ANYTHING BUT THAT.
 );
 
 CREATE TABLE prices (
@@ -96,7 +99,7 @@ CREATE TRIGGER items_bouncer
 -- Prevents redundant rows from being added to the item table.
 BEFORE INSERT ON items_meta FOR EACH ROW
 WHEN new.crc = (
-SELECT crc
+	SELECT crc
 	FROM items_meta items_meta2 WHERE
 	items_meta2.item_id = new.item_id AND
 	items_meta2.chain_id = new.chain_id AND
