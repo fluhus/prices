@@ -73,6 +73,48 @@ CREATE TABLE prices (
 	CHECK (price >= 0 AND unit_of_measure_price >= 0)
 );
 
+CREATE TABLE promos (
+-- Identifies every promotion in the data. Promo id and metadata are saved
+-- together since they are unique. A change in the metadata will be registered
+-- as a new promo.
+--
+-- All timestamps are unix time (seconds since 1/1/1970).
+--
+-- TODO(amit): Add a table for items in each promo.
+-- TODO(amit): Implement a bouncer.
+-- TODO(amit): Check is_active field.
+	id integer PRIMARY KEY AUTOINCREMENT,
+	timestamp_from               int,
+	timestamp_to                 int,
+	store_id                     int NOT NULL REFERENCES items_id(id),
+	reward_type                  text,
+	allow_multiple_discounts     text,
+	promotion_id                 text,
+	promotion_description        text,
+	promotion_start_date         text,
+	promotion_start_hour         text,
+	promotion_end_date           text,
+	promotion_end_hour           text,
+	min_qty                      text,
+	max_qty                      text,
+	discount_rate                text,
+	discount_type                text,
+	min_purchase_amnt            text,
+	min_no_of_item_offered       text,
+	price_update_date            text,
+	discounted_price             text,
+	discounted_price_per_mida    text,
+	additional_is_coupn          text,
+	additional_gift_count        text,
+	additional_is_total          text,
+	additional_min_basket_amount text,
+	remarks                      text,
+	crc                          int   -- Hash of all fields that need to be
+	                                   -- compared for bouncing, to simplify
+	                                   -- the trigger.
+	                                   -- DO NOT USE FOR ANYTHING BUT THAT.
+);
+
 
 ----- INDEXES & TRIGGERS -------------------------------------------------------
 

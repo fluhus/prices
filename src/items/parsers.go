@@ -87,10 +87,13 @@ var promosParser = &parser {
 	),
 	newXmlCapturers(
 		"PriceUpdateDate", "price_update_date",
-		"DiscountedPrice",
-		"DiscountedPricePerMida",
-		"AdditionalRestrictions",
-		"Remarks",
+		"DiscountedPrice", "discounted_price",
+		"DiscountedPricePerMida", "discounted_price_per_mida",
+		"AdditionalI?sCoupon", "additional_is_coupn",
+		"AdditionalGiftCount", "additional_gift_count",
+		"AdditionalIsTotal", "additional_is_total",
+		"AdditionalMinBasketAmount", "additional_min_basket_amount",
+		"Remarks", "remarks",
 	),
 }
 

@@ -187,22 +187,49 @@ func promosSqler(data []map[string]string, time int64) []byte {
 				data[0]["store_id"])
 	}
 	
-	// Insert into items_id.
+	// Insert into promos.
 	for i := 0; i < len(data); i += batchSize {
-		fmt.Fprintf(buf, "INSERT OR IGNORE INTO items_id VALUES\n")
+		fmt.Fprintf(buf, "INSERT INTO promos VALUES\n")
 		for j := i; j < len(data) && j < i+batchSize; j++ {
 			if j > i {
 				fmt.Fprintf(buf, ",")
 			}
 			
-			// Item-type=0 means an internal code, hence we identify by chain
-			// ID.
-			if data[j]["item_type"] == "0" {
-				fmt.Fprintf(buf, "(NULL,0,'%s','%s')\n",
-						data[j]["item_code"], data[j]["chain_id"])
-			} else {
-				fmt.Fprintf(buf, "(NULL,1,'%s','')\n", data[j]["item_code"])
-			}
+			selectStore := "SELECT id FROM stores_id WHERE chain_id='" +
+					data[j]["chain_id"] + "' AND subchain_id='" +
+					data[j]["subchain_id"] + "' AND store_id='" +
+					data[j]["store_id"] + "'"
+			
+			fmt.Fprintf(buf, "(NULL,%d,%d,(%s),'%s','%s','%s','%s','%s','%s'," +
+					"'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s'," +
+					"'%s','%s','%s','%s','%s',%d)",
+					time,
+					time + (60*60*24), // Add one day, so that the promo
+					                        // holds until tomorrow.
+					selectStore,
+					data[j]["reward_type"],
+					data[j]["allow_multiple_discounts"],
+					data[j]["promotion_id"],
+					data[j]["promotion_description"],
+					data[j]["promotion_start_date"],
+					data[j]["promotion_start_hour"],
+					data[j]["promotion_end_date"],
+					data[j]["promotion_end_hour"],
+					data[j]["min_qty"],
+					data[j]["max_qty"],
+					data[j]["discount_rate"], 
+					data[j]["discount_type"],
+					data[j]["min_purchase_amnt"],
+					data[j]["min_no_of_item_offered"],
+					data[j]["price_update_date"],
+					data[j]["discounted_price"],
+					data[j]["discounted_price_per_mida"],
+					data[j]["additional_is_coupon"],
+					data[j]["additional_gift_count"],
+					data[j]["additional_is_total"],
+					data[j]["additional_min_basket_amount"],
+					data[j]["remarks"],
+					rowCrc(data[j], promosCrc))
 		}
 		fmt.Fprintf(buf, ";\n")
 	}
@@ -250,5 +277,31 @@ var itemsMetaCrc = []string {
 	"quantity_in_package",
 	"allow_discount",
 	"item_status",
+}
+
+// Fields to include in CRC for promos table.
+var promosCrc = []string {
+	"reward_type",
+	"allow_multiple_discounts",
+	"promotion_id",
+	"promotion_description",
+	"promotion_start_date",
+	"promotion_start_hour",
+	"promotion_end_date",
+	"promotion_end_hour",
+	"min_qty",
+	"max_qty",
+	"discount_rate",
+	"discount_type",
+	"min_purchase_amnt",
+	"min_no_of_item_offered",
+	"price_update_date",
+	"discounted_price",
+	"discounted_price_per_mida",
+	"additional_is_coupn",
+	"additional_gift_count",
+	"additional_is_total",
+	"additional_min_basket_amount",
+	"remarks",
 }
 
