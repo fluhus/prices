@@ -205,7 +205,7 @@ func promosSqler(data []map[string]string, time int64) []byte {
 					"'%s','%s','%s','%s','%s',%d)",
 					time,
 					time + (60*60*24), // Add one day, so that the promo
-					                        // holds until tomorrow.
+					                   // holds until tomorrow.
 					selectStore,
 					data[j]["reward_type"],
 					data[j]["allow_multiple_discounts"],
