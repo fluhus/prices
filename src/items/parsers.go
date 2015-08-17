@@ -37,6 +37,7 @@ var pricesParser = &parser {
 		"AllowDiscount","allow_discount",
 		"ItemStatus","item_status",
 	),
+	nil,
 }
 
 var storesParser = &parser {
@@ -60,6 +61,7 @@ var storesParser = &parser {
 		"LastUpdateTime", "last_update_time",
 		"LastUpdateDate", "last_update_date",
 	),
+	nil,
 }
 
 var promosParser = &parser {
@@ -94,6 +96,11 @@ var promosParser = &parser {
 		"AdditionalIsTotal", "additional_is_total",
 		"AdditionalMinBasketAmount", "additional_min_basket_amount",
 		"Remarks", "remarks",
+	),
+	newXmlCapturers(
+		"ItemCode", "item_code",
+		"ItemType", "item_type",
+		"IsGiftItem", "is_gift_item",
 	),
 }
 

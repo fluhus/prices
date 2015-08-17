@@ -21,6 +21,9 @@ type parser struct {
 	
 	// Optional fields that may appear on every item.
 	optionalFields  []*capturer
+	
+	// Repeated fields that may appear on every item.
+	repeatedFields  []*capturer
 }
 
 // Returns a map for each item in the given text. Each map contains all columns,
@@ -52,10 +55,11 @@ func (p *parser) parse(text []byte) ([]map[string]string, error) {
 			return nil, err
 		}
 		
-		// Handle optional fields.
+		// Handle optional & repeated fields.
 		optional := toMap(p.optionalFields, items[i])
+		repeated := toMapRepeated(p.repeatedFields, items[i])
 		
-		result[i] = join(globals, mandatory, optional)
+		result[i] = join(globals, mandatory, optional, repeated)
 	}
 	
 	return result, nil
@@ -66,6 +70,23 @@ func toMap(c []*capturer, text []byte) map[string]string {
 	result := map[string]string {}
 	for i := range c {
 		result[c[i].column] = string(trim(c[i].capture(text)))
+	}
+	return result
+}
+
+// Generates a map from column name to trimmed repeated values, for each
+// capturer. Repeated values are stored in a single string, separated by ';'.
+func toMapRepeated(c []*capturer, text []byte) map[string]string {
+	result := map[string]string {}
+	for i := range c {
+		values := c[i].captures(text)
+		for _, value := range values {
+			if result[c[i].column] == "" {
+				result[c[i].column] = string(trim(value))
+			} else {
+				result[c[i].column] += ";" + string(trim(value))
+			}
+		}
 	}
 	return result
 }

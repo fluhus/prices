@@ -115,6 +115,15 @@ CREATE TABLE promos (
 	                                   -- DO NOT USE FOR ANYTHING BUT THAT.
 );
 
+CREATE TABLE promos_items (
+-- Reports what items participate in every promo. A single promo may have
+-- several rows, one for each item.
+	promo_id     int NOT NULL REFERENCES promos(id),
+	item_id      int NOT NULL REFERENCES items_id(id),
+	is_gift_item text,
+	UNIQUE(promo_id, item_id)
+);
+
 
 ----- INDEXES & TRIGGERS -------------------------------------------------------
 
@@ -152,5 +161,23 @@ BEGIN
 	SELECT raise(ignore);
 END;
 
+CREATE INDEX promos_index ON promos(crc, promotion_id, store_id);
+
+CREATE TRIGGER promos_bouncer
+-- Prevents redundant rows from being added to the item table.
+BEFORE INSERT ON promos FOR EACH ROW
+WHEN (
+	SELECT rowid FROM promos promos2 WHERE
+	promos2.crc = new.crc AND
+	promos2.promotion_id = new.promotion_id AND
+	promos2.store_id = new.store_id
+) IS NOT NULL
+BEGIN
+	UPDATE promos SET timestamp_to = new.timestamp_to WHERE
+		crc = new.crc AND 
+		promotion_id = new.promotion_id AND
+		store_id = new.store_id;
+	SELECT raise(ignore);
+END;
 
 
