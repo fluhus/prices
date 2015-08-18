@@ -1,6 +1,7 @@
 select 'prices:      ' || count(*) from prices;
 select 'items_id:    ' || count(*) from items_id;
 select 'items_meta:  ' || count(*) from items_meta;
+select 'promos:      ' || count(*) from promos;
 
 .print
 .print prices
@@ -13,6 +14,12 @@ group by date(timestamp, 'unixepoch');
 
 select date(timestamp, 'unixepoch'), count(*) from items_meta
 group by date(timestamp, 'unixepoch');
+
+.print
+.print promos
+
+select date(timestamp_from, 'unixepoch'), count(*) from promos
+group by date(timestamp_from, 'unixepoch');
 
 .print
 
