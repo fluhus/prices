@@ -5,7 +5,8 @@ package main
 import (
 	"fmt"
 	"bytes"
-	"encoding/xml"
+	"myxml"
+	"strings"
 )
 
 // Parses entire files and returns entries ready to be fed into a table.
@@ -29,18 +30,18 @@ type parser struct {
 // Returns a map for each item in the given text. Each map contains all columns,
 // even those with no values. Returns an error if a mandatory value is missing.
 func (p *parser) parse(text []byte) ([]map[string]string, error) {
-	// Check XML validity.
-	err := xml.Unmarshal(text, &struct{}{})
+	// Create XML node.
+	node, err := myxml.Read(bytes.NewBuffer(text))
 	if err != nil {
-		return nil, fmt.Errorf("%v", err)
+		return nil, err
 	}
-	
+
 	// Initialize result.
-	items := p.divider.captures(text)
+	items := node.FindTag(p.divider.re)
 	result := make([]map[string]string, len(items))
 	
 	// Handle global fields.
-	globals := toMap(p.globalFields, text)
+	globals := toMap(p.globalFields, node)
 	err = findMissing(globals)
 	if err != nil {
 		return nil, err
@@ -66,23 +67,24 @@ func (p *parser) parse(text []byte) ([]map[string]string, error) {
 }
 
 // Generates a map from column name to trimmed value, for each capturer.
-func toMap(c []*capturer, text []byte) map[string]string {
+func toMap(c []*capturer, node *myxml.Node) map[string]string {
 	result := map[string]string {}
 	for i := range c {
-		result[c[i].column] = string(trim(c[i].capture(text)))
+		value, _ := node.FindTextUnderTag(c[i].re)
+		result[c[i].column] = trim(value)
 	}
 	return result
 }
 
 // Generates a map from column name to trimmed repeated values, for each
 // capturer. Repeated values are stored in a single string, separated by ';'.
-func toMapRepeated(c []*capturer, text []byte) map[string]string {
+func toMapRepeated(c []*capturer, node *myxml.Node) map[string]string {
 	result := map[string]string {}
 	for i := range c {
 		buf := make([]byte, 0)
-		values := c[i].captures(text)
+		values := node.FindAllTextUnderTag(c[i].re)
 		for _, value := range values {
-			if result[c[i].column] == "" {
+			if len(buf) == 0 {
 				buf = append(buf, trim(value)...)
 			} else {
 				buf = append(buf, ';')
@@ -117,8 +119,8 @@ func findMissing(m map[string]string) error {
 }
 
 // Trims whitespaces from a given byte array.
-func trim(b []byte) []byte {
-	return bytes.Trim(b, " \t\n\r")
+func trim(s string) string {
+	return strings.Trim(s, " \t\n\r")
 }
 
 // Returns a unified map that contains the entries from all maps. Overlaps

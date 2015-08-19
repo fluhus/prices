@@ -39,9 +39,10 @@ func (c *capturer) captures(text []byte) [][]byte {
 // Returns a capturer that captures an XML node surrounded by the given tag.
 // Capture group 1 is the content of the node without the surrounding tag.
 func newXmlCapturer(tag, column string) *capturer {
-	return &capturer{
-		regexp.MustCompile("(?si)<" + tag + ">(.*?)</" + tag + ">"),
-		column}
+	return &capturer {
+		regexp.MustCompile("(?si)^" + tag + "$"),
+		column,
+	}
 }
 
 // Returns a list of regexs created by captureXml, one for each input string.

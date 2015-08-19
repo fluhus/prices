@@ -95,7 +95,7 @@ func (n *Node) stringPrefix(prefix string) string {
 	if n.IsText {
 		return prefix + "Text: " + n.Text + "\n"
 	} else {
-		result := prefix + "Node: " + n.Tag
+		result := prefix + "Node: <" + n.Tag + ">"
 		
 		for attr, value := range n.Attr {
 			result += " " + attr + "=\"" + value + "\""
@@ -110,44 +110,69 @@ func (n *Node) stringPrefix(prefix string) string {
 	}
 }
 
-// Helper for collecting nodes from a node-tree. Used for node search
-// functionality. Read from the buf field when done searching.
-type nodeBuffer struct {
-	buf []*Node
-}
-
-// Returns a new node buffer.
-func newNodeBuffer() *nodeBuffer {
-	return &nodeBuffer{}
-}
-
-// Adds a node to the buffer.
-func (nb nodeBuffer) append(n *Node) {
-	nb.buf = append(nb.buf, n)
-}
-
-// Returns all nodes whos tags match the given pattern.
-func (n *Node) FindTag(pattern string) []*Node {
-	nb := newNodeBuffer()
-	re := regexp.MustCompile(pattern)
-	n.findTagRec(re, newNodeBuffer())
-	return nb.buf
+// Returns all nodes whos tags match the given regexp.
+func (n *Node) FindTag(re *regexp.Regexp) []*Node {
+	ns := &[]*Node{}
+	n.findTagRec(re, ns)
+	return *ns
 }
 
 // Recursively searches for nodes whos tags match the given regexp.
-func (n *Node) findTagRec(re *regexp.Regexp, nb *nodeBuffer) {
+func (n *Node) findTagRec(re *regexp.Regexp, ns *[]*Node) {
 	if n.IsText {
 		return
 	}
 	
 	if re.MatchString(n.Tag) {
-		nb.append(n)
+		*ns = append(*ns, n)
 	}
 	
 	for _, child := range n.Children {
-		child.findTagRec(re, nb)
+		child.findTagRec(re, ns)
 	}
 }
 
+func (n *Node) FindTextUnderTag(re *regexp.Regexp) (string, bool) {
+	// If current node matches, return its text.
+	if re.MatchString(n.Tag) {
+		if len(n.Children) > 0 {
+			return n.Children[0].Text, true
+		} else {
+			return "", true
+		}
+	}
+	
+	// Search in children.
+	for _, child := range n.Children {
+		text, ok := child.FindTextUnderTag(re)
+		if ok {
+			return text, true
+		}
+	}
+	
+	// Not found. :(
+	return "", false
+}
 
+func (n *Node) FindAllTextUnderTag(re *regexp.Regexp) []string {
+	ss := &[]string{}
+	n.findAllTextUnderTagRec(re, ss)
+	return *ss
+}
+
+func (n *Node) findAllTextUnderTagRec(re *regexp.Regexp, ss *[]string) {
+	// If current node matches, append its text.
+	if re.MatchString(n.Tag) {
+		if len(n.Children) > 0 {
+			*ss = append(*ss, n.Children[0].Text)
+		} else {
+			*ss = append(*ss, "")
+		}
+	}
+	
+	// Search in children.
+	for _, child := range n.Children {
+		child.findAllTextUnderTagRec(re, ss)
+	}
+}
 
