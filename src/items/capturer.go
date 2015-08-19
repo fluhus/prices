@@ -3,58 +3,157 @@ package main
 // Capturer type for capturing field values in XMLs.
 
 import (
-	"regexp"
+	"myxml"
+	"strings"
 )
 
-// Captures fields for parsing XML files.
+// Captures fields from XML structures.
 type capturer struct {
-	re *regexp.Regexp
 	column string
+	tags []string
 }
 
-// Returns the content of the matching field, or nil if not found.
-// Result may need to be trimmed.
-func (c *capturer) capture(text []byte) []byte {
-	match := c.re.FindSubmatch(text)
-	if match == nil {
-		return nil
-	} else {
-		return match[1]
+// Returns all nodes (including input) whos tag equals one of this capturer's
+// tags.
+func (c *capturer) findNodes(node *myxml.Node) []*myxml.Node {
+	nodes := &[]*myxml.Node{}
+	c.findNodesRec(node, nodes)
+	return *nodes
+}
+
+// Recursive function for findNodes.
+func (c *capturer) findNodesRec(node *myxml.Node, nodes *[]*myxml.Node) {
+	// Ignore text nodes.
+	if node.IsText {
+		return
+	}
+	
+	// Check if current node matches.
+	for _, tag := range c.tags {
+		if node.Tag == tag {
+			*nodes = append(*nodes, node)
+			break
+		}
+	}
+	
+	// Search in children.
+	for _, child := range node.Children {
+		c.findNodesRec(child, nodes)
 	}
 }
 
-// Returns the content of the matching repeated field. Results may need to be
-// trimmed.
-func (c *capturer) captures(text []byte) [][]byte {
-	match := c.re.FindAllSubmatch(text, -1)
-	result := make([][]byte, len(match))
-	
-	for i := range match {
-		result[i] = match[i][1]
+// Returns the text value of the first node whos tag matches one of this
+// capturer's tags. The boolean return value indicates if such a node was found.
+func (c *capturer) findValue(node *myxml.Node) (string, bool) {
+	// Ignore text nodes.
+	if node.IsText {
+		return "", false
 	}
 	
-	return result
+	// Check if current node matches.
+	for _, tag := range c.tags {
+		if node.Tag == tag {
+			if len(node.Children) > 0 {
+				return node.Children[0].Text, true
+			} else {
+				return "", true
+			}
+		}
+	}
+	
+	// Search in children.
+	for _, child := range node.Children {
+		text, ok := c.findValue(child)
+		if ok {
+			return text, true
+		}
+	}
+	
+	// Not found. :(
+	return "", false
 }
 
-// Returns a capturer that captures an XML node surrounded by the given tag.
-// Capture group 1 is the content of the node without the surrounding tag.
-func newXmlCapturer(tag, column string) *capturer {
+// Returns all nodes (including input) whos tag equals one of this capturer's
+// tags.
+func (c *capturer) findValues(node *myxml.Node) []string {
+	values := &[]string{}
+	c.findValuesRec(node, values)
+	return *values
+}
+
+// Recursive function for findValues.
+func (c *capturer) findValuesRec(node *myxml.Node, values *[]string) {
+	// Ignore text nodes.
+	if node.IsText {
+		return
+	}
+	
+	// Check if current node matches.
+	for _, tag := range c.tags {
+		if node.Tag == tag {
+			if len(node.Children) > 0 {
+				*values = append(*values, node.Children[0].Text)
+			} else {
+				*values = append(*values, "")
+			}
+			break
+		}
+	}
+	
+	// Search in children.
+	for _, child := range node.Children {
+		c.findValuesRec(child, values)
+	}
+}
+
+// Returns a capturer that captures XML nodes/values under the given tags.
+// All values will be lower cased.
+func newCapturer(column string, tags ...string) *capturer {
+	newColumn := strings.ToLower(column)
+	newTags := make([]string, len(tags))
+	for i := range tags {
+		newTags[i] = strings.ToLower(tags[i])
+	}
+	
 	return &capturer {
-		regexp.MustCompile("(?si)^" + tag + "$"),
-		column,
+		newColumn,
+		newTags,
 	}
 }
 
-// Returns a list of regexs created by captureXml, one for each input string.
-func newXmlCapturers(tagsCols ...string) []*capturer {
-	if len(tagsCols) % 2 == 1 {
-		panic("Odd number of arguments is not accepted.")
+// Returns a slice capturers, according to the given strings.
+// Strings that begin with a colon (:) indicate a column name, and all the rest
+// are tag names. Tags are associated with the last encountered column name.
+func newCapturers(colsTags ...string) []*capturer {
+	// Empty slices are nothing but trouble.
+	if len(colsTags) == 0 {
+		return nil
 	}
-
-	result := make([]*capturer, len(tagsCols) / 2)
-	for i := 0; i < len(tagsCols); i += 2 {
-		result[i/2] = newXmlCapturer(tagsCols[i], tagsCols[i+1])
+	
+	// Check that first element is a column name.
+	if !strings.HasPrefix(colsTags[0], ":") {
+		panic("First element must be a column name (begin with a colon).")
 	}
+	
+	result := []*capturer{}
+	lastColumn := 0
+	
+	for i, s := range colsTags {
+		if strings.HasPrefix(s, ":") && i > 0 {
+			result = append(result, newCapturer(
+				colsTags[lastColumn][1:],
+				colsTags[lastColumn + 1 : i]...,
+			))
+			
+			lastColumn = i
+		}
+	}
+	
+	// Add last element.
+	result = append(result, newCapturer(
+		colsTags[lastColumn][1:],
+		colsTags[lastColumn + 1 : len(colsTags)]...,
+	))
 	
 	return result
 }

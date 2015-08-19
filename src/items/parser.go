@@ -35,9 +35,11 @@ func (p *parser) parse(text []byte) ([]map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	
+	tagsToLower(node)
 
 	// Initialize result.
-	items := node.FindTag(p.divider.re)
+	items := p.divider.findNodes(node)
 	result := make([]map[string]string, len(items))
 	
 	// Handle global fields.
@@ -70,7 +72,7 @@ func (p *parser) parse(text []byte) ([]map[string]string, error) {
 func toMap(c []*capturer, node *myxml.Node) map[string]string {
 	result := map[string]string {}
 	for i := range c {
-		value, _ := node.FindTextUnderTag(c[i].re)
+		value, _ := c[i].findValue(node)
 		result[c[i].column] = trim(value)
 	}
 	return result
@@ -82,7 +84,7 @@ func toMapRepeated(c []*capturer, node *myxml.Node) map[string]string {
 	result := map[string]string {}
 	for i := range c {
 		buf := make([]byte, 0)
-		values := node.FindAllTextUnderTag(c[i].re)
+		values := c[i].findValues(node)
 		for _, value := range values {
 			if len(buf) == 0 {
 				buf = append(buf, trim(value)...)
@@ -133,5 +135,13 @@ func join(m ...map[string]string) map[string]string {
 		}
 	}
 	return result
+}
+
+// Converts all tag names under (and including) the given node to lowercase.
+func tagsToLower(node *myxml.Node) {
+	node.Tag = strings.ToLower(node.Tag)
+	for _, child := range node.Children {
+		tagsToLower(child)
+	}
 }
 
