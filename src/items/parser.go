@@ -79,14 +79,17 @@ func toMap(c []*capturer, text []byte) map[string]string {
 func toMapRepeated(c []*capturer, text []byte) map[string]string {
 	result := map[string]string {}
 	for i := range c {
+		buf := make([]byte, 0)
 		values := c[i].captures(text)
 		for _, value := range values {
 			if result[c[i].column] == "" {
-				result[c[i].column] = string(trim(value))
+				buf = append(buf, trim(value)...)
 			} else {
-				result[c[i].column] += ";" + string(trim(value))
+				buf = append(buf, ';')
+				buf = append(buf, trim(value)...)
 			}
 		}
+		result[c[i].column] = string(buf)
 	}
 	return result
 }

@@ -12,9 +12,19 @@ import (
 	"time"
 	"runtime"
 	"io/ioutil"
+	"mypprof"
 )
 
+// Determines if CPU profiling should be performed.
+const profile = false
+
 func main() {
+	// Start profiling?
+	if profile {
+		mypprof.Start("items.pprof")
+		defer mypprof.Stop()
+	}
+	
 	// Handle arguments.
 	err := parseArgs()
 	if err != nil {
