@@ -5,6 +5,7 @@ PRAGMA default_cache_size = 524288;
 
 ----- TABLES -------------------------------------------------------------------
 
+-- TODO(amit): Remove _id suffix from table names.
 CREATE TABLE stores_id (
 -- Identifies every store in the data.
 	id           integer PRIMARY KEY AUTOINCREMENT,
@@ -86,7 +87,7 @@ CREATE TABLE promos (
 	id integer PRIMARY KEY AUTOINCREMENT,
 	timestamp_from               int,
 	timestamp_to                 int,
-	store_id                     int NOT NULL REFERENCES items_id(id),
+	chain_id                     text,
 	reward_type                  text,
 	allow_multiple_discounts     text,
 	promotion_id                 text,
@@ -115,13 +116,21 @@ CREATE TABLE promos (
 	                                   -- DO NOT USE FOR ANYTHING BUT THAT.
 );
 
+CREATE TABLE promos_stores (
+-- Reports what stores take part in every promo. A single promo may have
+-- several rows, one for each store.
+	promo_id int NOT NULL REFERENCES promos(id),
+	store_id int NOT NULL REFERENCES stores_id(id),
+	UNIQUE (promo_id, store_id)
+);
+
 CREATE TABLE promos_items (
--- Reports what items participate in every promo. A single promo may have
+-- Reports what items take part in every promo. A single promo may have
 -- several rows, one for each item.
 	promo_id     int NOT NULL REFERENCES promos(id),
 	item_id      int NOT NULL REFERENCES items_id(id),
 	is_gift_item text,
-	UNIQUE(promo_id, item_id)
+	UNIQUE (promo_id, item_id)
 );
 
 
@@ -161,7 +170,7 @@ BEGIN
 	SELECT raise(ignore);
 END;
 
-CREATE INDEX promos_index ON promos(crc, promotion_id, store_id);
+CREATE INDEX promos_index ON promos(crc, chain_id, promotion_id);
 
 CREATE TRIGGER promos_bouncer
 -- Prevents redundant rows from being added to the item table.
@@ -169,14 +178,17 @@ BEFORE INSERT ON promos FOR EACH ROW
 WHEN (
 	SELECT rowid FROM promos promos2 WHERE
 	promos2.crc = new.crc AND
-	promos2.promotion_id = new.promotion_id AND
-	promos2.store_id = new.store_id
+	promos2.chain_id = new.chain_id AND
+	promos2.promotion_id = new.promotion_id
 ) IS NOT NULL
 BEGIN
-	UPDATE promos SET timestamp_to = new.timestamp_to WHERE
-		crc = new.crc AND 
-		promotion_id = new.promotion_id AND
-		store_id = new.store_id;
+	UPDATE promos SET
+		timestamp_to = new.timestamp_to,
+		timestamp_from = min(timestamp_from, new.timestamp_from)
+	WHERE
+		crc = new.crc AND
+		chain_id = new.chain_id AND
+		promotion_id = new.promotion_id;
 	SELECT raise(ignore);
 END;
 

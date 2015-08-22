@@ -178,18 +178,13 @@ func promosSqler(data []map[string]string, time int64) []byte {
 			
 			data[j]["crc"] = fmt.Sprint(rowCrc(data[j], promosCrc))
 			
-			selectStore := "SELECT id FROM stores_id WHERE chain_id='" +
-					data[j]["chain_id"] + "' AND subchain_id='" +
-					data[j]["subchain_id"] + "' AND store_id='" +
-					data[j]["store_id"] + "'"
-			
 			fmt.Fprintf(buf, "(NULL,%d,%d,(%s),'%s','%s','%s','%s','%s','%s'," +
 					"'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s'," +
 					"'%s','%s','%s','%s','%s',%s)\n",
 					time,
 					time + (60*60*24), // Add one day, so that the promo
 					                   // holds until tomorrow.
-					selectStore,
+					data[j]["chain_id"],
 					data[j]["reward_type"],
 					data[j]["allow_multiple_discounts"],
 					data[j]["promotion_id"],
@@ -213,6 +208,29 @@ func promosSqler(data []map[string]string, time int64) []byte {
 					data[j]["additional_min_basket_amount"],
 					data[j]["remarks"],
 					data[j]["crc"])
+		}
+		fmt.Fprintf(buf, ";\n")
+	}
+	
+	// Insert into promos_stores.
+	for i := 0; i < len(data); i += batchSize {
+		fmt.Fprintf(buf, "INSERT OR IGNORE INTO promos_stores VALUES\n")
+		for j := i; j < len(data) && j < i+batchSize; j++ {
+			if j > i {
+				fmt.Fprintf(buf, ",")
+			}
+
+			selectPromo := "SELECT id FROM promos " +
+					"WHERE crc=" + data[j]["crc"] +
+					" AND chain_id='" + data[j]["chain_id"] + "'" +
+					" AND promotion_id='" + data[j]["promotion_id"] + "'"
+
+			selectStore := "SELECT id FROM stores_id WHERE chain_id='" +
+					data[j]["chain_id"] + "' AND subchain_id='" +
+					data[j]["subchain_id"] + "' AND store_id='" +
+					data[j]["store_id"] + "'"
+			
+			fmt.Fprintf(buf, "((%s),(%s))\n", selectPromo, selectStore)
 		}
 		fmt.Fprintf(buf, ";\n")
 	}
@@ -257,6 +275,8 @@ func promosSqler(data []map[string]string, time int64) []byte {
 				fmt.Fprintf(buf, ",")
 			}
 			
+			// TODO(amitl): Extract this insert into items to a function.
+
 			// Item-type=0 means an internal code, hence we identify by chain
 			// ID.
 			if items[j].typ == "0" {
@@ -268,7 +288,7 @@ func promosSqler(data []map[string]string, time int64) []byte {
 		}
 		fmt.Fprintf(buf, ";\n")
 	}
-	
+
 	// Insert into promos_items.
 	for i := 0; i < len(items); i += batchSize {
 		fmt.Fprintf(buf, "INSERT OR IGNORE INTO promos_items VALUES\n")
@@ -277,12 +297,10 @@ func promosSqler(data []map[string]string, time int64) []byte {
 				fmt.Fprintf(buf, ",")
 			}
 			
-			// TODO(amit): This way to select promo may be sensitive to hash
-			// collisions. May need to think of a better way.
 			selectPromo := "SELECT id FROM promos " +
-					"WHERE crc = " + items[j].crc + 
-					" AND promotion_id = '" + items[i].promoId +
-					"' ORDER BY timestamp_to DESC LIMIT 1"
+					"WHERE crc = " + items[j].crc +
+					" AND chain_id = '" + items[i].chain + "'" +
+					" AND promotion_id = '" + items[i].promoId + "'"
 			
 			fmt.Fprintf(buf, "((%s),(%s),%s)\n",
 					selectPromo,
@@ -357,8 +375,6 @@ var itemsMetaCrc = []string {
 // Fields to include in CRC for promos table.
 var promosCrc = []string {
 	"chain_id",
-	"subchain_id",
-	"store_id",
 	"reward_type",
 	"allow_multiple_discounts",
 	"promotion_id",
