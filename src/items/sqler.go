@@ -258,6 +258,13 @@ func promosSqler(data []map[string]string, time int64) []byte {
 			pef("Bad lengths: %d, %d, %d\n", len(codes), len(types), len(gifts))
 			return nil
 		}
+
+		// Ignore promo if it has too many items.
+		// TODO(amit): This is a temporary hack just to keep the database slim.
+		// I should find a solution for those DB-bloating promos.
+		if len(codes) > 1000 {
+			continue
+		}
 		
 		// Generate items.
 		for j := range codes {
@@ -298,11 +305,11 @@ func promosSqler(data []map[string]string, time int64) []byte {
 			}
 			
 			selectPromo := "SELECT id FROM promos " +
-					"WHERE crc = " + items[j].crc +
-					" AND chain_id = '" + items[i].chain + "'" +
-					" AND promotion_id = '" + items[i].promoId + "'"
+					"WHERE crc=" + items[j].crc +
+					" AND chain_id='" + items[i].chain + "'" +
+					" AND promotion_id='" + items[i].promoId + "'"
 			
-			fmt.Fprintf(buf, "((%s),(%s),%s)\n",
+			fmt.Fprintf(buf, "((%s),(%s),'%s')\n",
 					selectPromo,
 					selectItem(items[j].typ, items[j].code, items[j].chain),
 					items[j].gift)

@@ -183,7 +183,7 @@ WHEN (
 ) IS NOT NULL
 BEGIN
 	UPDATE promos SET
-		timestamp_to = new.timestamp_to,
+		timestamp_to = max(timestamp_to, new.timestamp_to),
 		timestamp_from = min(timestamp_from, new.timestamp_from)
 	WHERE
 		crc = new.crc AND

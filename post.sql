@@ -1,9 +1,3 @@
-select 'prices:       ' || count(*) from prices;
-select 'items_id:     ' || count(*) from items_id;
-select 'items_meta:   ' || count(*) from items_meta;
-select 'promos:       ' || count(*) from promos;
-select 'promos_items: ' || count(*) from promos_items;
-
 .print
 .print prices
 
@@ -25,9 +19,27 @@ group by date(timestamp_from, 'unixepoch');
 .print
 .print promos_items
 
-select promos.id, count(*) from promos, promos_items
+select promos.id, date(promos.timestamp_from, 'unixepoch'),
+date(promos.timestamp_to, 'unixepoch'), count(*) from promos, promos_items
 where promos.id = promos_items.promo_id
 group by promos.id;
+
+/*
+.print
+.print promos_stores
+
+select promos.id, count(*) from promos, promos_stores
+where promos.id = promos_stores.promo_id
+group by promos.id;
+*/
+
+.print
+
+select 'prices:       ' || count(*) from prices;
+select 'items_id:     ' || count(*) from items_id;
+select 'items_meta:   ' || count(*) from items_meta;
+select 'promos:       ' || count(*) from promos;
+select 'promos_items: ' || count(*) from promos_items;
 
 .print
 
@@ -45,18 +57,6 @@ vacuum;
 select 'prices:      ' || count(*) from prices;
 select 'items_id:    ' || count(*) from items_id;
 select 'items_meta:  ' || count(*) from items_meta;
-
-.print
-.print prices
-
-select date(timestamp, 'unixepoch'), count(*) from prices
-group by date(timestamp, 'unixepoch');
-
-.print
-.print items_meta
-
-select date(timestamp, 'unixepoch'), count(*) from items_meta
-group by date(timestamp, 'unixepoch');
 
 /*
 .print
