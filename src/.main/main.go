@@ -8,6 +8,6 @@ import (
 
 func main() {
 	fmt.Println("Hi")
-	fmt.Println(aggregators.Coop().Aggregate("try"))
+	fmt.Println(aggregators.Nibit(aggregators.Lahav, 2).Aggregate("nibit"))
 }
 

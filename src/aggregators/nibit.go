@@ -125,112 +125,96 @@ func (a *nibitAggregator) download(cl *http.Client, date, dir string) error {
 		return fmt.Errorf("Failed to read page body: %v", err)
 	}
 	
-	// Go over pages.
-	pageNumber := 1
-	for {
-		log.Printf("Parsing page %d.", pageNumber)
-	
-		// Update form values.
-		values := a.formValues(body)
-		a.setFormDate(values, date)
-		a.setFormChain(values, a.chain)
-		if pageNumber == 1 {
-			a.setFormActionSearch(values)
-		} else {
-			a.setFormActionNext(values)
-		}
-		pageNumber++
+	// Update form values.
+	values := a.formValues(body)
+	a.setFormDate(values, date)
+	a.setFormChain(values, a.chain)
+	a.setFormActionSearch(values)
 		
-		// Send post.
-		res, err = cl.PostForm(nibitPage, values)
-		if err != nil {
-			return fmt.Errorf("Failed to read page: %v", err)
-		}
-		if res.StatusCode != http.StatusOK {
-			res.Body.Close()
-			return fmt.Errorf("Failed to read page: Got status %s.", res.Status)
-		}
-		body, err = ioutil.ReadAll(res.Body)
+	// Send post - to get files for specific date and chain.
+	res, err = cl.PostForm(nibitPage, values)
+	if err != nil {
+		return fmt.Errorf("Failed to read page: %v", err)
+	}
+	if res.StatusCode != http.StatusOK {
 		res.Body.Close()
-		if err != nil {
-			return fmt.Errorf("Failed to read page body: %v", err)
+		return fmt.Errorf("Failed to read page: Got status %s.", res.Status)
+	}
+	body, err = ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		return fmt.Errorf("Failed to read page body: %v", err)
+	}
+		
+	a.clearFormAction(values)
+		
+	// Parse table.
+	rowsRe := regexp.MustCompile("(?s)<tr>(.*?)</tr>")
+	colsRe := regexp.MustCompile("(?s)<td>(.*?)</td>")
+	
+	rows := rowsRe.FindAllSubmatch(body, -1)
+	if len(rows) == 0 {
+		return fmt.Errorf("Found 0 files on page.")
+	}
+	log.Printf("Found %d rows (including header).", len(rows))
+	// (There can be days with no files, so no error for 0 files.)
+	
+	infos := make(chan *nibitFileInfo, numberOfThreads)
+	done  := make(chan error, numberOfThreads)
+	
+	// Start pusher thread.
+	go func() {
+		fileNumber := 1
+		// Go over table rows.
+		for _, row := range rows {
+			// Break into columns.
+			cols := colsRe.FindAllSubmatch(row[1], -1)
+			if len(cols) == 0 { continue }  // Maybe a header.
+			
+			info := &nibitFileInfo{string(cols[0][1]) + ".xml.gz",
+					fileNumber}
+			fileNumber++
+			
+			infos <- info
 		}
 		
-		a.clearFormAction(values)
-		
-		// Parse table.
-		rowsRe := regexp.MustCompile("(?s)<tr>(.*?)</tr>")
-		colsRe := regexp.MustCompile("(?s)<td>(.*?)</td>")
-		
-		rows := rowsRe.FindAllSubmatch(body, -1)
-		if len(rows) == 0 {
-			return fmt.Errorf("Found 0 files on page %d.", pageNumber)
-		}
-		log.Printf("Found %d rows (including header).", len(rows))
-		// (There can be days with no files, so no error for 0 files.)
-		
-		infos := make(chan *nibitFileInfo, numberOfThreads)
-		done  := make(chan error, numberOfThreads)
-		
-		// Start pusher thread.
+		close(infos)
+	}()
+	
+	// Start downloader threads.
+	for i := 0; i < numberOfThreads; i++ {
 		go func() {
-			fileNumber := 1
-			// Go over table rows.
-			for _, row := range rows {
-				// Break into columns.
-				cols := colsRe.FindAllSubmatch(row[1], -1)
-				if len(cols) == 0 { continue }  // Maybe a header.
-				
-				info := &nibitFileInfo{string(cols[0][1]) + ".xml.gz",
-						fileNumber}
-				fileNumber++
-				
-				infos <- info
+			// New values map to avoid file name collisions.
+			myvalues := a.copyValues(values)
+			
+			for info := range infos {
+				a.setFormTarget(myvalues, info.target)
+				_, err := downloadIfNotExistsPost(nibitPage,
+						filepath.Join(dir, info.name), cl, myvalues)
+				if err != nil {
+					done <- fmt.Errorf("Failed to download '%s': %v",
+							info.name, err)
+					return
+				}
 			}
 			
-			close(infos)
+			done <- nil
 		}()
-		
-		// Start downloader threads.
-		for i := 0; i < numberOfThreads; i++ {
-			go func() {
-				// New values map to avoid file name collisions.
-				myvalues := a.copyValues(values)
-				
-				for info := range infos {
-					a.setFormTarget(myvalues, info.target)
-					_, err := downloadIfNotExistsPost(nibitPage,
-							filepath.Join(dir, info.name), cl, myvalues)
-					if err != nil {
-						done <- fmt.Errorf("Failed to download '%s': %v",
-								info.name, err)
-						return
-					}
-				}
-				
-				done <- nil
-			}()
+	}
+	
+	// Wait for downloaders.
+	for i := 0; i < numberOfThreads; i++ {
+		e := <- done
+		if e != nil {
+			err = e
 		}
-		
-		// Wait for downloaders.
-		for i := 0; i < numberOfThreads; i++ {
-			e := <- done
-			if e != nil {
-				err = e
-			}
-		}
-		
-		// Drain pusher thread.
-		for range infos {}
-		
-		if err != nil {
-			return err
-		}
-		
-		// Break if last page.
-		if !a.pageHasNext(body) {
-			break
-		}
+	}
+	
+	// Drain pusher thread.
+	for range infos {}
+	
+	if err != nil {
+		return err
 	}
 	
 	return nil
@@ -283,20 +267,6 @@ func (a *nibitAggregator) setFormActionSearch(values urllib.Values) {
 	values["ctl00$MainContent$btnSearch"] = []string{"חיפוש"}
 }
 
-// Sets action to 'next'.
-func (a *nibitAggregator) setFormActionNext(values urllib.Values) {
-	delete(values, "ctl00$MainContent$btnSearch")
-	delete(values, "ctl00$MainContent$btnPrev1")
-	values["ctl00$MainContent$btnNext1"] = []string{"קדימה"}
-}
-
-// Sets action to 'prev'.
-func (a *nibitAggregator) setFormActionPrev(values urllib.Values) {
-	delete(values, "ctl00$MainContent$btnNext1")
-	delete(values, "ctl00$MainContent$btnSearch")
-	values["ctl00$MainContent$btnPrev1"] = []string{"אחורה"}
-}
-
 // Removes action.
 func (a *nibitAggregator) clearFormAction(values urllib.Values) {
 	delete(values, "ctl00$MainContent$btnNext1")
@@ -314,12 +284,6 @@ func (a *nibitAggregator) setFormChain(values urllib.Values,
 func (a *nibitAggregator) setFormTarget(values urllib.Values, target int) {
 	values["__EVENTTARGET"] = []string{fmt.Sprintf(
 			"ctl00$MainContent$repeater$ctl%02d$lblDownloadFile", target)}
-}
-
-// Checks whether the 'next' button is enabled.
-func (a *nibitAggregator) pageHasNext(body []byte) bool {
-	re := regexp.MustCompile("<input [^>]* name=\"ctl00\\$MainContent\\$btnNext1\" [^>]* disabled=\"disabled\"")
-	return !re.Match(body)
 }
 
 // Returns a shallow copy of the given values. Keys can be added and removed
