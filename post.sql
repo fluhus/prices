@@ -52,6 +52,15 @@ items_meta2.rowid <> items_meta.rowid
 order by items_meta2.timestamp desc limit 1
 );
 
+delete from prices where price || unit_of_measure_price = (
+select price || unit_of_measure_price from prices prices2 where
+prices2.item_id = prices.item_id and
+prices2.store_id = prices.store_id and
+prices2.timestamp <= prices.timestamp and
+prices2.rowid <> prices.rowid
+order by prices2.timestamp desc limit 1
+);
+
 vacuum;
 
 select 'prices:      ' || count(*) from prices;
