@@ -36,9 +36,9 @@ func storesSqler(data []map[string]string, time int64) []byte {
 	buf := bytes.NewBuffer(nil)
 	data = escapeQuotes(data)
 	
-	// Insert into stores_id.
+	// Insert into stores.
 	for i := 0; i < len(data); i += batchSize {
-		fmt.Fprintf(buf, "INSERT OR IGNORE INTO stores_id VALUES\n")
+		fmt.Fprintf(buf, "INSERT OR IGNORE INTO stores VALUES\n")
 		for j := i; j < len(data) && j < i+batchSize; j++ {
 			if j > i {
 				fmt.Fprintf(buf, ",")
@@ -56,7 +56,7 @@ func storesSqler(data []map[string]string, time int64) []byte {
 			if j > i {
 				fmt.Fprintf(buf, ",")
 			}
-			fmt.Fprintf(buf, "(%d,(SELECT id FROM stores_id WHERE chain_id=" +
+			fmt.Fprintf(buf, "(%d,(SELECT id FROM stores WHERE chain_id=" +
 					"'%s' AND subchain_id='%s' AND store_id='%s'),%s,%s,'%s'," +
 					"'%s','%s','%s','%s','%s','%s','%s')\n",
 					time, data[j]["chain_id"], data[j]["subchain_id"],
@@ -77,16 +77,16 @@ func pricesSqler(data []map[string]string, time int64) []byte {
 	buf := bytes.NewBuffer(nil)
 	data = escapeQuotes(data)
 	
-	// Make sure store is in stores_id (sometimes it isn't on the stores file).
+	// Make sure store is in stores (sometimes it isn't on the stores file).
 	if len(data) > 0 {
-		fmt.Fprintf(buf, "INSERT OR IGNORE INTO stores_id VALUES (NULL,'%s'" +
+		fmt.Fprintf(buf, "INSERT OR IGNORE INTO stores VALUES (NULL,'%s'" +
 				",'%s','%s');\n", data[0]["chain_id"], data[0]["subchain_id"],
 				data[0]["store_id"])
 	}
 	
-	// Insert into items_id.
+	// Insert into items.
 	for i := 0; i < len(data); i += batchSize {
-		fmt.Fprintf(buf, "INSERT OR IGNORE INTO items_id VALUES\n")
+		fmt.Fprintf(buf, "INSERT OR IGNORE INTO items VALUES\n")
 		for j := i; j < len(data) && j < i+batchSize; j++ {
 			if j > i {
 				fmt.Fprintf(buf, ",")
@@ -138,7 +138,7 @@ func pricesSqler(data []map[string]string, time int64) []byte {
 				fmt.Fprintf(buf, ",")
 			}
 			
-			selectStore := "SELECT id FROM stores_id WHERE chain_id='" +
+			selectStore := "SELECT id FROM stores WHERE chain_id='" +
 					data[j]["chain_id"] + "' AND subchain_id='" +
 					data[j]["subchain_id"] + "' AND store_id='" +
 					data[j]["store_id"] + "'"
@@ -161,9 +161,9 @@ func promosSqler(data []map[string]string, time int64) []byte {
 	buf := bytes.NewBuffer(nil)
 	data = escapeQuotes(data)
 	
-	// Make sure store is in stores_id (sometimes it isn't on the stores file).
+	// Make sure store is in stores (sometimes it isn't on the stores file).
 	if len(data) > 0 {
-		fmt.Fprintf(buf, "INSERT OR IGNORE INTO stores_id VALUES (NULL,'%s'" +
+		fmt.Fprintf(buf, "INSERT OR IGNORE INTO stores VALUES (NULL,'%s'" +
 				",'%s','%s');\n", data[0]["chain_id"], data[0]["subchain_id"],
 				data[0]["store_id"])
 	}
@@ -225,7 +225,7 @@ func promosSqler(data []map[string]string, time int64) []byte {
 					" AND chain_id='" + data[j]["chain_id"] + "'" +
 					" AND promotion_id='" + data[j]["promotion_id"] + "'"
 
-			selectStore := "SELECT id FROM stores_id WHERE chain_id='" +
+			selectStore := "SELECT id FROM stores WHERE chain_id='" +
 					data[j]["chain_id"] + "' AND subchain_id='" +
 					data[j]["subchain_id"] + "' AND store_id='" +
 					data[j]["store_id"] + "'"
@@ -274,9 +274,9 @@ func promosSqler(data []map[string]string, time int64) []byte {
 		}
 	}
 	
-	// Insert into items_id, in case an item is not present.
+	// Insert into items, in case an item is not present.
 	for i := 0; i < len(items); i += batchSize {
-		fmt.Fprintf(buf, "INSERT OR IGNORE INTO items_id VALUES\n")
+		fmt.Fprintf(buf, "INSERT OR IGNORE INTO items VALUES\n")
 		for j := i; j < len(items) && j < i+batchSize; j++ {
 			if j > i {
 				fmt.Fprintf(buf, ",")
@@ -328,11 +328,11 @@ func promosSqler(data []map[string]string, time int64) []byte {
 func selectItem(typ, code, chain string) string {
 	// Items of type 0 (internal barcode) are identified with chain_id.
 	if typ == "0" {
-		return "SELECT id FROM items_id WHERE item_type=0 AND " +
+		return "SELECT id FROM items WHERE item_type=0 AND " +
 				"item_code='" + code + "' AND " +
 				"chain_id='" + chain + "'"
 	} else {
-		return "SELECT id FROM items_id WHERE item_type=1 AND " +
+		return "SELECT id FROM items WHERE item_type=1 AND " +
 				"item_code='" + code + "' AND " + "chain_id=''"
 	}
 }

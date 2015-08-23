@@ -5,8 +5,8 @@ PRAGMA default_cache_size = 524288;
 
 ----- TABLES -------------------------------------------------------------------
 
--- TODO(amit): Remove _id suffix from table names.
-CREATE TABLE stores_id (
+-- TODO(amit): Add a bouncer for stores.
+CREATE TABLE stores (
 -- Identifies every store in the data.
 	id           integer PRIMARY KEY AUTOINCREMENT,
 	chain_id     text  NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE stores_id (
 CREATE TABLE stores_meta (
 -- Metadata about stores.
 	timestamp        int, -- Unix time (seconds since 1/1/1970).
-	id               int  NOT NULL REFERENCES stores_id(id),
+	id               int  NOT NULL REFERENCES stores(id),
 	bikoret_no       int,
 	store_type       int,
 	chain_name       text,
@@ -32,7 +32,7 @@ CREATE TABLE stores_meta (
 	last_update_time text
 );
 
-CREATE TABLE items_id (
+CREATE TABLE items (
 -- Identifies every commodity item in the data.
 	id         integer PRIMARY KEY AUTOINCREMENT,
 	item_type  int   NOT NULL,  -- 0 for internal barcodes, 1 for universal.
@@ -46,7 +46,7 @@ CREATE TABLE items_id (
 CREATE TABLE items_meta (
 -- Contains all metadata about each item.
 	timestamp                     int, -- Unix time (seconds since 1/1/1970).
-	item_id                       int  NOT NULL REFERENCES items_id(id),
+	item_id                       int  NOT NULL REFERENCES items(id),
 	chain_id                      text NOT NULL,
 	update_time                   text,
 	item_name                     text,
@@ -67,8 +67,8 @@ CREATE TABLE items_meta (
 CREATE TABLE prices (
 -- Contains all reported prices for all items.
 	timestamp             int,   -- Unix time (seconds since 1/1/1970).
-	item_id               int NOT NULL REFERENCES items_id(id),
-	store_id              int NOT NULL REFERENCES stores_id(id),
+	item_id               int NOT NULL REFERENCES items(id),
+	store_id              int NOT NULL REFERENCES stores(id),
 	price                 real,  -- Price in shekels as reported in raw data.
 	unit_of_measure_price real,  -- Price in shekels as reported in raw data.
 	CHECK (price >= 0 AND unit_of_measure_price >= 0)
@@ -120,7 +120,7 @@ CREATE TABLE promos_stores (
 -- Reports what stores take part in every promo. A single promo may have
 -- several rows, one for each store.
 	promo_id int NOT NULL REFERENCES promos(id),
-	store_id int NOT NULL REFERENCES stores_id(id),
+	store_id int NOT NULL REFERENCES stores(id),
 	UNIQUE (promo_id, store_id)
 );
 
@@ -128,7 +128,7 @@ CREATE TABLE promos_items (
 -- Reports what items take part in every promo. A single promo may have
 -- several rows, one for each item.
 	promo_id     int NOT NULL REFERENCES promos(id),
-	item_id      int NOT NULL REFERENCES items_id(id),
+	item_id      int NOT NULL REFERENCES items(id),
 	is_gift_item text,
 	UNIQUE (promo_id, item_id)
 );
