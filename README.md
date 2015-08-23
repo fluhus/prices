@@ -5,8 +5,8 @@ This is a collection of tools and scripts to download and manage price data
 from Israeli vendors.
 
 1. [License](#license)
-1. [Requirements](#requirements)
 1. [What's in the Box](#whats-in-the-box)
+1. [Requirements](#requirements)
 1. [How to Build](#how-to-build)
 1. [TODOs](#todos)
 
