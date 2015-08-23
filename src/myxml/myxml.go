@@ -7,6 +7,8 @@ import (
 	"io"
 )
 
+// TODO(amit): Remove unneeded functions and tests.
+
 // A single XML node. This type is the entry point to this package.
 // Each XML tag and textual datum is represented by a node.
 //

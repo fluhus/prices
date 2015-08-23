@@ -1,6 +1,8 @@
 // Parses price XMLs.
 package main
 
+// TODO(amit): Document files better.
+
 import (
 	"os"
 	"fmt"
