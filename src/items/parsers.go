@@ -9,7 +9,7 @@ var parsers = map[string]*parser {
 	"promos": promosParser,
 }
 
-// Parsec price files.
+// Parses price files.
 var pricesParser = &parser {
 	newCapturer("", "Item", "Product"),
 	newCapturers(
@@ -40,6 +40,7 @@ var pricesParser = &parser {
 	nil,
 }
 
+// Parses store files.
 var storesParser = &parser {
 	newCapturer("", "Store"),
 	newCapturers(
@@ -64,6 +65,7 @@ var storesParser = &parser {
 	nil,
 }
 
+// Parses promo files.
 var promosParser = &parser {
 	newCapturer("", "Promotion"),
 	newCapturers(

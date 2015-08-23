@@ -1,13 +1,13 @@
 package main
 
-// Capturer type for capturing field values in XMLs.
+// Capturer type, for looking up field values in XML nodes.
 
 import (
 	"myxml"
 	"strings"
 )
 
-// Captures fields from XML structures.
+// Looks up field values in XML nodes.
 type capturer struct {
 	column string
 	tags []string

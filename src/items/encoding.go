@@ -1,6 +1,6 @@
 package main
 
-// Encoding convertion functionality.
+// Functionality for converting XML text encoding to UTF-8.
 
 import (
 	"fmt"

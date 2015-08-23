@@ -1,6 +1,6 @@
 package main
 
-// Parser type for parsing XMLs of prices, stores and promos.
+// Parser type for converting XML text data to field maps.
 
 import (
 	"fmt"
@@ -9,7 +9,8 @@ import (
 	"strings"
 )
 
-// Parses entire files and returns entries ready to be fed into a table.
+// Parses entire XML files and returns maps that map each required field to its
+// value.
 type parser struct {
 	// Capturer for dividing the file into items.
 	divider         *capturer
