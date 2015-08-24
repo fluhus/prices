@@ -73,5 +73,5 @@ Things to do in no particular order (in addition to TODOs in code).
 
 * Create a table for manufacturers.
 * Change binary names from `prices` and `items` to something more informative.
-* Embed SQL scripts in 'items' binary?
+* Embed SQL scripts in `items` binary?
 
