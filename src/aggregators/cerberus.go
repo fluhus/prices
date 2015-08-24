@@ -30,11 +30,12 @@ const (
 // An aggregator for Cerberus-based databases.
 type cerberusAggregator struct {
 	username string
+	password string
 }
 
 // Returns a new Cerberus aggregator with the given user-name.
-func Cerberus(username string) Aggregator {
-	return &cerberusAggregator{username}
+func Cerberus(username, password string) Aggregator {
+	return &cerberusAggregator{username, password}
 }
 
 func (a *cerberusAggregator) Aggregate(dir string) error {
@@ -144,7 +145,7 @@ func (a *cerberusAggregator) login() (*http.Client, error) {
 		map[string][]string{
 			"csrftoken": []string{string(token)},
 			"username": []string{a.username},
-			"password": []string{""},
+			"password": []string{a.password},
 			"Submit": []string{"Sign in"},
 		})
 	if err != nil {

@@ -93,23 +93,23 @@ type aggTask struct {
 // Holds tasks to perform by the main program. Tasks will be performed
 // sequentially. Use a nil value to make a placeholder, for chain counting.
 var tasks = []*aggTask {
-	&aggTask{ aggregators.Cerberus("TivTaam"), "TivTaam", "tivtaam" },
+	&aggTask{ aggregators.Cerberus("TivTaam", ""), "TivTaam", "tivtaam" },
 	&aggTask{ aggregators.Shufersal(), "Shufersal", "shufersal" },
-	&aggTask{ aggregators.Cerberus("DorAlon"), "DorAlon", "doralon" },
-	&aggTask{ aggregators.Cerberus("osherad"), "OsherAd", "osherad" },
+	&aggTask{ aggregators.Cerberus("DorAlon", ""), "DorAlon", "doralon" },
+	&aggTask{ aggregators.Cerberus("osherad", ""), "OsherAd", "osherad" },
 	&aggTask{ aggregators.Mega(), "Mega", "mega" },
-	&aggTask{ aggregators.Cerberus("HaziHinam"), "HaziHinam", "hazihinam" },
-	&aggTask{ aggregators.Cerberus("Keshet"), "Keshet", "keshet" },
-	&aggTask{ aggregators.Cerberus("RamiLevi"), "RamiLevi", "ramilevi" },
-	&aggTask{ aggregators.Cerberus("SuperDosh"), "SuperDosh", "superdosh" },
-	&aggTask{ aggregators.Cerberus("Yohananof"), "Yohananof", "yohananof" },
+	&aggTask{ aggregators.Cerberus("HaziHinam", ""), "HaziHinam", "hazihinam" },
+	&aggTask{ aggregators.Cerberus("Keshet", ""), "Keshet", "keshet" },
+	&aggTask{ aggregators.Cerberus("RamiLevi", ""), "RamiLevi", "ramilevi" },
+	&aggTask{ aggregators.Cerberus("SuperDosh", ""), "SuperDosh", "superdosh" },
+	&aggTask{ aggregators.Cerberus("Yohananof", ""), "Yohananof", "yohananof" },
 	&aggTask{ aggregators.Eden(), "Eden", "eden" },
 	&aggTask{ aggregators.Bitan(), "Bitan", "bitan" },
 	&aggTask{ aggregators.Nibit(aggregators.Victory, 7), "Victory", "victory" },
 	&aggTask{ aggregators.Nibit(aggregators.Hashook, 7), "Hashook", "hashook" },
 	&aggTask{ aggregators.Nibit(aggregators.Lahav, 7), "Lahav", "lahav" },
 	&aggTask{ aggregators.Coop(), "Coop", "coop" },
-	nil,  // Placeholder for Freshmarket.
+	&aggTask{ aggregators.Cerberus("freshmarket_sn", "f_efrd"), "Freshmarket", "freshmarket" },
 	&aggTask{ aggregators.Zolbegadol(), "ZolBegadol", "zolbegadol" },
 }
 
