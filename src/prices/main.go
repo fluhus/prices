@@ -110,6 +110,7 @@ var tasks = []*aggTask {
 	&aggTask{ aggregators.Nibit(aggregators.Lahav, 7), "Lahav", "lahav" },
 	&aggTask{ aggregators.Coop(), "Coop", "coop" },
 	nil,  // Placeholder for Freshmarket.
+	&aggTask{ aggregators.Zolbegadol(), "ZolBegadol", "zolbegadol" },
 }
 
 // Returns the name that should be given to the log file.

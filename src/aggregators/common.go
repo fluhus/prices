@@ -170,3 +170,8 @@ func downloadIfNotExistsPost(url, to string, cl *http.Client,
 	return true, nil
 }
 
+// A directory and a file. Surprised? So are we!
+type dirFile struct {
+	dir string
+	file string
+}

@@ -8,6 +8,6 @@ import (
 
 func main() {
 	fmt.Println("Hi")
-	fmt.Println(aggregators.Nibit(aggregators.Lahav, 2).Aggregate("nibit"))
+	fmt.Println(aggregators.Zolbegadol().Aggregate("/cs/prices/amit/zolbegadol"))
 }
 

@@ -1,6 +1,6 @@
 package aggregators
 
-// An aggregator for the Mega chain.
+// An aggregator for the Zol-Begadol chain.
 
 import (
 	"net/http"
@@ -12,18 +12,18 @@ import (
 	"os"
 )
 
-// Home page of the Mega price site.
-const megaHome = "http://publishprice.mega.co.il/"
+// Home page of the Zol-Begadol price site.
+const zolbegadolHome = "http://zolvebegadol.com/"
 
-// An aggregator for the Mega chain.
-type megaAggregator struct{}
+// An aggregator for the Zol-Begadol chain.
+type zolbegadolAggregator struct{}
 
-// Returns a new Mega aggregator.
-func Mega() Aggregator {
-	return &megaAggregator{}
+// Returns a new Zol-Begadol aggregator.
+func Zolbegadol() Aggregator {
+	return &zolbegadolAggregator{}
 }
 
-func (a *megaAggregator) Aggregate(dir string) error {
+func (a *zolbegadolAggregator) Aggregate(dir string) error {
 	// Create output directory.
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
@@ -38,7 +38,7 @@ func (a *megaAggregator) Aggregate(dir string) error {
 		go func() {
 			for df := range files {
 				to := filepath.Join(dir, df.file)
-				_, err := downloadIfNotExists(megaHome + df.dir + df.file,
+				_, err := downloadIfNotExists(zolbegadolHome + df.dir + df.file,
 						to, nil)
 				if err != nil {
 					done <- err
@@ -71,9 +71,9 @@ func (a *megaAggregator) Aggregate(dir string) error {
 }
 
 // Returns paths of subdirectories of the price page.
-func (a *megaAggregator) getDirectories() ([]string, error) {
+func (a *zolbegadolAggregator) getDirectories() ([]string, error) {
 	// Get home page.
-	res, err := http.Get(megaHome)
+	res, err := http.Get(zolbegadolHome)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (a *megaAggregator) getDirectories() ([]string, error) {
 	}
 	
 	// Parse directory names.
-	re := regexp.MustCompile("<a href=\"(2\\d{7}/)\"")
+	re := regexp.MustCompile("<a href=\"(201\\d{5}/)\"")
 	match := re.FindAllSubmatch(body, -1)
 	
 	if len(match) == 0 {
@@ -97,7 +97,7 @@ func (a *megaAggregator) getDirectories() ([]string, error) {
 	
 	dirs := make([]string, len(match))
 	for i := range match {
-		dirs[i] = string(match[i][1])
+		dirs[i] = string(match[i][1]) + "/gz/"
 	}
 	
 	return dirs, nil
@@ -105,9 +105,9 @@ func (a *megaAggregator) getDirectories() ([]string, error) {
 
 // Returns paths of files in a subdirectory. The paths are ready for download.
 // dir should be as returned from getDirectories.
-func (a *megaAggregator) getFiles(dir string) ([]string, error) {
+func (a *zolbegadolAggregator) getFiles(dir string) ([]string, error) {
 	// Get home page.
-	res, err := http.Get(megaHome + dir)
+	res, err := http.Get(zolbegadolHome + dir)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func (a *megaAggregator) getFiles(dir string) ([]string, error) {
 //
 // This function was created because going over all directories in a single
 // thread takes too long.
-func (a *megaAggregator) getFilesChannel() (files chan *dirFile,
+func (a *zolbegadolAggregator) getFilesChannel() (files chan *dirFile,
 		done chan error) {
 	// Initialize channels.
 	files = make(chan *dirFile, numberOfThreads)
