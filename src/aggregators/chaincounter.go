@@ -31,8 +31,8 @@ func CountChains() (int, error) {
 	}
 	
 	// Parse page.
-	rows := regexp.MustCompile("<tr class=\"ms-rteTable(Even|Odd)Row-mytable" +
-			"\">").FindAllSubmatch(body, -1)
+	rows := regexp.MustCompile("<tr class=\"ms-rteTable(Even|Odd|Footer)Row" +
+			"-mytable\">").FindAllSubmatch(body, -1)
 	
 	if len(rows) == 0 {
 		return 0, fmt.Errorf("Found 0 chains; page structure may have changed.")
