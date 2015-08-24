@@ -74,16 +74,13 @@ CREATE TABLE prices (
 	CHECK (price >= 0 AND unit_of_measure_price >= 0)
 );
 
+-- TODO(amit): Check is_active field.
 CREATE TABLE promos (
 -- Identifies every promotion in the data. Promo id and metadata are saved
 -- together since they are unique. A change in the metadata will be registered
 -- as a new promo.
 --
 -- All timestamps are unix time (seconds since 1/1/1970).
---
--- TODO(amit): Add a table for items in each promo.
--- TODO(amit): Implement a bouncer.
--- TODO(amit): Check is_active field.
 	id integer PRIMARY KEY AUTOINCREMENT,
 	timestamp_from               int,
 	timestamp_to                 int,
