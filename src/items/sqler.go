@@ -1,6 +1,6 @@
 package main
 
-// Handles transforming of parsed XML nodes into SQL queries.
+// Handles transforming of field maps into SQL queries.
 
 import (
 	"fmt"
