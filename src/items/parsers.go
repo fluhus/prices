@@ -76,12 +76,12 @@ var promosParser = &parser {
 	newCapturers(
 		":promotion_id", "PromotionId",
 		":promotion_description", "PromotionDescription",
+	),
+	newCapturers(
 		":promotion_start_date", "PromotionStartDate",
 		":promotion_start_hour", "PromotionStartHour",
 		":promotion_end_date", "PromotionEndDate",
 		":promotion_end_hour", "PromotionEndHour",
-	),
-	newCapturers(
 		":reward_type", "RewardType",
 		":allow_multiple_discounts", "AllowMultipleDiscounts",
 		":min_qty", "MinQty",
