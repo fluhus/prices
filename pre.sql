@@ -7,7 +7,7 @@ PRAGMA default_cache_size = 524288;
 
 -- TODO(amit): Add a bouncer for stores.
 CREATE TABLE stores (
--- Identifies every store in the data.
+-- Identifies every store in the data. Each store may appear once.
 	id           integer PRIMARY KEY AUTOINCREMENT,
 	chain_id     text  NOT NULL,
 	subchain_id  text  NOT NULL,
@@ -17,8 +17,9 @@ CREATE TABLE stores (
 );
 
 CREATE TABLE stores_meta (
--- Metadata about stores.
-	timestamp        int, -- Unix time (seconds since 1/1/1970).
+-- Metadata about stores. Each store may appear several times.
+	timestamp        int, -- Unix time (seconds since 1/1/1970) when this entry
+	                      -- was encountered.
 	id               int  NOT NULL REFERENCES stores(id),
 	bikoret_no       int,
 	store_type       int,
@@ -33,7 +34,7 @@ CREATE TABLE stores_meta (
 );
 
 CREATE TABLE items (
--- Identifies every commodity item in the data.
+-- Identifies every commodity item in the data. Each item may appear once.
 	id         integer PRIMARY KEY AUTOINCREMENT,
 	item_type  int   NOT NULL,  -- 0 for internal barcodes, 1 for universal.
 	item_code  text  NOT NULL,
@@ -44,8 +45,9 @@ CREATE TABLE items (
 );
 
 CREATE TABLE items_meta (
--- Contains all metadata about each item.
-	timestamp                     int, -- Unix time (seconds since 1/1/1970).
+-- Contains all metadata about each item. Each item may appear several times.
+	timestamp                     int, -- Unix time (seconds since 1/1/1970) 
+	                                   -- when this entry was encountered.
 	item_id                       int  NOT NULL REFERENCES items(id),
 	chain_id                      text NOT NULL,
 	update_time                   text,
@@ -66,7 +68,8 @@ CREATE TABLE items_meta (
 
 CREATE TABLE prices (
 -- Contains all reported prices for all items.
-	timestamp             int,   -- Unix time (seconds since 1/1/1970).
+	timestamp             int,   -- Unix time (seconds since 1/1/1970) when this
+	                             -- entry was encountered.
 	item_id               int NOT NULL REFERENCES items(id),
 	store_id              int NOT NULL REFERENCES stores(id),
 	price                 real,  -- Price in shekels as reported in raw data.
@@ -82,8 +85,10 @@ CREATE TABLE promos (
 --
 -- All timestamps are unix time (seconds since 1/1/1970).
 	id integer PRIMARY KEY AUTOINCREMENT,
-	timestamp_from               int,
-	timestamp_to                 int,
+	timestamp_from               int,  -- Time when this entry was first
+	                                   -- encountered.
+	timestamp_to                 int,  -- Time when this entry was first
+	                                   -- encountered + one day.
 	chain_id                     text,
 	reward_type                  text,
 	allow_multiple_discounts     text,
