@@ -5,6 +5,31 @@ PRAGMA default_cache_size = 524288;
 
 ----- TABLES -------------------------------------------------------------------
 
+CREATE TABLE chains (
+-- Associates chain ID with chain name.
+	id text,
+	name text
+);
+
+INSERT INTO chains VALUES
+("7290492000005","Dor Alon"),
+("7290103152017","Osher Ad"),
+("7290700100008","ColBo Hazi Hinam"),
+("7290873900009","Super Dash"),
+("7290803800003","Supershuk Yohananof"),
+("7290785400000","Keshet Taamim"),
+("7290058140886","Rami Levi Shivuk Shikma"),
+("7290696200003","Victory"),
+("7290661400001","Machsanei HaShuk"),
+("7290058179503","Machsanei Lahav"),
+("7290725900003","Yeinot Bitan"),
+("7290055755557","Eden Teva Market"),
+("7290027600007","Shufersal"),
+("7290058140886","Zol VeBegadol"),
+("7290633800006","Coop"),
+("7290055700007","Mega")
+;
+
 -- TODO(amit): Add a bouncer for stores.
 CREATE TABLE stores (
 -- Identifies every store in the data. Each store may appear once.
@@ -137,6 +162,8 @@ CREATE TABLE promos_items (
 
 
 ----- INDEXES & TRIGGERS -------------------------------------------------------
+
+CREATE INDEX chains_index ON chains(id);
 
 CREATE INDEX prices_index ON prices(item_id, store_id, timestamp);
 
