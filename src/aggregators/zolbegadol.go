@@ -126,7 +126,7 @@ func (a *zolbegadolAggregator) getFiles(dir string) ([]string, error) {
 	match := re.FindAllSubmatch(body, -1)
 	
 	if len(match) == 0 {
-		return nil, fmt.Errorf("Found no files.")
+		return nil, fmt.Errorf("Found no files in directory '%s'.", dir)
 	}
 	
 	files := make([]string, len(match))

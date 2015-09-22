@@ -8,6 +8,6 @@ import (
 
 func main() {
 	fmt.Println("Hi")
-	fmt.Println(aggregators.Cerberus("freshmarket_sn", "f_efrd").Aggregate("try/freshmarket"))
+	fmt.Println(aggregators.Zolbegadol().Aggregate("try/zolbe"))
 }
 
