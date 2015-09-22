@@ -7,8 +7,8 @@ PRAGMA default_cache_size = 524288;
 
 CREATE TABLE chains (
 -- Associates chain ID with chain name.
-	id text,
-	name text
+	id   text NOT NULL,
+	name text NOT NULL
 );
 
 INSERT INTO chains VALUES
@@ -112,7 +112,7 @@ CREATE TABLE promos (
 	id integer PRIMARY KEY AUTOINCREMENT,
 	timestamp_from               int,  -- Time when this entry was first
 	                                   -- encountered.
-	timestamp_to                 int,  -- Time when this entry was first
+	timestamp_to                 int,  -- Time when this entry was last
 	                                   -- encountered + one day.
 	chain_id                     text,
 	reward_type                  text,
