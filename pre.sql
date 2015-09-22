@@ -5,29 +5,50 @@ PRAGMA default_cache_size = 524288;
 
 ----- TABLES -------------------------------------------------------------------
 
+CREATE TABLE documentation (
+-- Database created on 22/9/2015.
+--
+-- Changes from last version:
+-- 1. Newer data.
+-- 2. Added table 'chains'.
+-- 3. Temporarily removed Zol-Vebegadol data, since they used the same
+--    chain_id as Rami-Levi.
+--
+-- Chains with no data yet:
+-- 1. Zol-Vebegadol - bad chain_id collides with Rami-Levi's.
+-- 2. Coop          - missing field in data files.
+-- 3. Freshmarket   - corrupted gzip files.
+-- 4. Bitan         - bad UTF-8 encoding.
+-- 5. Eden-Teva     - bad UTF-8 encoding.
+
+a
+);
+
 CREATE TABLE chains (
--- Associates chain ID with chain name.
-	id   text NOT NULL,
-	name text NOT NULL
+-- Maps chain ID to chain name.
+	id   text PRIMARY KEY,
+	name text
 );
 
 INSERT INTO chains VALUES
-("7290492000005","Dor Alon"),
-("7290103152017","Osher Ad"),
 ("7290700100008","ColBo Hazi Hinam"),
-("7290873900009","Super Dash"),
-("7290803800003","Supershuk Yohananof"),
+("7290633800006","Coop"),
+("7290492000005","Dor Alon"),
+("7290055755557","Eden Teva Market"),
+("7290876100000","Fresh Market"),
 ("7290785400000","Keshet Taamim"),
-("7290058140886","Rami Levi Shivuk Shikma"),
-("7290696200003","Victory"),
 ("7290661400001","Machsanei HaShuk"),
 ("7290058179503","Machsanei Lahav"),
-("7290725900003","Yeinot Bitan"),
-("7290055755557","Eden Teva Market"),
+("7290055700007","Mega"),
+("7290103152017","Osher Ad"),
+("7290058140886","Rami Levi Shivuk Shikma"),
 ("7290027600007","Shufersal"),
-("7290058140886","Zol VeBegadol"),
-("7290633800006","Coop"),
-("7290055700007","Mega")
+("7290873900009","Super Dosh"),
+("7290803800003","Supershuk Yohananof"),
+("7290873255550","Tiv Taam"),
+("7290696200003","Victory"),
+("7290725900003","Yeinot Bitan")
+--("7290058140886","Zol VeBegadol")
 ;
 
 -- TODO(amit): Add a bouncer for stores.
@@ -162,8 +183,6 @@ CREATE TABLE promos_items (
 
 
 ----- INDEXES & TRIGGERS -------------------------------------------------------
-
-CREATE INDEX chains_index ON chains(id);
 
 CREATE INDEX prices_index ON prices(item_id, store_id, timestamp);
 
