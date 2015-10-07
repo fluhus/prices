@@ -31,24 +31,24 @@ CREATE TABLE chains (
 );
 
 INSERT INTO chains VALUES
-("7290700100008","ColBo Hazi Hinam"),
-("7290633800006","Coop"),
-("7290492000005","Dor Alon"),
-("7290055755557","Eden Teva Market"),
-("7290876100000","Fresh Market"),
-("7290785400000","Keshet Taamim"),
-("7290661400001","Machsanei HaShuk"),
-("7290058179503","Machsanei Lahav"),
-("7290055700007","Mega"),
-("7290103152017","Osher Ad"),
-("7290058140886","Rami Levi Shivuk Shikma"),
-("7290027600007","Shufersal"),
-("7290873900009","Super Dosh"),
-("7290803800003","Supershuk Yohananof"),
-("7290873255550","Tiv Taam"),
-("7290696200003","Victory"),
-("7290725900003","Yeinot Bitan")
---("7290058140886","Zol VeBegadol")
+('7290700100008','ColBo Hazi Hinam'),
+('7290633800006','Coop'),
+('7290492000005','Dor Alon'),
+('7290055755557','Eden Teva Market'),
+('7290876100000','Fresh Market'),
+('7290785400000','Keshet Taamim'),
+('7290661400001','Machsanei HaShuk'),
+('7290058179503','Machsanei Lahav'),
+('7290055700007','Mega'),
+('7290103152017','Osher Ad'),
+('7290058140886','Rami Levi Shivuk Shikma'),
+('7290027600007','Shufersal'),
+('7290873900009','Super Dosh'),
+('7290803800003','Supershuk Yohananof'),
+('7290873255550','Tiv Taam'),
+('7290696200003','Victory'),
+('7290725900003','Yeinot Bitan')
+--('7290058140886','Zol VeBegadol')
 ;
 
 -- TODO(amit): Add a bouncer for stores.
@@ -64,8 +64,7 @@ CREATE TABLE stores (
 
 CREATE TABLE stores_meta (
 -- Metadata about stores. Each store may appear several times.
-	timestamp        int, -- Unix time (seconds since 1/1/1970) when this entry
-	                      -- was encountered.
+	timestamp        int, -- Unix time when this entry was encountered.
 	id               int  NOT NULL REFERENCES stores(id),
 	bikoret_no       int,
 	store_type       int,
@@ -92,8 +91,8 @@ CREATE TABLE items (
 
 CREATE TABLE items_meta (
 -- Contains all metadata about each item. Each item may appear several times.
-	timestamp                     int, -- Unix time (seconds since 1/1/1970) 
-	                                   -- when this entry was encountered.
+	timestamp                     int, -- Unix time when this entry was
+	                                   -- encountered.
 	item_id                       int  NOT NULL REFERENCES items(id),
 	chain_id                      text NOT NULL,
 	update_time                   text,
@@ -114,8 +113,7 @@ CREATE TABLE items_meta (
 
 CREATE TABLE prices (
 -- Contains all reported prices for all items.
-	timestamp             int,   -- Unix time (seconds since 1/1/1970) when this
-	                             -- entry was encountered.
+	timestamp             int,   -- Unix time when this entry was encountered.
 	item_id               int NOT NULL REFERENCES items(id),
 	store_id              int NOT NULL REFERENCES stores(id),
 	price                 real,  -- Price in shekels as reported in raw data.
@@ -128,12 +126,10 @@ CREATE TABLE promos (
 -- Identifies every promotion in the data. Promo id and metadata are saved
 -- together since they are unique. A change in the metadata will be registered
 -- as a new promo.
---
--- All timestamps are unix time (seconds since 1/1/1970).
 	id integer PRIMARY KEY AUTOINCREMENT,
-	timestamp_from               int,  -- Time when this entry was first
+	timestamp_from               int,  -- Unix time when this entry was first
 	                                   -- encountered.
-	timestamp_to                 int,  -- Time when this entry was last
+	timestamp_to                 int,  -- Unix time when this entry was last
 	                                   -- encountered + one day.
 	chain_id                     text,
 	reward_type                  text,
@@ -217,6 +213,7 @@ WHEN new.crc = (
 BEGIN
 	SELECT raise(ignore);
 END;
+
 
 CREATE INDEX promos_index ON promos(crc, chain_id, promotion_id);
 
