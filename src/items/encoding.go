@@ -28,7 +28,7 @@ func toUtf8(text []byte) ([]byte, error) {
 	
 	// Escape ampersands that are not part of an escape sequence (&...;).
 	// In some chains they forgot to escape them and it annoys the XML parser.
-	newText = regexp.MustCompile("&([a-z]*[^a-z;])").ReplaceAll(
+	newText = regexp.MustCompile("&([^#a-z]|[a-z]+[^a-z;])").ReplaceAll(
 			newText, []byte("&amp;$1"))
 	
 	return newText, nil
