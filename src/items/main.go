@@ -155,7 +155,7 @@ func parseArgs() error {
 // Does the entire processing for a single file. Returns the SQL that should be
 // passed to the database program.
 func parseFile(file string) ([]byte, error) {
-	// Extract data-type and timestamp.
+	// Extract data-type, timestamp and chain-ID.
 	typ := fileType(file)
 	if typ == "" {
 		return nil,
@@ -166,6 +166,8 @@ func parseFile(file string) ([]byte, error) {
 	if tim == -1 {
 		return nil, fmt.Errorf("Could not infer timestamp.")
 	}
+	
+	chainId := fileChainId(file)
 	
 	// Read input XML.
 	data, err := load(file)
@@ -184,7 +186,9 @@ func parseFile(file string) ([]byte, error) {
 	if prsr == nil {
 		panic("Nil parser for type '" + typ + "'.")
 	}
-	items, err := prsr.parse(data)
+	
+	// Passing chain-ID because Co-Op don't include that field in their XMLs.
+	items, err := prsr.parse(data, map[string]string{"chain_id":chainId})
 	if err != nil {
 		return nil, fmt.Errorf("Error parsing file: %v", err)
 	}
@@ -226,6 +230,17 @@ func fileTimestamp(file string) int64 {
 			int(minute), 0, 0, time.UTC)
 	
 	return t.Unix()
+}
+
+// Infers the chain-ID of a file according to its name. Returns an empty string
+// if failed.
+func fileChainId(file string) string {
+	match := regexp.MustCompile("\\D(7290\\d+)").FindStringSubmatch(file)
+	if match == nil || len(match[1]) != 13 {
+		return ""
+	}
+	
+	return match[1]
 }
 
 var help =

@@ -30,7 +30,10 @@ type parser struct {
 
 // Returns a map for each item in the given text. Each map contains all columns,
 // even those with no values. Returns an error if a mandatory value is missing.
-func (p *parser) parse(text []byte) ([]map[string]string, error) {
+// The preset argument contains preset values for fields, in case they are not
+// found in the data. If they are found, the values in the data will be used.
+func (p *parser) parse(text []byte, preset map[string]string) (
+		[]map[string]string, error) {
 	// Create XML node.
 	node, err := myxml.Read(bytes.NewBuffer(text))
 	if err != nil {
@@ -44,7 +47,7 @@ func (p *parser) parse(text []byte) ([]map[string]string, error) {
 	result := make([]map[string]string, len(items))
 	
 	// Handle global fields.
-	globals := toMap(p.globalFields, node)
+	globals := join(preset, toMap(p.globalFields, node))
 	err = findMissing(globals)
 	if err != nil {
 		return nil, err
@@ -121,18 +124,21 @@ func findMissing(m map[string]string) error {
 	}
 }
 
-// Trims whitespaces from a given byte array.
+// Trims whitespaces from a given string.
 func trim(s string) string {
 	return strings.Trim(s, " \t\n\r")
 }
 
 // Returns a unified map that contains the entries from all maps. Overlaps
-// will have the last value encountered. The input maps are unchanged.
+// will have the last value encountered. Empty string values are ignored. The
+// input maps are unchanged.
 func join(m ...map[string]string) map[string]string {
 	result := map[string]string {}
 	for i := range m {
 		for j := range m[i] {
-			result[j] = m[i][j]
+			if result[j] == "" || m[i][j] != "" {
+				result[j] = m[i][j]
+			}
 		}
 	}
 	return result
