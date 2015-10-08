@@ -100,7 +100,7 @@ var promosParser = &parser {
 		":remarks", "Remarks",
 	),
 	newCapturers(
-		":item_code", "ItemCode",
+		":item_code", "ItemCode", "ItemId",
 		":item_type", "ItemType",
 		":is_gift_item", "IsGiftItem",
 	),

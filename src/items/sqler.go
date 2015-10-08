@@ -253,10 +253,11 @@ func promosSqler(data []map[string]string, time int64) []byte {
 		gifts := strings.Split(data[i]["is_gift_item"], ";")
 		
 		// Check lengths are all equal.
-		if len(codes) != len(types) || len(codes) != len(gifts) {
+		if len(codes) != len(types) {
 			// TODO(amit): Return an error.
-			pef("Bad lengths: %d, %d, %d\n", len(codes), len(types), len(gifts))
-			return nil
+			pe("Promo ignored promo due to mismatching lengths:", len(codes),
+					len(types))
+			continue
 		}
 
 		// Ignore promo if it has too many items.
@@ -268,9 +269,15 @@ func promosSqler(data []map[string]string, time int64) []byte {
 		
 		// Generate items.
 		for j := range codes {
-			items = append(items, &promoItem{codes[j], types[j], gifts[j],
-					data[i]["chain_id"], data[i]["crc"],
-					data[i]["promotion_id"]})
+			if len(gifts) == len(codes) {
+				items = append(items, &promoItem{codes[j], types[j], gifts[j],
+						data[i]["chain_id"], data[i]["crc"],
+						data[i]["promotion_id"]})
+			} else {
+				items = append(items, &promoItem{codes[j], types[j], "0",
+						data[i]["chain_id"], data[i]["crc"],
+						data[i]["promotion_id"]})
+			}
 		}
 	}
 	
