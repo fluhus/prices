@@ -25,6 +25,11 @@ furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
 
+A link to the Github project (https://github.com/fluhus/prices) shall be
+included in all copies or substantial portions of the Software. Any product
+based on the Software must present the link either in its welcome, about or
+help section, explicitly declaring that it is based on the Software.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
