@@ -15,7 +15,7 @@ import (
 	"mypprof"
 )
 
-// Determines if CPU profiling should be performed.
+// Determines whether CPU profiling should be performed.
 const profile = false
 
 func main() {
@@ -70,6 +70,7 @@ func main() {
 	for i := 0; i < numOfThreads; i++ {
 		go func() {
 			for file := range fileChan {
+				// Turn file to SQL.
 				sql, err := parseFile(file)
 				if err != nil {
 					errChan <- fmt.Errorf("%v %s", err, file)
@@ -77,6 +78,7 @@ func main() {
 				}
 				pe("Success", file)
 				
+				// Send SQL if not in check-mode.
 				if !*args.check {
 					sqlChan <- sql
 				}
@@ -158,8 +160,8 @@ func parseFile(file string) ([]byte, error) {
 	// Extract data-type, timestamp and chain-ID.
 	typ := fileType(file)
 	if typ == "" {
-		return nil,
-				fmt.Errorf("Could not infer data type (stores/prices/promos).")
+		return nil, fmt.Errorf(
+				"Could not infer data type (stores/prices/promos).")
 	}
 	
 	tim := fileTimestamp(file)
@@ -175,10 +177,10 @@ func parseFile(file string) ([]byte, error) {
 		return nil, fmt.Errorf("Error reading input: %v", err)
 	}
 	
-	// Convert to utf-8.
-	data, err = toUtf8(data)
+	// Make syntax & encoding corrections.
+	data, err = correctXml(data)
 	if err != nil {
-		return nil, fmt.Errorf("Error converting encoding: %v", err)
+		return nil, fmt.Errorf("Error correcting XML: %v", err)
 	}
 	
 	// Parse items.

@@ -6,20 +6,19 @@ PRAGMA default_cache_size = 524288;
 ----- TABLES -------------------------------------------------------------------
 
 CREATE TABLE documentation (
--- Database created on 22/9/2015.
+-- Database created on 10/10/2015.
 --
 -- Changes from last version:
--- 1. Newer data.
--- 2. Added table 'chains'.
--- 3. Temporarily removed Zol-Vebegadol data, since they used the same
---    chain_id as Rami-Levi.
+-- 1. Fresh data.
+-- 2. Yeinot Bitan (prices only) & Co-op data were added.
 --
 -- Chains with no data yet:
--- 1. Zol-Vebegadol - bad chain_id collides with Rami-Levi's.
--- 2. Coop          - missing field in data files.
+-- 1. Yeinot Bitan  - no promos due to bad XMLs; trying to work around it
+--                    somehow...
+-- 2. Zol-Vebegadol - bad chain_id collides with Rami-Levi's, and they also
+--                    stopped publishing.
 -- 3. Freshmarket   - corrupted gzip files.
--- 4. Bitan         - bad UTF-8 encoding.
--- 5. Eden-Teva     - bad UTF-8 encoding.
+-- 4. Eden-Teva     - stopped publishing, and old files are in bad format.
 
 a
 );
@@ -171,6 +170,11 @@ CREATE TABLE promos_stores (
 CREATE TABLE promos_items (
 -- Reports what items take part in every promo. A single promo may have
 -- several rows, one for each item.
+--
+-- CAVEAT: promos that include more than 1000 items are not reported here,
+-- because those promos usually apply on an entire store ("everything for 10%
+-- discount") and that bloats the DB. They are reported on the other tables
+-- as usual.
 	promo_id     int NOT NULL REFERENCES promos(id),
 	item_id      int NOT NULL REFERENCES items(id),
 	is_gift_item text,

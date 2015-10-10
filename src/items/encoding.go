@@ -1,6 +1,6 @@
 package main
 
-// Functionality for converting XML text encoding to UTF-8.
+// Functionality for correcting XML syntax and encoding errors.
 
 import (
 	"bytes"
@@ -9,8 +9,9 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
-// Converts the given XML to utf-8.
-func toUtf8(text []byte) ([]byte, error) {
+// Converts the given XML to utf-8, and corrects some syntax errors that the
+// publishers make.
+func correctXml(text []byte) ([]byte, error) {
 	// Charset reader converts arbitrary text to UTF-8. Hurray!
 	r, err := charset.NewReader(bytes.NewBuffer(text), "application/xml")
 	if err != nil {
@@ -30,6 +31,11 @@ func toUtf8(text []byte) ([]byte, error) {
 	// In some chains they forgot to escape them and it annoys the XML parser.
 	newText = regexp.MustCompile("&([^#a-z]|[a-z]+[^a-z;])").ReplaceAll(
 			newText, []byte("&amp;$1"))
+	
+	// Quote unquoted attributes (Bitan has unquoted counts in their promo
+	// files).
+	newText = regexp.MustCompile("(\\w+=)(\\w+)").ReplaceAll(
+			newText, []byte("$1\"$2\""))
 	
 	return newText, nil
 }
