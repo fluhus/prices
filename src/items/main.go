@@ -75,8 +75,9 @@ func main() {
 				if err != nil {
 					errChan <- fmt.Errorf("%v %s", err, file)
 					continue;
+				} else {
+					errChan <- fmt.Errorf("Success %s", file)
 				}
-				pe("Success", file)
 				
 				// Send SQL if not in check-mode.
 				if !*args.check {
