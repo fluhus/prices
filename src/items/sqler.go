@@ -173,6 +173,64 @@ func promosSqler(data []map[string]string, time int64) []byte {
 				data[0]["store_id"])
 	}
 	
+	// Compute CRC for each promo.
+	for i := range data {
+		data[i]["crc"] = fmt.Sprint(rowCrc(data[i], promosCrc))
+	}
+	
+	// Promos with more items than that are not reported in promos_items.
+	const maxItemsInPromo = 100
+	
+	// Items counts for each promo are stored here, to be reported in the promos
+	// table.
+	numberOfItems := make([]int, len(data))
+	
+	// Generate an array of items.
+	type promoItem struct {
+		code    string
+		typ     string
+		gift    string
+		chain   string
+		crc     string
+		promoId string
+	}
+	
+	items := []*promoItem{}
+	for i := range data {
+		// Get repeated fields.
+		codes := strings.Split(data[i]["item_code"], ";")
+		types := strings.Split(data[i]["item_type"], ";")
+		gifts := strings.Split(data[i]["is_gift_item"], ";")
+		
+		// Check lengths are all equal.
+		if len(codes) != len(types) {
+			// TODO(amit): Return an error.
+			pe("Promo ignored promo due to mismatching lengths:", len(codes),
+					len(types))
+			continue
+		}
+		
+		numberOfItems[i] = len(codes)
+
+		// Ignore promo if it has too many items.
+		if len(codes) > maxItemsInPromo {
+			continue
+		}
+		
+		// Generate items.
+		for j := range codes {
+			if len(gifts) == len(codes) {
+				items = append(items, &promoItem{codes[j], types[j], gifts[j],
+						data[i]["chain_id"], data[i]["crc"],
+						data[i]["promotion_id"]})
+			} else {
+				items = append(items, &promoItem{codes[j], types[j], "0",
+						data[i]["chain_id"], data[i]["crc"],
+						data[i]["promotion_id"]})
+			}
+		}
+	}
+	
 	// Insert into promos.
 	for i := 0; i < len(data); i += batchSize {
 		fmt.Fprintf(buf, "INSERT INTO promos VALUES\n")
@@ -181,11 +239,14 @@ func promosSqler(data []map[string]string, time int64) []byte {
 				fmt.Fprintf(buf, ",")
 			}
 			
-			data[j]["crc"] = fmt.Sprint(rowCrc(data[j], promosCrc))
+			tooMany := 0
+			if numberOfItems[j] > maxItemsInPromo {
+				tooMany = 1;
+			}
 			
 			fmt.Fprintf(buf, "(NULL,%d,%d,(%s),'%s','%s','%s','%s','%s','%s'," +
 					"'%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s'," +
-					"'%s','%s','%s','%s','%s',%s)\n",
+					"'%s','%s','%s','%s','%s',%d,%d,%s)\n",
 					time,
 					time + (60*60*24), // Add one day, so that the promo
 					                   // holds until tomorrow.
@@ -212,6 +273,8 @@ func promosSqler(data []map[string]string, time int64) []byte {
 					data[j]["additional_is_total"],
 					data[j]["additional_min_basket_amount"],
 					data[j]["remarks"],
+					numberOfItems[j],
+					tooMany,
 					data[j]["crc"])
 		}
 		fmt.Fprintf(buf, ";\n")
@@ -238,52 +301,6 @@ func promosSqler(data []map[string]string, time int64) []byte {
 			fmt.Fprintf(buf, "((%s),(%s))\n", selectPromo, selectStore)
 		}
 		fmt.Fprintf(buf, ";\n")
-	}
-	
-	// Generate an array of items.
-	type promoItem struct {
-		code    string
-		typ     string
-		gift    string
-		chain   string
-		crc     string
-		promoId string
-	}
-	
-	items := []*promoItem{}
-	for i := range data {
-		// Get repeated fields.
-		codes := strings.Split(data[i]["item_code"], ";")
-		types := strings.Split(data[i]["item_type"], ";")
-		gifts := strings.Split(data[i]["is_gift_item"], ";")
-		
-		// Check lengths are all equal.
-		if len(codes) != len(types) {
-			// TODO(amit): Return an error.
-			pe("Promo ignored promo due to mismatching lengths:", len(codes),
-					len(types))
-			continue
-		}
-
-		// Ignore promo if it has too many items.
-		// TODO(amit): This is a temporary hack just to keep the database slim.
-		// I should find a solution for those DB-bloating promos.
-		if len(codes) > 1000 {
-			continue
-		}
-		
-		// Generate items.
-		for j := range codes {
-			if len(gifts) == len(codes) {
-				items = append(items, &promoItem{codes[j], types[j], gifts[j],
-						data[i]["chain_id"], data[i]["crc"],
-						data[i]["promotion_id"]})
-			} else {
-				items = append(items, &promoItem{codes[j], types[j], "0",
-						data[i]["chain_id"], data[i]["crc"],
-						data[i]["promotion_id"]})
-			}
-		}
 	}
 	
 	// Insert into items, in case an item is not present.

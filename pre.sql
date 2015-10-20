@@ -164,6 +164,13 @@ CREATE TABLE promos (
 	additional_is_total          text,
 	additional_min_basket_amount text,
 	remarks                      text,
+	number_of_items              int,  -- Number of items that take part in the
+	                                   -- promotion. Should be equivalent to
+	                                   -- count(*) on the id in promos_items,
+	                                   -- but some of the promos are not
+	                                   -- reported there. (safe)
+	not_in_promos_items          int,  -- 0 if reported in promos_items, 1 if
+	                                   -- not. (safe)
 	crc                          int   -- Hash of all fields that need to be
 	                                   -- compared for bouncing, to simplify
 	                                   -- the trigger.
