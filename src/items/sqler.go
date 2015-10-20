@@ -112,7 +112,7 @@ func pricesSqler(data []map[string]string, time int64) []byte {
 				fmt.Fprintf(buf, ",")
 			}
 			
-			fmt.Fprintf(buf, "(%d,(%s),'%s','%s','%s','%s','%s','%s','%s'," +
+			fmt.Fprintf(buf, "(%d,(%s),'%s','%s','%s','%s','%s'," +
 					"'%s','%s','%s','%s',%d)\n", 
 					time,
 					selectItem(data[j]["item_type"], data[j]["item_code"],
@@ -121,10 +121,11 @@ func pricesSqler(data []map[string]string, time int64) []byte {
 					data[j]["update_time"],
 					data[j]["item_name"],
 					data[j]["manufacturer_item_description"],
-					data[j]["unit_quantity"], data[j]["quantity"],
-					data[j]["unit_of_measure"], data[j]["is_weighted"],
+					data[j]["unit_quantity"],
+					data[j]["is_weighted"],
 					data[j]["quantity_in_package"],
-					data[j]["allow_discount"], data[j]["item_status"],
+					data[j]["allow_discount"],
+					data[j]["item_status"],
 					rowCrc(data[j], itemsMetaCrc))
 		}
 		fmt.Fprintf(buf, ";\n")
@@ -143,12 +144,16 @@ func pricesSqler(data []map[string]string, time int64) []byte {
 					data[j]["subchain_id"] + "' AND store_id='" +
 					data[j]["store_id"] + "'"
 			
-			fmt.Fprintf(buf, "(%d,(%s),(%s),%s,%s)\n",
+			fmt.Fprintf(buf, "(%d,(%s),(%s),%s,%s,'%s','%s',%d)\n",
 					time,
 					selectItem(data[j]["item_type"], data[j]["item_code"],
 							data[j]["chain_id"]),
-					selectStore, data[j]["price"],
-					data[j]["unit_of_measure_price"])
+					selectStore,
+					data[j]["price"],
+					data[j]["unit_of_measure_price"],
+					data[j]["unit_of_measure"],
+					data[j]["quantity"],
+					rowCrc(data[j], pricesCrc))
 		}
 		fmt.Fprintf(buf, ";\n")
 	}
@@ -378,12 +383,18 @@ var itemsMetaCrc = []string {
 	"item_name",
 	"manufacturer_item_description",
 	"unit_quantity",
-	"quantity",
-	"unit_of_measure",
 	"is_weighted",
 	"quantity_in_package",
 	"allow_discount",
 	"item_status",
+}
+
+// Fields to include in CRC for prices table.
+var pricesCrc = []string {
+	"price",
+	"unit_of_measure_price",
+	"unit_of_measure",
+	"quantity",
 }
 
 // Fields to include in CRC for promos table.

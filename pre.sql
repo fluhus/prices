@@ -6,28 +6,24 @@ PRAGMA default_cache_size = 524288;
 ----- TABLES -------------------------------------------------------------------
 
 CREATE TABLE documentation (
--- Database created on 10/10/2015.
+-- Database created on ???.
 --
 -- Changes from last version:
 -- 1. Fresh data.
 -- 2. Moved fields from items_meta to prices:
---    - 
+--    - unit_of_measure
+--    - quantity
 --
--- Chains with no data yet:
--- 1. Yeinot Bitan  - no promos due to bad XMLs; trying to work around it
---                    somehow...
--- 2. Zol-Vebegadol - bad chain_id collides with Rami-Levi's, and they also
---                    stopped publishing.
--- 3. Freshmarket   - corrupted gzip files.
--- 4. Eden-Teva     - stopped publishing, and old files are in bad format.
+-- See unresolved data issues here:
+-- https://docs.google.com/document/d/168h95u3p-Xx7hSAHj_qKhM2aIo2G3vkmI3qDB1z-bNI/
 --
 -- PLEASE BE WARNED:
 -- Vendors report garbage. Unless stated otherwise, any piece of information
--- presented in this database should be treated as incorrect, unreliable, badly
--- formatted, unsafe for use, offensive, and inappropriate for children.
+-- presented in this database should be treated as unreliable, possibly
+-- incorrect, badly formatted, unsafe for use, offensive, and inappropriate for
+-- children.
 --
--- Data fields that were created or curated by us will be marked explicitly as
--- safe.
+-- Data fields that were created or curated by us are marked explicitly as safe.
 
 a
 );
@@ -109,8 +105,6 @@ CREATE TABLE items_meta (
 	item_name                     text,
 	manufacturer_item_description text,
 	unit_quantity                 text,
-	quantity                      text,
-	unit_of_measure               text,
 	is_weighted                   text,
 	quantity_in_package           text,
 	allow_discount                text,
@@ -128,8 +122,13 @@ CREATE TABLE prices (
 	item_id               int NOT NULL REFERENCES items(id),   -- (safe)
 	store_id              int NOT NULL REFERENCES stores(id),  -- (safe)
 	price                 real,  -- Price in shekels as reported in raw data.
-	unit_of_measure_price real   -- Price in shekels as reported in raw data.
-	--CHECK (price >= 0 AND unit_of_measure_price >= 0)
+	unit_of_measure_price real,  -- Price in shekels as reported in raw data.
+	unit_of_measure       text,
+	quantity              text,
+	crc                   int    -- Hash of all fields that need to be
+	                             -- compared for bouncing, to simplify
+	                             -- the trigger.
+	                             -- DO NOT USE FOR ANYTHING BUT THAT.
 );
 
 -- TODO(amit): Check is_active field.
@@ -201,8 +200,8 @@ CREATE INDEX prices_index ON prices(item_id, store_id, timestamp);
 CREATE TRIGGER prices_bouncer
 -- Prevents redundant rows from being added to the price table.
 BEFORE INSERT ON prices FOR EACH ROW
-WHEN new.price || new.unit_of_measure_price = (
-	SELECT price || unit_of_measure_price FROM prices prices2 WHERE
+WHEN new.crc = (
+	SELECT crc FROM prices prices2 WHERE
 	prices2.item_id = new.item_id AND
 	prices2.store_id = new.store_id AND
 	prices2.timestamp <= new.timestamp
