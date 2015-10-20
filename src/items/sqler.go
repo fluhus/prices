@@ -56,8 +56,9 @@ func storesSqler(data []map[string]string, time int64) []byte {
 			if j > i {
 				fmt.Fprintf(buf, ",")
 			}
-			fmt.Fprintf(buf, "(%d,(SELECT id FROM stores WHERE chain_id=" +
-					"'%s' AND subchain_id='%s' AND store_id='%s'),%s,%s,'%s'," +
+			fmt.Fprintf(buf, "(%d,(SELECT store_id FROM stores WHERE chain_id" +
+					"='%s' AND subchain_id='%s' AND reported_store_id='%s')" +
+					",%s,%s,'%s'," +
 					"'%s','%s','%s','%s','%s','%s','%s')\n",
 					time, data[j]["chain_id"], data[j]["subchain_id"],
 					data[j]["store_id"], data[j]["bikoret_no"],
@@ -139,9 +140,9 @@ func pricesSqler(data []map[string]string, time int64) []byte {
 				fmt.Fprintf(buf, ",")
 			}
 			
-			selectStore := "SELECT id FROM stores WHERE chain_id='" +
+			selectStore := "SELECT store_id FROM stores WHERE chain_id='" +
 					data[j]["chain_id"] + "' AND subchain_id='" +
-					data[j]["subchain_id"] + "' AND store_id='" +
+					data[j]["subchain_id"] + "' AND reported_store_id='" +
 					data[j]["store_id"] + "'"
 			
 			fmt.Fprintf(buf, "(%d,(%s),(%s),%s,%s,'%s','%s',%d)\n",
@@ -288,14 +289,14 @@ func promosSqler(data []map[string]string, time int64) []byte {
 				fmt.Fprintf(buf, ",")
 			}
 
-			selectPromo := "SELECT id FROM promos " +
+			selectPromo := "SELECT promo_id FROM promos " +
 					"WHERE crc=" + data[j]["crc"] +
 					" AND chain_id='" + data[j]["chain_id"] + "'" +
 					" AND promotion_id='" + data[j]["promotion_id"] + "'"
 
-			selectStore := "SELECT id FROM stores WHERE chain_id='" +
+			selectStore := "SELECT store_id FROM stores WHERE chain_id='" +
 					data[j]["chain_id"] + "' AND subchain_id='" +
-					data[j]["subchain_id"] + "' AND store_id='" +
+					data[j]["subchain_id"] + "' AND reported_store_id='" +
 					data[j]["store_id"] + "'"
 			
 			fmt.Fprintf(buf, "((%s),(%s))\n", selectPromo, selectStore)
@@ -333,7 +334,7 @@ func promosSqler(data []map[string]string, time int64) []byte {
 				fmt.Fprintf(buf, ",")
 			}
 			
-			selectPromo := "SELECT id FROM promos " +
+			selectPromo := "SELECT promo_id FROM promos " +
 					"WHERE crc=" + items[j].crc +
 					" AND chain_id='" + items[i].chain + "'" +
 					" AND promotion_id='" + items[i].promoId + "'"
@@ -357,11 +358,11 @@ func promosSqler(data []map[string]string, time int64) []byte {
 func selectItem(typ, code, chain string) string {
 	// Items of type 0 (internal barcode) are identified with chain_id.
 	if typ == "0" {
-		return "SELECT id FROM items WHERE item_type=0 AND " +
+		return "SELECT item_id FROM items WHERE item_type=0 AND " +
 				"item_code='" + code + "' AND " +
 				"chain_id='" + chain + "'"
 	} else {
-		return "SELECT id FROM items WHERE item_type=1 AND " +
+		return "SELECT item_id FROM items WHERE item_type=1 AND " +
 				"item_code='" + code + "' AND " + "chain_id=''"
 	}
 }
