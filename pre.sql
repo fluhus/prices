@@ -10,7 +10,8 @@ CREATE TABLE documentation (
 --
 -- Changes from last version:
 -- 1. Fresh data.
--- 2. Yeinot Bitan (prices only) & Co-op data were added.
+-- 2. Moved fields from items_meta to prices:
+--    - 
 --
 -- Chains with no data yet:
 -- 1. Yeinot Bitan  - no promos due to bad XMLs; trying to work around it
@@ -19,14 +20,22 @@ CREATE TABLE documentation (
 --                    stopped publishing.
 -- 3. Freshmarket   - corrupted gzip files.
 -- 4. Eden-Teva     - stopped publishing, and old files are in bad format.
+--
+-- PLEASE BE WARNED:
+-- Vendors report garbage. Unless stated otherwise, any piece of information
+-- presented in this database should be treated as incorrect, unreliable, badly
+-- formatted, unsafe for use, offensive, and inappropriate for children.
+--
+-- Data fields that were created or curated by us will be marked explicitly as
+-- safe.
 
 a
 );
 
 CREATE TABLE chains (
 -- Maps chain ID to chain name.
-	id   text PRIMARY KEY,
-	name text
+	id   text PRIMARY KEY,   -- (safe)
+	name text                -- (safe)
 );
 
 INSERT INTO chains VALUES
@@ -53,7 +62,7 @@ INSERT INTO chains VALUES
 -- TODO(amit): Add a bouncer for stores.
 CREATE TABLE stores (
 -- Identifies every store in the data. Each store may appear once.
-	id           integer PRIMARY KEY AUTOINCREMENT,
+	id           integer PRIMARY KEY AUTOINCREMENT,   -- (safe)
 	chain_id     text  NOT NULL,
 	subchain_id  text  NOT NULL,
 	store_id     text  NOT NULL,
@@ -63,8 +72,9 @@ CREATE TABLE stores (
 
 CREATE TABLE stores_meta (
 -- Metadata about stores. Each store may appear several times.
-	timestamp        int, -- Unix time when this entry was encountered.
-	id               int  NOT NULL REFERENCES stores(id),
+	timestamp        int, -- Unix time when this entry was encountered
+	                      -- (safe).
+	id               int  NOT NULL REFERENCES stores(id),  -- (safe)
 	bikoret_no       int,
 	store_type       int,
 	chain_name       text,
@@ -79,7 +89,7 @@ CREATE TABLE stores_meta (
 
 CREATE TABLE items (
 -- Identifies every commodity item in the data. Each item may appear once.
-	id         integer PRIMARY KEY AUTOINCREMENT,
+	id         integer PRIMARY KEY AUTOINCREMENT,  -- (safe)
 	item_type  int   NOT NULL,  -- 0 for internal barcodes, 1 for universal.
 	item_code  text  NOT NULL,
 	chain_id   text  NOT NULL,  -- Empty string for universal.
@@ -91,8 +101,9 @@ CREATE TABLE items (
 CREATE TABLE items_meta (
 -- Contains all metadata about each item. Each item may appear several times.
 	timestamp                     int, -- Unix time when this entry was
-	                                   -- encountered.
+	                                   -- encountered. (safe)
 	item_id                       int  NOT NULL REFERENCES items(id),
+	                                   -- (safe)
 	chain_id                      text NOT NULL,
 	update_time                   text,
 	item_name                     text,
@@ -113,8 +124,9 @@ CREATE TABLE items_meta (
 CREATE TABLE prices (
 -- Contains all reported prices for all items.
 	timestamp             int,   -- Unix time when this entry was encountered.
-	item_id               int NOT NULL REFERENCES items(id),
-	store_id              int NOT NULL REFERENCES stores(id),
+	                             -- (safe)
+	item_id               int NOT NULL REFERENCES items(id),   -- (safe)
+	store_id              int NOT NULL REFERENCES stores(id),  -- (safe)
 	price                 real,  -- Price in shekels as reported in raw data.
 	unit_of_measure_price real   -- Price in shekels as reported in raw data.
 	--CHECK (price >= 0 AND unit_of_measure_price >= 0)
@@ -127,9 +139,9 @@ CREATE TABLE promos (
 -- as a new promo.
 	id integer PRIMARY KEY AUTOINCREMENT,
 	timestamp_from               int,  -- Unix time when this entry was first
-	                                   -- encountered.
+	                                   -- encountered. (safe)
 	timestamp_to                 int,  -- Unix time when this entry was last
-	                                   -- encountered + one day.
+	                                   -- encountered + one day. (safe)
 	chain_id                     text,
 	reward_type                  text,
 	allow_multiple_discounts     text,
@@ -162,8 +174,8 @@ CREATE TABLE promos (
 CREATE TABLE promos_stores (
 -- Reports what stores take part in every promo. A single promo may have
 -- several rows, one for each store.
-	promo_id int NOT NULL REFERENCES promos(id),
-	store_id int NOT NULL REFERENCES stores(id),
+	promo_id int NOT NULL REFERENCES promos(id),  -- (safe)
+	store_id int NOT NULL REFERENCES stores(id),  -- (safe)
 	UNIQUE (promo_id, store_id)
 );
 
@@ -175,8 +187,8 @@ CREATE TABLE promos_items (
 -- because those promos usually apply on an entire store ("everything for 10%
 -- discount") and that bloats the DB. They are reported on the other tables
 -- as usual.
-	promo_id     int NOT NULL REFERENCES promos(id),
-	item_id      int NOT NULL REFERENCES items(id),
+	promo_id     int NOT NULL REFERENCES promos(id), -- (safe)
+	item_id      int NOT NULL REFERENCES items(id),  -- (safe)
 	is_gift_item text,
 	UNIQUE (promo_id, item_id)
 );
