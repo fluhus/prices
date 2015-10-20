@@ -69,6 +69,10 @@ select 'prices:      ' || count(*) from prices;
 select 'items:       ' || count(*) from items;
 select 'items_meta:  ' || count(*) from items_meta;
 
+-- Debugging. Remove after.
+.print BAD PRICES
+select * from prices where price < 0 or unit_of_measure_price < 0;
+
 /*
 .print
 .print "counts from 2015-07-01"

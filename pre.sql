@@ -116,8 +116,8 @@ CREATE TABLE prices (
 	item_id               int NOT NULL REFERENCES items(id),
 	store_id              int NOT NULL REFERENCES stores(id),
 	price                 real,  -- Price in shekels as reported in raw data.
-	unit_of_measure_price real,  -- Price in shekels as reported in raw data.
-	CHECK (price >= 0 AND unit_of_measure_price >= 0)
+	unit_of_measure_price real   -- Price in shekels as reported in raw data.
+	--CHECK (price >= 0 AND unit_of_measure_price >= 0)
 );
 
 -- TODO(amit): Check is_active field.
