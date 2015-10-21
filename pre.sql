@@ -194,7 +194,7 @@ CREATE TABLE promos_items (
 -- Reports what items take part in every promo. A single promo may have
 -- several rows, one for each item.
 --
--- CAVEAT: promos that include more than 1000 items are not reported here,
+-- CAVEAT: promos that include more than 100 items are not reported here,
 -- because those promos usually apply on an entire store ("everything for 10%
 -- discount") and that bloats the DB. They are reported on the other tables
 -- as usual.
@@ -245,7 +245,7 @@ END;
 CREATE INDEX promos_index ON promos(crc, chain_id, promotion_id);
 
 CREATE TRIGGER promos_bouncer
--- Prevents redundant rows from being added to the item table.
+-- Prevents redundant rows from being added to the promo table.
 BEFORE INSERT ON promos FOR EACH ROW
 WHEN (
 	SELECT rowid FROM promos promos2 WHERE
