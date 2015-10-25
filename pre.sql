@@ -19,14 +19,17 @@ CREATE TABLE documentation (
 -- 4. Changed column names from 'id' back to full names like 'item_id',
 --   'promo_id', etc. to keep names consistent across tables.
 --
+-- See XML specifications here:
+-- https://drive.google.com/file/d/0Bw2XXw9aHzlCT0xRMV9WSnZIS0E/view
+--
 -- See unresolved data issues here:
 -- https://docs.google.com/document/d/168h95u3p-Xx7hSAHj_qKhM2aIo2G3vkmI3qDB1z-bNI/
 --
 -- PLEASE BE WARNED:
 -- Vendors report garbage. Unless stated otherwise, any piece of information
--- presented in this database should be treated as unreliable, possibly
--- incorrect, badly formatted, unsafe for use, offensive, and inappropriate for
--- children.
+-- presented in this database is brought 'as is' and should be treated as
+-- unreliable, possibly incorrect, badly formatted, unsafe for use, offensive,
+-- and inappropriate for children.
 --
 -- Data fields that were created or curated by us are marked explicitly as safe.
 
@@ -35,8 +38,8 @@ a
 
 CREATE TABLE chains (
 -- Maps chain ID to chain name.
-	chain_id   text PRIMARY KEY,   -- (safe)
-	chain_name text                -- (safe)
+	chain_id   text PRIMARY KEY,   -- Chain code. (safe)
+	chain_name text                -- Chain name in English. (safe)
 );
 
 INSERT INTO chains VALUES
@@ -64,20 +67,20 @@ INSERT INTO chains VALUES
 CREATE TABLE stores (
 -- Identifies every store in the data. Each store may appear once.
 	store_id           integer PRIMARY KEY AUTOINCREMENT,   -- (safe)
-	chain_id           text  NOT NULL,
-	subchain_id        text  NOT NULL,
-	reported_store_id  text  NOT NULL,
+	chain_id           text  NOT NULL, -- Chain code.
+	subchain_id        text  NOT NULL, -- Subchain code.
+	reported_store_id  text  NOT NULL, -- Store number issued by the chain.
 	CHECK  (chain_id <> '' AND subchain_id <> '' AND reported_store_id <> ''),
 	UNIQUE (chain_id, subchain_id, reported_store_id)
 );
 
 CREATE TABLE stores_meta (
 -- Metadata about stores. Each store may appear several times.
-	timestamp        int, -- Unix time when this entry was encountered
-	                      -- (safe).
-	store_id         int  NOT NULL REFERENCES stores(store_id),  -- (safe)
-	bikoret_no       int,
-	store_type       int,
+	timestamp        int,  -- Unix time when this entry was encountered
+	                       -- (safe).
+	store_id         int   NOT NULL REFERENCES stores(store_id), -- (safe)
+	bikoret_no       int,  -- ???
+	store_type       int,  -- 1 for physical, 2 for online, 3 for both.
 	chain_name       text,
 	subchain_name    text,
 	store_name       text,
@@ -91,8 +94,8 @@ CREATE TABLE stores_meta (
 CREATE TABLE items (
 -- Identifies every commodity item in the data. Each item may appear once.
 	item_id    integer PRIMARY KEY AUTOINCREMENT,  -- (safe)
-	item_type  int   NOT NULL,  -- 0 for internal barcodes, 1 for universal.
-	item_code  text  NOT NULL,
+	item_type  int   NOT NULL,  -- 0 for internal codes, 1 for barcodes.
+	item_code  text  NOT NULL,  -- Barcode number or internal code.
 	chain_id   text  NOT NULL,  -- Empty string for universal.
 	CHECK  (item_code <> '' AND ((item_type = '0' AND chain_id <> '') OR
 			(item_type = '1' AND chain_id = ''))),
@@ -101,23 +104,23 @@ CREATE TABLE items (
 
 CREATE TABLE items_meta (
 -- Contains all metadata about each item. Each item may appear several times.
-	timestamp                     int, -- Unix time when this entry was
-	                                   -- encountered. (safe)
-	item_id                       int  NOT NULL REFERENCES items(item_id),
-	                                   -- (safe)
-	chain_id                      text NOT NULL,
+	timestamp                     int,  -- Unix time when this entry was
+	                                    -- encountered. (safe)
+	item_id                       int   NOT NULL REFERENCES items(item_id),
+	                                    -- (safe)
+	chain_id                      text  NOT NULL,
 	update_time                   text,
 	item_name                     text,
 	manufacturer_item_description text,
 	unit_quantity                 text,
-	is_weighted                   text,
-	quantity_in_package           text,
-	allow_discount                text,
-	item_status                   text,
-	crc                           int  -- Hash of all fields that need to be
-	                                   -- compared for bouncing, to simplify
-	                                   -- the trigger.
-	                                   -- DO NOT USE FOR ANYTHING BUT THAT.
+	is_weighted                   text, -- 1 if sold in bulk, 0 if not.
+	quantity_in_package           text, -- Quantity of units in a package.
+	allow_discount                text, -- Is the item allowed in promotions.
+	item_status                   text, -- ???
+	crc                           int   -- Hash of all fields that need to be
+	                                    -- compared for bouncing, to simplify
+	                                    -- the trigger.
+	                                    -- DO NOT USE FOR ANYTHING BUT THAT.
 );
 
 CREATE TABLE prices (
@@ -128,8 +131,8 @@ CREATE TABLE prices (
 	store_id              int NOT NULL REFERENCES stores(store_id), -- (safe)
 	price                 real,  -- Price in shekels as reported in raw data.
 	unit_of_measure_price real,  -- Price in shekels as reported in raw data.
-	unit_of_measure       text,
-	quantity              text,
+	unit_of_measure       text,  -- Gram, liter, etc.
+	quantity              text,  -- How many grams/liters etc.
 	crc                   int    -- Hash of all fields that need to be
 	                             -- compared for bouncing, to simplify
 	                             -- the trigger.
@@ -147,27 +150,28 @@ CREATE TABLE promos (
 	timestamp_to                 int,  -- Unix time when this entry was last
 	                                   -- encountered + one day. (safe)
 	chain_id                     text,
-	reward_type                  text,
-	allow_multiple_discounts     text,
-	promotion_id                 text,
+	reward_type                  text, -- ???
+	allow_multiple_discounts     text, -- 'Kefel mivtzaim'.
+	promotion_id                 text, -- Issued by the chain, not by us.
 	promotion_description        text,
 	promotion_start_date         text,
 	promotion_start_hour         text,
 	promotion_end_date           text,
 	promotion_end_hour           text,
-	min_qty                      text,
-	max_qty                      text,
+	min_qty                      text, -- Min quantity for triggering promo.
+	max_qty                      text, -- Max quantity for triggering promo.
 	discount_rate                text,
-	discount_type                text,
+	discount_type                text, -- 0 for relative, 1 for absolute.
 	min_purchase_amnt            text,
-	min_no_of_item_offered       text,
+	min_no_of_item_offered       text, -- Like min_qty, not sure what the
+	                                   -- difference is.
 	price_update_date            text,
 	discounted_price             text,
 	discounted_price_per_mida    text,
-	additional_is_coupn          text,
-	additional_gift_count        text,
-	additional_is_total          text,
-	additional_min_basket_amount text,
+	additional_is_coupn          text, -- 1 if depends on coupon, 0 if not.
+	additional_gift_count        text, -- Number of gift items.
+	additional_is_total          text, -- Promo is on all items in the store.
+	additional_min_basket_amount text, -- ???
 	remarks                      text,
 	number_of_items              int,  -- Number of items that take part in the
 	                                   -- promotion. Should be equivalent to
