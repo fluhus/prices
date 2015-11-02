@@ -6,18 +6,11 @@ PRAGMA default_cache_size = 524288;
 ----- TABLES -------------------------------------------------------------------
 
 CREATE TABLE documentation (
--- Database created on ???.
+-- Data dates from 8/10 - 20/10.
 --
 -- Changes from last version:
--- 1. Fresh data.
--- 2. Moved fields from items_meta to prices:
---    - unit_of_measure
---    - quantity
--- 3. Added new columns to promos table:
---    - number_of_items
---    - not_in_promos_items
--- 4. Changed column names from 'id' back to full names like 'item_id',
---   'promo_id', etc. to keep names consistent across tables.
+-- 1. Hopefully managed to translate gibberish text.
+-- 2. Improved documentation of table fields.
 --
 -- See XML specifications here:
 -- https://drive.google.com/file/d/0Bw2XXw9aHzlCT0xRMV9WSnZIS0E/view

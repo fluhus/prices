@@ -23,6 +23,12 @@ func correctXml(text []byte) ([]byte, error) {
 		return nil, err
 	}
 	
+	// Some Gibberish will not convert, so convert manually.
+	for i := byte(160); i <= 186; i++ {
+		newText = bytes.Replace(newText,
+				[]byte{195, i}, []byte{215, i-16}, -1)
+	}
+	
 	// Replace encoding field with utf-8.
 	newText = regexp.MustCompile("encoding=\".*?\"").ReplaceAll(newText,
 			[]byte("encoding=\"utf-8\""))
