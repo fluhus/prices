@@ -19,12 +19,13 @@ func main() {
 	}
 	
 	// Parse tables.
-	pe("Parsing...")
 	tables, err := parseSchema(text)
 	if err != nil {
 		pe("error:", err)
 	} else {
-		pe(tables[5])
+		for _, t := range tables {
+			fmt.Printf("%s", t.html())
+		}
 	}
 }
 
@@ -113,7 +114,7 @@ func parseTable(text, name []byte) (*table, error) {
 			match := fieldRow.FindSubmatch(brow)
 			
 			// Check if stumbled on a unique or a check.
-			if nonFieldName.Match(match[1]) {
+			if len(match[1]) == 0 || nonFieldName.Match(match[1]) {
 				continue
 			}
 			
@@ -154,6 +155,36 @@ func (t *table) String() string {
 	}
 	
 	return buf.String()
+}
+
+func (t *table) html() []byte {
+	buf := bytes.NewBuffer(nil)
+	
+	// Create title and doc.
+	fmt.Fprintf(buf, "<h3>%s</h3>\n", t.name)
+	fmt.Fprintf(buf, "%s\n", t.doc)
+	
+	// Create table and header.
+	fmt.Fprintf(buf, "<div class=\"panel panel-default\">\n")
+	fmt.Fprintf(buf, "<table class=\"table table-bordered\">\n")
+	fmt.Fprintf(buf, "<tr><th>Field</th><th>Safe</th><th " +
+			"style=\"width:100%%\">Description</th></tr>\n")
+	
+	// Print fields.
+	for _, f := range t.fields {
+		class := ""
+		if f.safe {
+			class = "glyphicon glyphicon-ok"
+		}
+		fmt.Fprintf(buf, "<tr><td><strong>%s<strong></td><td><span " +
+				"class=\"%s\" aria-hidden=\"true\"" +
+				"></span></td><td>%s</td></tr>\n", f.name, class, f.doc)
+	}
+	
+	// Finish table.
+	fmt.Fprintf(buf, "</table>\n</div>\n")
+	
+	return buf.Bytes()
 }
 
 func pe(a ...interface{}) {
