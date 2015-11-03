@@ -30,8 +30,8 @@ a
 );
 
 CREATE TABLE chains (
--- Maps chain ID to chain name.
-	chain_id   text PRIMARY KEY,   -- Chain code. (safe)
+-- Maps chain code to chain name.
+	chain_id   text PRIMARY KEY,   -- Chain code, as provided by GS1. (safe)
 	chain_name text                -- Chain name in English. (safe)
 );
 
@@ -60,8 +60,8 @@ INSERT INTO chains VALUES
 CREATE TABLE stores (
 -- Identifies every store in the data. Each store may appear once.
 	store_id           integer PRIMARY KEY AUTOINCREMENT,   -- (safe)
-	chain_id           text  NOT NULL, -- Chain code.
-	subchain_id        text  NOT NULL, -- Subchain code.
+	chain_id           text  NOT NULL, -- Chain code, as provided by GS1.
+	subchain_id        text  NOT NULL, -- Subchain number.
 	reported_store_id  text  NOT NULL, -- Store number issued by the chain.
 	CHECK  (chain_id <> '' AND subchain_id <> '' AND reported_store_id <> ''),
 	UNIQUE (chain_id, subchain_id, reported_store_id)
@@ -69,8 +69,8 @@ CREATE TABLE stores (
 
 CREATE TABLE stores_meta (
 -- Metadata about stores. Each store may appear several times.
-	timestamp        int,  -- Unix time when this entry was encountered
-	                       -- (safe).
+	timestamp        int,  -- Unix time when this entry was encountered.
+	                       -- (safe)
 	store_id         int   NOT NULL REFERENCES stores(store_id), -- (safe)
 	bikoret_no       int,  -- ???
 	store_type       int,  -- 1 for physical, 2 for online, 3 for both.
@@ -101,7 +101,8 @@ CREATE TABLE items_meta (
 	                                    -- encountered. (safe)
 	item_id                       int   NOT NULL REFERENCES items(item_id),
 	                                    -- (safe)
-	chain_id                      text  NOT NULL,
+	chain_id                      text  NOT NULL, -- Chain code, as provided by
+	                                              -- GS1.
 	update_time                   text,
 	item_name                     text,
 	manufacturer_item_description text,
@@ -137,12 +138,12 @@ CREATE TABLE promos (
 -- Identifies every promotion in the data. Promo id and metadata are saved
 -- together since they are unique. A change in the metadata will be registered
 -- as a new promo.
-	promo_id                     integer PRIMARY KEY AUTOINCREMENT,
+	promo_id                     integer PRIMARY KEY AUTOINCREMENT, -- (safe)
 	timestamp_from               int,  -- Unix time when this entry was first
 	                                   -- encountered. (safe)
 	timestamp_to                 int,  -- Unix time when this entry was last
 	                                   -- encountered + one day. (safe)
-	chain_id                     text,
+	chain_id                     text, -- Chain code, as provided by GS1.
 	reward_type                  text, -- ???
 	allow_multiple_discounts     text, -- 'Kefel mivtzaim'.
 	promotion_id                 text, -- Issued by the chain, not by us.
