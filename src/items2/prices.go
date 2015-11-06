@@ -17,16 +17,16 @@ func init() {
 		for prices := range priceDataChan {
 			reportPriceData(prices)
 		}
-		priceDatadone <- 0
+		priceDataDone <- 0
 	}()
 }
 
 var priceDataChan = make(chan []*priceData, runtime.NumCPU())
-var priceDatadone = make(chan int, 1)
+var priceDataDone = make(chan int, 1)
 
 func priceDataFinalize() {
 	close(priceDataChan)
-	<-priceDatadone
+	<-priceDataDone
 	priceDataOutBuf.Flush()
 	priceDataOut.Close()
 }
@@ -53,12 +53,12 @@ func (p *priceData) hash() int {
 	)
 }
 
-func (p *priceData) id() string {
-	return fmt.Sprintf("%s,%s", p.itemId, p.storeId)
+func (p *priceData) id() int64 {
+	return int64(p.itemId) << 32 + int64(p.storeId)
 }
 
 // Maps itemId,storeId to hash.
-var priceDataMap = map[string]int {}
+var priceDataMap = map[int64]int {}
 
 func reportPriceData(ps []*priceData) {
 	for i := range ps {
