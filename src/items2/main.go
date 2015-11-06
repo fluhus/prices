@@ -13,16 +13,31 @@ import (
 	"runtime"
 	"io/ioutil"
 	"mypprof"
+	"runtime/pprof"
 )
 
 // Determines whether CPU profiling should be performed.
-const profile = false
+const profileCpu = false
+
+// Determines whether memory profiling should be performed.
+const profileMem = true
 
 func main() {
 	// Start profiling?
-	if profile {
-		mypprof.Start("items.pprof")
+	if profileCpu {
+		mypprof.Start("/cs/icore/amitlavon/items.cpu.pprof")
 		defer mypprof.Stop()
+	}
+	if profileMem {
+		defer func() {
+			f, err := os.Create("/cs/icore/amitlavon/items.mem.pprof")
+			if err != nil {
+				panic(err)
+			}
+			runtime.GC()
+			pprof.WriteHeapProfile(f)
+			f.Close()
+		} ()
 	}
 	
 	// Handle arguments.
