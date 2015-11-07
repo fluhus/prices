@@ -5,18 +5,19 @@ import (
 	"hash/crc64"
 	"os"
 	"bufio"
+	"path/filepath"
 )
 
-func init() {
+func initItems() {
 	itemToken <- 0
 
 	var err error
-	itemsOut, err = os.Create("/cs/icore/amitlavon/items.txt")
+	itemsOut, err = os.Create(filepath.Join(args.outDir, "items.txt"))
 	if err != nil { panic(err) }
 	itemsOutBuf = bufio.NewWriter(itemsOut)
 }
 
-func itemsFinalize() {
+func finalizeItems() {
 	itemsOutBuf.Flush()
 	itemsOut.Close()
 }

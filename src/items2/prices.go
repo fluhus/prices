@@ -5,11 +5,12 @@ import (
 	"os"
 	"bufio"
 	"runtime"
+	"path/filepath"
 )
 
-func init() {
+func initPriceData() {
 	var err error
-	priceDataOut, err = os.Create("/cs/icore/amitlavon/prices.txt")
+	priceDataOut, err = os.Create(filepath.Join(args.outDir, "prices.txt"))
 	if err != nil { panic(err) }
 	priceDataOutBuf = bufio.NewWriter(priceDataOut)
 	
@@ -24,7 +25,7 @@ func init() {
 var priceDataChan = make(chan []*priceData, runtime.NumCPU())
 var priceDataDone = make(chan int, 1)
 
-func priceDataFinalize() {
+func finalizePriceData() {
 	close(priceDataChan)
 	<-priceDataDone
 	priceDataOutBuf.Flush()

@@ -5,11 +5,12 @@ import (
 	"os"
 	"bufio"
 	"runtime"
+	"path/filepath"
 )
 
-func init() {
+func initItemMeta() {
 	var err error
-	itemMetaOut, err = os.Create("/cs/icore/amitlavon/items_meta.txt")
+	itemMetaOut, err = os.Create(filepath.Join(args.outDir, "items_meta.txt"))
 	if err != nil { panic(err) }
 	itemMetaOutBuf = bufio.NewWriter(itemMetaOut)
 	
@@ -24,7 +25,7 @@ func init() {
 var itemMetaChan = make(chan []*itemMeta, runtime.NumCPU())
 var itemMetaDone = make(chan int, 1)
 
-func itemMetaFinalize() {
+func finalizeItemMeta() {
 	close(itemMetaChan)
 	<-itemMetaDone
 	itemMetaOutBuf.Flush()

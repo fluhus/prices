@@ -23,23 +23,6 @@ const profileCpu = false
 const profileMem = true
 
 func main() {
-	// Start profiling?
-	if profileCpu {
-		mypprof.Start("/cs/icore/amitlavon/items.cpu.pprof")
-		defer mypprof.Stop()
-	}
-	if profileMem {
-		defer func() {
-			f, err := os.Create("/cs/icore/amitlavon/items.mem.pprof")
-			if err != nil {
-				panic(err)
-			}
-			runtime.GC()
-			pprof.WriteHeapProfile(f)
-			f.Close()
-		} ()
-	}
-	
 	// Handle arguments.
 	err := parseArgs()
 	if err != nil {
@@ -51,6 +34,29 @@ func main() {
 		pe(myflag.Help())
 		os.Exit(1)
 	}
+	
+	// Start profiling?
+	if profileCpu {
+		mypprof.Start(filepath.Join(args.outDir, "items.cpu.pprof"))
+		defer mypprof.Stop()
+	}
+	if profileMem {
+		defer func() {
+			runtime.GC()
+			f, err := os.Create(filepath.Join(args.outDir, "items.mem.pprof"))
+			if err != nil {
+				return
+			}
+			pprof.WriteHeapProfile(f)
+			f.Close()
+		} ()
+	}
+	
+	// Init stuff.
+	initItems()
+	initStores()
+	initItemMeta()
+	initPriceData()
 	
 	// Prepare threads.
 	numOfThreads := runtime.NumCPU()
@@ -114,10 +120,10 @@ func main() {
 	<-doneChan
 	
 	// Finalize stuff.
-	itemsFinalize()
-	storesFinalize()
-	itemMetaFinalize()
-	priceDataFinalize()
+	finalizeItems()
+	finalizeStores()
+	finalizeItemMeta()
+	finalizePriceData()
 }
 
 // Println to stderr.
@@ -133,6 +139,7 @@ func pef(s string, a ...interface{}) {
 var args struct {
 	files []string
 	check *bool
+	outDir string
 	help bool
 }
 
@@ -142,6 +149,8 @@ func parseArgs() error {
 			"Only check file, do not print SQL statements.", false)
 	filesFile := myflag.String("files", "f", "path",
 			"A file that contains a list of files, one per line.", "")
+	outDir := myflag.String("out", "o", "path",
+			"Output directory.", ".")
 	
 	// Parse flags.
 	err := myflag.Parse()
@@ -153,6 +162,7 @@ func parseArgs() error {
 		return nil
 	}
 	
+	args.outDir = *outDir
 	args.files = myflag.Args()
 	
 	// Get file list from file.

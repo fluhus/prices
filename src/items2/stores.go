@@ -4,18 +4,19 @@ import (
 	"fmt"
 	"os"
 	"bufio"
+	"path/filepath"
 )
 
-func init() {
+func initStores() {
 	storeToken <- 0
 
 	var err error
-        storesOut, err = os.Create("/cs/icore/amitlavon/stores.txt")
-        if err != nil { panic(err) }
-        storesOutBuf = bufio.NewWriter(storesOut)
+	storesOut, err = os.Create(filepath.Join(args.outDir, "stores.txt"))
+	if err != nil { panic(err) }
+	storesOutBuf = bufio.NewWriter(storesOut)
 }
 
-func storesFinalize() {
+func finalizeStores() {
 	storesOutBuf.Flush()
 	storesOut.Close()
 }
