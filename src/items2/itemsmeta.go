@@ -38,7 +38,7 @@ var itemMetaOutBuf *bufio.Writer
 type itemMeta struct {
 	timestamp int64
 	itemId int
-	chainId string
+	storeId int
 	updateTime string
 	itemName string
 	manufacturerItemDescription string
@@ -61,12 +61,12 @@ func (i *itemMeta) hash() int {
 	)
 }
 
-func (i *itemMeta) id() string {
-	return fmt.Sprintf("%s,%s", i.itemId, i.chainId)
+func (i *itemMeta) id() int64 {
+	return int64(i.itemId) << 32 + int64(i.storeId)
 }
 
 // Maps itemId,chainId to hash.
-var itemMetaMap = map[string]int {}
+var itemMetaMap = map[int64]int {}
 
 func reportItemMetas(is []*itemMeta) {
 	for i := range is {
@@ -77,7 +77,7 @@ func reportItemMetas(is []*itemMeta) {
 			fmt.Fprintf(itemMetaOutBuf, "%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\n",
 					is[i].timestamp,
 					is[i].itemId,
-					is[i].chainId,
+					is[i].storeId,
 					is[i].updateTime,
 					is[i].itemName,
 					is[i].manufacturerItemDescription,

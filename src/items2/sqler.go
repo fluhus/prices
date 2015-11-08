@@ -105,7 +105,7 @@ func pricesSqler(data []map[string]string, time int64) []byte {
 		metas[i] = &itemMeta {
 			time,
 			ids[i],
-			d["chain_id"],
+			sids[i],
 			d["update_time"],
 			d["item_name"],
 			d["manufacturer_item_description"],
