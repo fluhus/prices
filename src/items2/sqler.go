@@ -34,44 +34,41 @@ const batchSize = 500
 
 // Creates SQL statements for stores.
 func storesSqler(data []map[string]string, time int64) []byte {
-	buf := bytes.NewBuffer(nil)
 	data = escapeQuotes(data)
 	
-	// Insert into stores.
-	for i := 0; i < len(data); i += batchSize {
-		fmt.Fprintf(buf, "INSERT OR IGNORE INTO stores VALUES\n")
-		for j := i; j < len(data) && j < i+batchSize; j++ {
-			if j > i {
-				fmt.Fprintf(buf, ",")
-			}
-			fmt.Fprintf(buf, "(NULL,'%s','%s','%s')\n", data[j]["chain_id"],
-					data[j]["subchain_id"], data[j]["store_id"])
+	// Get store-ids.
+	ss := make([]*bouncer.Store, len(data))
+	for i, d := range data {
+		ss[i] = &bouncer.Store {
+			d["chain_id"],
+			d["subchain_id"],
+			d["store_id"],
 		}
-		fmt.Fprintf(buf, ";\n")
+	}
+	sids := bouncer.MakeStoreIds(ss)
+	
+	// Report store-metas.
+	metas := make([]*bouncer.StoreMeta, len(data))
+	for i, d := range data {
+		metas[i] = &bouncer.StoreMeta {
+			time,
+			sids[i],
+			d["bikoret_no"],
+			d["store_type"],
+			d["chain_name"],
+			d["subchain_name"],
+			d["store_name"],
+			d["address"],
+			d["city"],
+			d["zip_code"],
+			d["last_update_date"],
+			d["last_update_time"],
+		}
 	}
 	
-	// Insert into stores_meta.
-	for i := 0; i < len(data); i += batchSize {
-		fmt.Fprintf(buf, "INSERT INTO stores_meta VALUES\n")
-		for j := i; j < len(data) && j < i+batchSize; j++ {
-			if j > i {
-				fmt.Fprintf(buf, ",")
-			}
-			fmt.Fprintf(buf, "(%d,(SELECT store_id FROM stores WHERE chain_id" +
-					"='%s' AND subchain_id='%s' AND reported_store_id='%s')" +
-					",%s,%s,'%s'," +
-					"'%s','%s','%s','%s','%s','%s','%s')\n",
-					time, data[j]["chain_id"], data[j]["subchain_id"],
-					data[j]["store_id"], data[j]["bikoret_no"],
-					data[j]["store_type"], data[j]["chain_name"],
-					data[j]["subchain_name"], data[j]["store_name"],
-					data[j]["address"], data[j]["city"], data[j]["zip_code"],
-					data[j]["last_update_date"], data[j]["last_update_time"])
-		}
-		fmt.Fprintf(buf, ";\n")
-	}
+	bouncer.ReportStoreMetas(metas)
 	
-	return buf.Bytes()
+	return nil
 }
 
 // Creates SQL statements for prices.

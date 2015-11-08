@@ -12,7 +12,7 @@ import (
 var (
 	itemsOut    *os.File      // Output file.
 	itemsOutBuf *bufio.Writer // Output buffer.
-	itemsToken  chan int      // Token for synchronizing item id generation.
+	itemsToken  chan int      // Token for synchronizing id generation.
 	items       []*Item       // Reported items.
 	itemsMap    map[int][]int // Item hash-index.
 )

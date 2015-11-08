@@ -26,6 +26,7 @@ func Initialize(dir string) {
 	initItemsMeta()
 	initPrices()
 	initStores()
+	initStoresMeta()
 }
 
 // Flushes and closes all streams used by this package, and terminates all
@@ -36,6 +37,7 @@ func Finalize() {
 	finalizeItemsMeta()
 	finalizePrices()
 	finalizeStores()
+	finalizeStoresMeta()
 }
 
 // Used for hashing stuff.

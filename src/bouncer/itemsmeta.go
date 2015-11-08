@@ -14,8 +14,9 @@ var (
 	itemMetaOut    *os.File         // Output file.
 	itemMetaOutBuf *bufio.Writer    // Output buffer.
 	itemMetaChan   chan []*ItemMeta // Used for reporting item-metas.
-	itemMetaDone   chan int         // Indicates when meta reporting is finished.
-	itemMetaMap    map[int64]int    // Maps itemId,chainId to hash.
+	itemMetaDone   chan int         // Indicates when meta reporting is 
+	                                // finished.
+	itemMetaMap    map[int64]int    // Maps ItemId & StoreId to hash.
 )
 
 // Initializes the 'items_meta' table bouncer.

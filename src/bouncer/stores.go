@@ -12,7 +12,7 @@ import (
 var (
 	storesOut    *os.File      // Output file.
 	storesOutBuf *bufio.Writer // Output buffer.
-	storeToken   chan int      // Used for reporting stores.
+	storeToken   chan int      // Token for synchronizing id generation.
 	stores       []*Store      // Reported stores.
 	storesMap    map[int][]int // Store hash-index.
 )
