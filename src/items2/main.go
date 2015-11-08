@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"mypprof"
 	"runtime/pprof"
+	"bouncer"
 )
 
 // Determines whether CPU profiling should be performed.
@@ -52,11 +53,9 @@ func main() {
 		} ()
 	}
 	
-	// Init stuff.
-	initItems()
-	initStores()
-	initItemMeta()
-	initPriceData()
+	// Init bouncer.
+	bouncer.Initialize(args.outDir)
+	defer bouncer.Finalize()
 	
 	// Prepare threads.
 	numOfThreads := runtime.NumCPU()
@@ -118,12 +117,6 @@ func main() {
 	close(errChan)
 	<-doneChan
 	<-doneChan
-	
-	// Finalize stuff.
-	finalizeItems()
-	finalizeStores()
-	finalizeItemMeta()
-	finalizePriceData()
 }
 
 // Println to stderr.

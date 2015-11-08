@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"strings"
 	"hash/crc64"
+	"bouncer"
 )
 
 
@@ -78,31 +79,31 @@ func pricesSqler(data []map[string]string, time int64) []byte {
 	data = escapeQuotes(data)
 
 	// Report stores (just to get ids).
-	ss := make([]*store, len(data))
+	ss := make([]*bouncer.Store, len(data))
 	for i, d := range data {
-		ss[i] = &store {
+		ss[i] = &bouncer.Store {
 			d["chain_id"],
 			d["subchain_id"],
 			d["store_id"],
 		}
 	}
-	sids := makeStoreIds(ss)
+	sids := bouncer.MakeStoreIds(ss)
 
 	// Report items.
-	is := make([]*item, len(data))
+	is := make([]*bouncer.Item, len(data))
 	for i, d := range data {
-		is[i] = &item {d["item_type"], d["item_code"], d["chain_id"]}
-		if is[i].itemType != `"0"` {
-			is[i].itemType = `"1"`
-			is[i].chainId = ""
+		is[i] = &bouncer.Item {d["item_type"], d["item_code"], d["chain_id"]}
+		if is[i].ItemType != `"0"` {
+			is[i].ItemType = `"1"`
+			is[i].ChainId = ""
 		}
 	}
-	ids := makeItemIds(is)
+	ids := bouncer.MakeItemIds(is)
 	
 	// Report item-metas.
-	metas := make([]*itemMeta, len(data))
+	metas := make([]*bouncer.ItemMeta, len(data))
 	for i, d := range data {
-		metas[i] = &itemMeta {
+		metas[i] = &bouncer.ItemMeta {
 			time,
 			ids[i],
 			sids[i],
@@ -117,12 +118,12 @@ func pricesSqler(data []map[string]string, time int64) []byte {
 		}
 	}
 	
-	itemMetaChan <- metas
+	bouncer.ReportItemMetas(metas)
 	
 	// Report prices.
-	prices := make([]*priceData, len(data))
+	prices := make([]*bouncer.Price, len(data))
 	for i, d := range data {
-		prices[i] = &priceData {
+		prices[i] = &bouncer.Price {
 			time,
 			ids[i],
 			sids[i],
@@ -133,7 +134,7 @@ func pricesSqler(data []map[string]string, time int64) []byte {
 		}
 	}
 	
-	priceDataChan <- prices
+	bouncer.ReportPrices(prices)
 	
 	return nil
 }
