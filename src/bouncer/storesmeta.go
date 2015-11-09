@@ -75,8 +75,6 @@ func (s *StoreMeta) hash() int {
 		s.Address,
 		s.City,
 		s.ZipCode,
-		s.LastUpdateDate,
-		s.LastUpdateTime,
 	)
 }
 
