@@ -57,15 +57,14 @@ INSERT INTO chains VALUES
 --('7290058140886','Zol VeBegadol')
 ;
 
--- TODO(amit): Add a bouncer for stores.
 CREATE TABLE stores (
 -- Identifies every store in the data. Each store may appear once.
-	store_id           integer PRIMARY KEY AUTOINCREMENT,   -- (safe)
+	store_id           integer PRIMARY KEY,  -- (safe)
 	chain_id           text  NOT NULL, -- Chain code, as provided by GS1.
 	subchain_id        text  NOT NULL, -- Subchain number.
 	reported_store_id  text  NOT NULL  -- Store number issued by the chain.
 );
-.import /cs/icore/amitlavon/stores.txt stores
+.import /cs/icore/amitlavon/stam14/stores.txt stores
 
 CREATE TABLE stores_meta (
 -- Metadata about stores. Each store may appear several times.
@@ -83,18 +82,16 @@ CREATE TABLE stores_meta (
 	last_update_date text,
 	last_update_time text
 );
+.import /cs/icore/amitlavon/stam14/stores_meta.txt stores_meta
 
 CREATE TABLE items (
 -- Identifies every commodity item in the data. Each item may appear once.
-	item_id    integer PRIMARY KEY AUTOINCREMENT,  -- (safe)
-	item_type  int   NOT NULL,  -- 0 for internal codes, 1 for barcodes.
-	item_code  text  NOT NULL,  -- Barcode number or internal code.
-	chain_id   text  NOT NULL,  -- Empty string for universal.
-	CHECK  (item_code <> '' AND ((item_type = '0' AND chain_id <> '') OR
-			(item_type = '1' AND chain_id = ''))),
-	UNIQUE (item_type, item_code, chain_id)
+	item_id    integer PRIMARY KEY, -- (safe)
+	item_type  int   NOT NULL,      -- 0 for internal codes, 1 for barcodes.
+	item_code  text  NOT NULL,      -- Barcode number or internal code.
+	chain_id   text  NOT NULL       -- Empty string for universal.
 );
-.import /cs/icore/amitlavon/items.txt items
+.import /cs/icore/amitlavon/stam14/items.txt items
 
 CREATE TABLE items_meta (
 -- Contains all metadata about each item. Each item may appear several times.
@@ -113,7 +110,7 @@ CREATE TABLE items_meta (
 	allow_discount                text, -- Is the item allowed in promotions.
 	item_status                   text  -- ???
 );
-.import /cs/icore/amitlavon/items_meta.txt items_meta
+.import /cs/icore/amitlavon/stam14/items_meta.txt items_meta
 
 CREATE TABLE prices (
 -- Contains all reported prices for all items.
@@ -126,27 +123,27 @@ CREATE TABLE prices (
 	unit_of_measure       text,  -- Gram, liter, etc.
 	quantity              text   -- How many grams/liters etc.
 );
-.import /cs/icore/amitlavon/prices.txt prices
+.import /cs/icore/amitlavon/stam14/prices.txt prices
 
 -- TODO(amit): Check is_active field.
 CREATE TABLE promos (
 -- Identifies every promotion in the data. Promo id and metadata are saved
 -- together since they are unique. A change in the metadata will be registered
 -- as a new promo.
-	promo_id                     integer PRIMARY KEY AUTOINCREMENT, -- (safe)
+	promo_id                     integer PRIMARY KEY, -- (safe)
 	timestamp_from               int,  -- Unix time when this entry was first
 	                                   -- encountered. (safe)
 	timestamp_to                 int,  -- Unix time when this entry was last
 	                                   -- encountered + one day. (safe)
 	chain_id                     text, -- Chain code, as provided by GS1.
-	reward_type                  text, -- ???
-	allow_multiple_discounts     text, -- 'Kefel mivtzaim'.
 	promotion_id                 text, -- Issued by the chain, not by us.
 	promotion_description        text,
 	promotion_start_date         text,
 	promotion_start_hour         text,
 	promotion_end_date           text,
 	promotion_end_hour           text,
+	reward_type                  text, -- ???
+	allow_multiple_discounts     text, -- 'Kefel mivtzaim'.
 	min_qty                      text, -- Min quantity for triggering promo.
 	max_qty                      text, -- Max quantity for triggering promo.
 	discount_rate                text,
@@ -167,21 +164,18 @@ CREATE TABLE promos (
 	                                   -- count(*) on the id in promos_items,
 	                                   -- but some of the promos are not
 	                                   -- reported there. (safe)
-	not_in_promos_items          int,  -- 0 if reported in promos_items, 1 if
+	not_in_promos_items          int   -- 0 if reported in promos_items, 1 if
 	                                   -- not. (safe)
-	crc                          int   -- Hash of all fields that need to be
-	                                   -- compared for bouncing, to simplify
-	                                   -- the trigger.
-	                                   -- DO NOT USE FOR ANYTHING BUT THAT.
 );
+.import /cs/icore/amitlavon/stam14/promos.txt promos
 
 CREATE TABLE promos_stores (
 -- Reports what stores take part in every promo. A single promo may have
 -- several rows, one for each store.
 	promo_id int NOT NULL REFERENCES promos(promo_id),  -- (safe)
-	store_id int NOT NULL REFERENCES stores(store_id),  -- (safe)
-	UNIQUE (promo_id, store_id)
+	store_id int NOT NULL REFERENCES stores(store_id)   -- (safe)
 );
+.import /cs/icore/amitlavon/stam14/promos_stores.txt promos_stores
 
 CREATE TABLE promos_items (
 -- Reports what items take part in every promo. A single promo may have
@@ -193,33 +187,23 @@ CREATE TABLE promos_items (
 -- as usual.
 	promo_id     int NOT NULL REFERENCES promos(promo_id), -- (safe)
 	item_id      int NOT NULL REFERENCES items(item_id),   -- (safe)
-	is_gift_item text,
-	UNIQUE (promo_id, item_id)
+	is_gift_item text
 );
+.import /cs/icore/amitlavon/stam14/promos_items.txt promos_items
 
+CREATE TEMP TABLE promos_to (
+-- A temporary table for updating the timestamp_to field in promos. The
+-- timestamp_to field is evaluated after reporting each promo, so it has to be
+-- updated separately.
+	promo_id     int,
+	timestamp_to int
+);
+.import /cs/icore/amitlavon/stam14/promos_to.txt promos_to
 
------ INDEXES & TRIGGERS -------------------------------------------------------
+CREATE INDEX promos_to_index ON promos_to(promo_id);
 
-CREATE INDEX promos_index ON promos(crc, chain_id, promotion_id);
-
-CREATE TRIGGER promos_bouncer
--- Prevents redundant rows from being added to the promo table.
-BEFORE INSERT ON promos FOR EACH ROW
-WHEN (
-	SELECT rowid FROM promos promos2 WHERE
-	promos2.crc = new.crc AND
-	promos2.chain_id = new.chain_id AND
-	promos2.promotion_id = new.promotion_id
-) IS NOT NULL
-BEGIN
-	UPDATE promos SET
-		timestamp_to = max(timestamp_to, new.timestamp_to),
-		timestamp_from = min(timestamp_from, new.timestamp_from)
-	WHERE
-		crc = new.crc AND
-		chain_id = new.chain_id AND
-		promotion_id = new.promotion_id;
-	SELECT raise(ignore);
-END;
-
+UPDATE promos SET timestamp_to = (
+	SELECT timestamp_to FROM promos_to WHERE promos_to.promo_id
+			= promos.promo_id
+);
 

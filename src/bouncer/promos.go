@@ -124,9 +124,10 @@ type Promo struct {
 
 // Holds data about the last promo with the specific identification details.
 type promoHash struct {
-	hash        int   // Hash of the promo.
-	id          int   // Id given to promo.
-	timestampTo int64 // Last timestamp the promo was seen.
+	hash        int              // Hash of the promo.
+	id          int              // Id given to promo.
+	timestampTo int64            // Last timestamp the promo was seen.
+	storeIds    map[int]struct{} // Ids of stores that reported that promo.
 }
 
 // Returns the hash of an store-meta entry.
@@ -182,17 +183,26 @@ func reportPromos(ps []*Promo) {
 			}
 
 			// Assign new id.
-			promosMap[p.id()] = &promoHash{h, nextPromoId, p.Timestamp}
+			last = &promoHash{h, nextPromoId, p.Timestamp, map[int]struct{}{}}
+			promosMap[p.id()] = last
 			nextPromoId++
 
-			// Report in promos_items table. TODO
-			inPromosItems := true
+			// Report in promos_items.
+			notInPromosItems := "0"
+			if len(p.ItemIds) > 100 {
+				notInPromosItems = "1"
+			} else {
+				for i := range p.ItemIds {
+					fmt.Fprintf(promosItemsOutBuf, "%v\t%v\t%v\n", last.id,
+						p.ItemIds[i], p.GiftItems[i])
+				}
+			}
 
 			// Report new promo.
 			fmt.Fprintf(promosOutBuf,
-				"%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t" +
-						"%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\n",
-				nextPromoId-1,
+				"%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t"+
+					"%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\n",
+				last.id,
 				p.Timestamp,
 				0,
 				p.ChainId,
@@ -219,10 +229,16 @@ func reportPromos(ps []*Promo) {
 				p.AdditionalMinBasketAmount,
 				p.Remarks,
 				len(p.ItemIds),
-				inPromosItems,
+				notInPromosItems,
 			)
 		} else {
 			last.timestampTo = p.Timestamp
+		}
+
+		// Report in promos_stores.
+		if _, ok := last.storeIds[p.StoreId]; !ok {
+			last.storeIds[p.StoreId] = struct{}{}
+			fmt.Fprintf(promosStoresOutBuf, "%v\t%v\n", last.id, p.StoreId)
 		}
 	}
 }
