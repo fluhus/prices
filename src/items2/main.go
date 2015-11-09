@@ -137,6 +137,7 @@ var args struct {
 	check bool
 	outDir string
 	forceRaw bool
+	serialize bool
 	help bool
 }
 
@@ -150,6 +151,10 @@ func parseArgs() error {
 			"Output directory.", ".")
 	forceRaw := myflag.Bool("force-raw", "f",
 			"Force parsing of raw files, instead of reading serialized data.",
+			false)
+	serialize := myflag.Bool("serialize", "s",
+			"Create serialized files of parsed data, for faster loading in " +
+			"the next run.",
 			false)
 	
 	// Parse flags.
@@ -165,6 +170,7 @@ func parseArgs() error {
 	args.outDir = *outDir
 	args.check = *check
 	args.forceRaw = *forceRaw
+	args.serialize = *serialize
 	args.files = myflag.Args()
 	
 	// Get file list from file.
@@ -205,10 +211,13 @@ func parseFile(file string) ([]byte, error) {
 	
 	// Attempt to read an already serialized file.
 	var items []map[string]string
-	err := gobz.Load(file + ".gobz", &items)
-	if args.forceRaw || err != nil {
-		// Didn't succeed in reading gobz; read raw file.
+	var err error
+	if !args.forceRaw {
+		err = gobz.Load(file + ".gobz", &items)
+	}
 	
+	// Parse raw file.
+	if args.forceRaw || err != nil {
 		// Load input XML.
 		data, err := load(file)
 		if err != nil {
@@ -238,9 +247,11 @@ func parseFile(file string) ([]byte, error) {
 		}
 		
 		// Save processed file.
+		if args.serialize {
 		err = gobz.Save(file + ".gobz", items)
-		if err != nil {
-			return nil, fmt.Errorf("Error saving gobz: %v", err)
+			if err != nil {
+				return nil, fmt.Errorf("Error saving gobz: %v", err)
+			}
 		}
 	}
 
