@@ -15,13 +15,14 @@ import (
 	"mypprof"
 	"runtime/pprof"
 	"bouncer"
+	"gobz"
 )
 
 // Determines whether CPU profiling should be performed.
 const profileCpu = false
 
 // Determines whether memory profiling should be performed.
-const profileMem = true
+const profileMem = false
 
 func main() {
 	// Handle arguments.
@@ -54,8 +55,10 @@ func main() {
 	}
 	
 	// Init bouncer.
-	bouncer.Initialize(args.outDir)
-	defer bouncer.Finalize()
+	if !args.check {
+		bouncer.Initialize(args.outDir)
+		defer bouncer.Finalize()
+	}
 	
 	// Prepare threads.
 	numOfThreads := runtime.NumCPU()
@@ -131,19 +134,23 @@ func pef(s string, a ...interface{}) {
 
 var args struct {
 	files []string
-	check *bool
+	check bool
 	outDir string
+	forceRaw bool
 	help bool
 }
 
 func parseArgs() error {
 	// Set flags.
-	args.check = myflag.Bool("check", "c",
-			"Only check file, do not print SQL statements.", false)
-	filesFile := myflag.String("files", "f", "path",
-			"A file that contains a list of files, one per line.", "")
+	check := myflag.Bool("check", "c",
+			"Only check files, do not print SQL statements.", false)
+	filesFile := myflag.String("in", "i", "path",
+			"A file that contains a list of input files, one per line.", "")
 	outDir := myflag.String("out", "o", "path",
 			"Output directory.", ".")
+	forceRaw := myflag.Bool("force-raw", "f",
+			"Force parsing of raw files, instead of reading serialized data.",
+			false)
 	
 	// Parse flags.
 	err := myflag.Parse()
@@ -156,6 +163,8 @@ func parseArgs() error {
 	}
 	
 	args.outDir = *outDir
+	args.check = *check
+	args.forceRaw = *forceRaw
 	args.files = myflag.Args()
 	
 	// Get file list from file.
@@ -194,34 +203,48 @@ func parseFile(file string) ([]byte, error) {
 	
 	chainId := fileChainId(file)
 	
-	// Read input XML.
-	data, err := load(file)
-	if err != nil {
-		return nil, fmt.Errorf("Error reading input: %v", err)
-	}
+	// Attempt to read an already serialized file.
+	var items []map[string]string
+	err := gobz.Load(file + ".gobz", &items)
+	if args.forceRaw || err != nil {
+		// Didn't succeed in reading gobz; read raw file.
 	
-	// Make syntax & encoding corrections.
-	data, err = correctXml(data)
-	if err != nil {
-		return nil, fmt.Errorf("Error correcting XML: %v", err)
-	}
-	
-	// Parse items.
-	prsr := parsers[typ]
-	if prsr == nil {
-		panic("Nil parser for type '" + typ + "'.")
-	}
-	
-	// Passing chain-ID because Co-Op don't include that field in their XMLs.
-	items, err := prsr.parse(data, map[string]string{"chain_id":chainId})
-	if err != nil {
-		return nil, fmt.Errorf("Error parsing file: %v", err)
-	}
-	if len(items) == 0 {
-		return nil, fmt.Errorf("Error parsing file: 0 items found.")
+		// Load input XML.
+		data, err := load(file)
+		if err != nil {
+			return nil, fmt.Errorf("Error reading input: %v", err)
+		}
+		
+		// Make syntax & encoding corrections.
+		data, err = correctXml(data)
+		if err != nil {
+			return nil, fmt.Errorf("Error correcting XML: %v", err)
+		}
+		
+		// Parse items.
+		prsr := parsers[typ]
+		if prsr == nil {
+			panic("Nil parser for type '" + typ + "'.")
+		}
+		
+		// Passing chain-ID because Co-Op don't include that field in their
+		// XMLs.
+		items, err = prsr.parse(data, map[string]string{"chain_id":chainId})
+		if err != nil {
+			return nil, fmt.Errorf("Error parsing file: %v", err)
+		}
+		if len(items) == 0 {
+			return nil, fmt.Errorf("Error parsing file: 0 items found.")
+		}
+		
+		// Save processed file.
+		err = gobz.Save(file + ".gobz", items)
+		if err != nil {
+			return nil, fmt.Errorf("Error saving gobz: %v", err)
+		}
 	}
 
-	if *args.check {
+	if args.check {
 		return nil, nil
 	}
 	return sqlers[typ](items, tim), nil
