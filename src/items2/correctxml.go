@@ -41,7 +41,7 @@ func correctGibberish(text []byte) []byte {
 
 // Replaces encoding attribute value with utf-8.
 func correctEncodingField(text []byte) []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, len(text)*2))
+	buf := bytes.NewBuffer(make([]byte, 0, len(text)))
 	
 	for i := 0; i < len(text); i++ {
 		buf.WriteByte(text[i])
@@ -64,7 +64,7 @@ func correctEncodingField(text []byte) []byte {
 // Quote unquoted attributes (Bitan has unquoted counts in their promo
 // files).
 func correctUnquotedAttrs(text []byte) []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, len(text)*2))
+	buf := bytes.NewBuffer(make([]byte, 0, len(text)))
 	
 	for i := 0; i < len(text); i++ {
 		buf.WriteByte(text[i])
@@ -86,7 +86,7 @@ func correctUnquotedAttrs(text []byte) []byte {
 // Escapes ampersands that are not part of an escape sequence (&...;).
 // In some chains they forgot to escape them and it annoys the XML parser.
 func correctAmpersands(text []byte) []byte {
-	buf := bytes.NewBuffer(make([]byte, 0, len(text)*2))
+	buf := bytes.NewBuffer(make([]byte, 0, len(text)))
 	
 	for i := 0; i < len(text); i++ {
 		buf.WriteByte(text[i])
