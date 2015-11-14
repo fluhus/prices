@@ -10,8 +10,14 @@ import (
 )
 
 func main() {
+	// Parse command-line argument.
+	latex := false
+	if len(os.Args) > 1 && os.Args[1] == "-latex" {
+		latex = true
+	}
+	
 	// Read schema.
-	pe("Reading from stdin...")
+	pe("Reading from stdin...\n(use with -latex argument for latex output)")
 	text, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		pe("Error reading schema:", err)
@@ -24,7 +30,11 @@ func main() {
 		pe("error:", err)
 	} else {
 		for _, t := range tables {
-			fmt.Printf("%s", t.html())
+			if latex {
+				fmt.Printf("%s", t.latex())
+			} else {
+				fmt.Printf("%s", t.html())
+			}
 		}
 	}
 }
@@ -185,6 +195,42 @@ func (t *table) html() []byte {
 	fmt.Fprintf(buf, "</table>\n</div>\n")
 	
 	return buf.Bytes()
+}
+
+func (t *table) latex() []byte {
+	buf := bytes.NewBuffer(nil)
+	
+	// Create title and doc.
+	fmt.Fprintf(buf, "\\subsection*{%s}\n", quoteLatex(t.name))
+	fmt.Fprintf(buf, "%s\n", quoteLatex(t.doc))
+	
+	// Create table and header.
+	fmt.Fprintf(buf, "\\begin{tabularx}{\\linewidth}{|l|X|}\n")
+	fmt.Fprintf(buf, "\\hline Field & Description \\\\\n")
+	
+	// Print fields.
+	for _, f := range t.fields {
+		fmt.Fprintf(buf, "\\hline %s & %s \\\\\n",
+				quoteLatex(f.name), quoteLatex(f.doc))
+	}
+	
+	// Finish table.
+	fmt.Fprintf(buf, "\\hline \\end{tabularx}\n\n")
+	
+	return buf.Bytes()
+}
+
+var latexQuotes = map[string]string {
+	"&": "\\&",
+	"_": "\\_",
+	"%": "\\%",
+}
+
+func quoteLatex(text []byte) []byte {
+	for s, r := range latexQuotes {
+		text = bytes.Replace(text, []byte(s), []byte(r), -1)
+	}
+	return text
 }
 
 func pe(a ...interface{}) {
