@@ -161,9 +161,9 @@ CREATE TABLE promos (
 	remarks                      text,
 	number_of_items              int,  -- Number of items that take part in the
 	                                   -- promotion. Should be equivalent to
-	                                   -- count(*) on the id in promos_items,
-	                                   -- but some of the promos are not
-	                                   -- reported there. (safe)
+	                                   -- count(*) on the promo_id in 
+	                                   -- promos_items, but some of the promos
+	                                   -- are not reported there. (safe)
 	not_in_promos_items          int   -- 0 if reported in promos_items, 1 if
 	                                   -- not. (safe)
 );
