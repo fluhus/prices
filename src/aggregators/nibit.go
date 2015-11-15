@@ -17,6 +17,8 @@ import (
 const (
 	nibitHome = "http://matrixcatalog.co.il/"                // For cookies.
 	nibitPage = nibitHome + "NBCompetitionRegulations.aspx"  // For queries.
+	nibitDownload = "http://matrixcatalog.co.il/" +
+			"CompetitionRegulationsFiles/latest/"            // For downloads.
 )
 
 // Chain ID's for filtering.
@@ -184,13 +186,9 @@ func (a *nibitAggregator) download(cl *http.Client, date, dir string) error {
 	// Start downloader threads.
 	for i := 0; i < numberOfThreads; i++ {
 		go func() {
-			// New values map to avoid file name collisions.
-			myvalues := a.copyValues(values)
-			
 			for info := range infos {
-				a.setFormTarget(myvalues, info.target)
-				_, err := downloadIfNotExistsPost(nibitPage,
-						filepath.Join(dir, info.name), cl, myvalues)
+				_, err := downloadIfNotExists(nibitDownload + info.name,
+						filepath.Join(dir, info.name), cl)
 				if err != nil {
 					done <- fmt.Errorf("Failed to download '%s': %v",
 							info.name, err)
