@@ -67,7 +67,7 @@ var storesParser = &parser {
 
 // Parses promo files.
 var promosParser = &parser {
-	newCapturer("", "Promotion"),
+	newCapturer("", "Promotion", "Sale"),
 	newCapturers(
 		":chain_id", "ChainId",
 		":subchain_id", "SubchainId",
