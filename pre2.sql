@@ -7,12 +7,6 @@ PRAGMA default_cache_size = 524288;
 ----- TABLES -------------------------------------------------------------------
 
 CREATE TABLE documentation (
--- Data dates from 8/10 - 20/10.
---
--- Changes from last version:
--- 1. Hopefully managed to translate gibberish text.
--- 2. Improved documentation of table fields.
---
 -- See XML specifications here:
 -- https://drive.google.com/file/d/0Bw2XXw9aHzlCT0xRMV9WSnZIS0E/view
 --
@@ -30,10 +24,11 @@ CREATE TABLE documentation (
 a
 );
 
+.print chains
 CREATE TABLE chains (
 -- Maps chain code to chain name.
-	chain_id   text PRIMARY KEY,   -- Chain code, as provided by GS1. (safe)
-	chain_name text                -- Chain name in English. (safe)
+	chain_id   text PRIMARY KEY, -- Chain code, as provided by GS1. (safe)
+	chain_name text              -- Chain name in English. (safe)
 );
 
 INSERT INTO chains VALUES
@@ -57,20 +52,22 @@ INSERT INTO chains VALUES
 --('7290058140886','Zol VeBegadol')
 ;
 
+.print stores
 CREATE TABLE stores (
 -- Identifies every store in the data. Each store may appear once.
-	store_id           integer PRIMARY KEY,  -- (safe)
+	store_id           integer, -- (safe)
 	chain_id           text  NOT NULL, -- Chain code, as provided by GS1.
 	subchain_id        text  NOT NULL, -- Subchain number.
 	reported_store_id  text  NOT NULL  -- Store number issued by the chain.
 );
 .import /cs/icore/amitlavon/stam14/stores.txt stores
 
+.print stores_meta
 CREATE TABLE stores_meta (
 -- Metadata about stores. Each store may appear several times.
 	timestamp        int,  -- Unix time when this entry was encountered.
 	                       -- (safe)
-	store_id         int   NOT NULL REFERENCES stores(store_id), -- (safe)
+	store_id         int   NOT NULL, -- References stores.store_id. (safe)
 	bikoret_no       int,  -- ???
 	store_type       int,  -- 1 for physical, 2 for online, 3 for both.
 	chain_name       text,
@@ -84,23 +81,25 @@ CREATE TABLE stores_meta (
 );
 .import /cs/icore/amitlavon/stam14/stores_meta.txt stores_meta
 
+.print items
 CREATE TABLE items (
 -- Identifies every commodity item in the data. Each item may appear once.
-	item_id    integer PRIMARY KEY, -- (safe)
-	item_type  int   NOT NULL,      -- 0 for internal codes, 1 for barcodes.
-	item_code  text  NOT NULL,      -- Barcode number or internal code.
-	chain_id   text  NOT NULL       -- Empty string for universal.
+	item_id    integer,        -- (safe)
+	item_type  int   NOT NULL, -- 0 for internal codes, 1 for barcodes.
+	item_code  text  NOT NULL, -- Barcode number or internal code.
+	chain_id   text  NOT NULL  -- Empty string for universal.
 );
 .import /cs/icore/amitlavon/stam14/items.txt items
 
+.print items_meta
 CREATE TABLE items_meta (
 -- Contains all metadata about each item. Each item may appear several times.
 	timestamp                     int,  -- Unix time when this entry was
 	                                    -- encountered. (safe)
-	item_id                       int   NOT NULL REFERENCES items(item_id),
-	                                    -- (safe)
-	chain_id                      text  NOT NULL, -- Chain code, as provided by
-	                                              -- GS1.
+	item_id                       int  NOT NULL, -- References items(item_id).
+	                                             -- (safe)
+	chain_id                      text NOT NULL, -- Chain code, as provided by
+	                                             -- GS1.
 	update_time                   text,
 	item_name                     text,
 	manufacturer_item_description text,
@@ -112,12 +111,13 @@ CREATE TABLE items_meta (
 );
 .import /cs/icore/amitlavon/stam14/items_meta.txt items_meta
 
+.print prices
 CREATE TABLE prices (
 -- Contains all reported prices for all items.
 	timestamp             int,   -- Unix time when this entry was encountered.
 	                             -- (safe)
-	item_id               int NOT NULL REFERENCES items(item_id),   -- (safe)
-	store_id              int NOT NULL REFERENCES stores(store_id), -- (safe)
+	item_id               int NOT NULL, -- References items.item_id. (safe)
+	store_id              int NOT NULL, -- References stores.store_id. (safe)
 	price                 real,  -- Price in shekels as reported in raw data.
 	unit_of_measure_price real,  -- Price in shekels as reported in raw data.
 	unit_of_measure       text,  -- Gram, liter, etc.
@@ -125,12 +125,13 @@ CREATE TABLE prices (
 );
 .import /cs/icore/amitlavon/stam14/prices.txt prices
 
+.print promos
 -- TODO(amit): Check is_active field.
 CREATE TABLE promos (
 -- Identifies every promotion in the data. Promo id and metadata are saved
 -- together since they are unique. A change in the metadata will be registered
 -- as a new promo.
-	promo_id                     integer PRIMARY KEY, -- (safe)
+	promo_id                     integer, -- (safe)
 	timestamp_from               int,  -- Unix time when this entry was first
 	                                   -- encountered. (safe)
 	timestamp_to                 int,  -- Unix time when this entry was last
@@ -169,14 +170,16 @@ CREATE TABLE promos (
 );
 .import /cs/icore/amitlavon/stam14/promos.txt promos
 
+.print promos_stores
 CREATE TABLE promos_stores (
 -- Reports what stores take part in every promo. A single promo may have
 -- several rows, one for each store.
-	promo_id int NOT NULL REFERENCES promos(promo_id),  -- (safe)
-	store_id int NOT NULL REFERENCES stores(store_id)   -- (safe)
+	promo_id int NOT NULL, -- References promos.promo_id. (safe)
+	store_id int NOT NULL  -- References stores.store_id. (safe)
 );
 .import /cs/icore/amitlavon/stam14/promos_stores.txt promos_stores
 
+.print promos_items
 CREATE TABLE promos_items (
 -- Reports what items take part in every promo. A single promo may have
 -- several rows, one for each item.
@@ -185,12 +188,13 @@ CREATE TABLE promos_items (
 -- because those promos usually apply on an entire store ("everything for 10%
 -- discount") and that bloats the DB. They are reported on the other tables
 -- as usual.
-	promo_id     int NOT NULL REFERENCES promos(promo_id), -- (safe)
-	item_id      int NOT NULL REFERENCES items(item_id),   -- (safe)
+	promo_id     int NOT NULL, -- References promos.promo_id. (safe)
+	item_id      int NOT NULL, -- References items.item_id. (safe)
 	is_gift_item text
 );
 .import /cs/icore/amitlavon/stam14/promos_items.txt promos_items
 
+.print promos_to
 CREATE TEMP TABLE promos_to (
 -- A temporary table for updating the timestamp_to field in promos. The
 -- timestamp_to field is evaluated after reporting each promo, so it has to be
@@ -206,4 +210,5 @@ UPDATE promos SET timestamp_to = (
 	SELECT timestamp_to FROM promos_to WHERE promos_to.promo_id
 			= promos.promo_id
 );
+
 
