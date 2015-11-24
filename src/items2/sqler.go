@@ -2,6 +2,8 @@ package main
 
 // Handles transforming of field maps into SQL queries.
 
+// TODO(amit): Needs refactoring. This is no longer an SQL generator.
+
 import (
 	"bouncer"
 	"strings"

@@ -1,6 +1,8 @@
 // Parses price XMLs.
 package main
 
+// TODO(amit): Drop this package in favor of items2.
+
 import (
 	"os"
 	"fmt"
