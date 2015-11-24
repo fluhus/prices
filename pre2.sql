@@ -207,8 +207,8 @@ CREATE TEMP TABLE promos_to (
 CREATE INDEX promos_to_index ON promos_to(promo_id);
 
 UPDATE promos SET timestamp_to = (
-	SELECT timestamp_to FROM promos_to WHERE promos_to.promo_id
-			= promos.promo_id
+	SELECT timestamp_to FROM promos_to
+	WHERE promos_to.promo_id = promos.promo_id
 );
 
 
