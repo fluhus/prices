@@ -23,7 +23,7 @@ var (
 	promosDone         chan int      // Indicates when promo reporting is finished.
 	nextPromoId        int           // Id to assign to the next new promo.
 
-	promosMap map[string]*promoHash // Maps ChainId,PromotionId to hash.
+	promosMap map[int][]*promoId // Maps hash to promo-details.
 )
 
 // Initializes the 'promos*' table bouncer.
@@ -31,7 +31,7 @@ func initPromos() {
 	// Initialize data structures.
 	promosChan = make(chan []*Promo, runtime.NumCPU())
 	promosDone = make(chan int, 1)
-	promosMap = map[string]*promoHash{}
+	promosMap = map[int][]*promoId{}
 	nextPromoId = 0
 
 	// Open output files.
@@ -76,8 +76,11 @@ func finalizePromos() {
 	<-promosDone
 
 	// Write pending data.
-	for _, ph := range promosMap {
-		fmt.Fprintf(promosToOutBuf, "%v\t%v\n", ph.id, ph.timestampTo+60*60*24)
+	for _, pids := range promosMap {
+		for _, pid := range pids {
+			fmt.Fprintf(promosToOutBuf, "%v\t%v\n", pid.id,
+				pid.timestampTo+60*60*24)
+		}
 	}
 
 	// Flush output buffers and close files.
@@ -123,9 +126,10 @@ type Promo struct {
 }
 
 // Holds data about the last promo with the specific identification details.
-type promoHash struct {
-	hash        int              // Hash of the promo.
-	id          int              // Id given to promo.
+type promoId struct {
+	id          int              // ID given to promo.
+	chainId     string           // ID of the reporting chain.
+	promotionId string           // ID reported by the chain.
 	timestampTo int64            // Last timestamp the promo was seen.
 	storeIds    map[int]struct{} // Ids of stores that reported that promo.
 }
@@ -159,32 +163,38 @@ func (p *Promo) hash() int {
 	)
 }
 
-// Returns the identification string of the promo.
-func (p *Promo) id() string {
-	return fmt.Sprintf("%v,%v", p.ChainId, p.PromotionId)
-}
-
 // Reports the given promos.
 func ReportPromos(ps []*Promo) {
 	promosChan <- ps
 }
 
-// Reports the given promos. Called by the goroutine that listens on the channel.
+// Returns the promo-id object that corresponds to the given details. Returns
+// nil if not found.
+func lastReportedPromo(hash int, chainId string, promotionId string) *promoId {
+	candidates := promosMap[hash]
+
+	for _, candidate := range candidates {
+		if candidate.chainId == chainId &&
+			candidate.promotionId == promotionId {
+			return candidate
+		}
+	}
+
+	return nil
+}
+
+// Reports the given promos. Called by the goroutine that listens on the
+// channel.
 func reportPromos(ps []*Promo) {
 	for _, p := range ps {
 		h := p.hash()
-		last := promosMap[p.id()]
+		last := lastReportedPromo(h, p.ChainId, p.PromotionId)
 
-		if last == nil || last.hash != h {
-			// Report last timestamp of previous.
-			if last != nil {
-				fmt.Fprintf(promosToOutBuf, "%v\t%v\n", last.id,
-					last.timestampTo+60*60*24)
-			}
-
+		if last == nil {
 			// Assign new id.
-			last = &promoHash{h, nextPromoId, p.Timestamp, map[int]struct{}{}}
-			promosMap[p.id()] = last
+			last = &promoId{nextPromoId, p.ChainId, p.PromotionId, p.Timestamp,
+				map[int]struct{}{}}
+			promosMap[h] = append(promosMap[h], last)
 			nextPromoId++
 
 			// Report in promos_items.
@@ -242,4 +252,3 @@ func reportPromos(ps []*Promo) {
 		}
 	}
 }
-
