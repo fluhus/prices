@@ -125,15 +125,6 @@ type Promo struct {
 	GiftItems                 []string
 }
 
-// Holds data about the last promo with the specific identification details.
-type promoId struct {
-	id          int              // ID given to promo.
-	chainId     string           // ID of the reporting chain.
-	promotionId string           // ID reported by the chain.
-	timestampTo int64            // Last timestamp the promo was seen.
-	storeIds    map[int]struct{} // Ids of stores that reported that promo.
-}
-
 // Returns the hash of an store-meta entry.
 func (p *Promo) hash() int {
 	return hash(
@@ -166,6 +157,15 @@ func (p *Promo) hash() int {
 // Reports the given promos.
 func ReportPromos(ps []*Promo) {
 	promosChan <- ps
+}
+
+// Holds data about the last promo with the specific identification details.
+type promoId struct {
+	id          int              // ID given to promo.
+	chainId     string           // ID of the reporting chain.
+	promotionId string           // ID reported by the chain.
+	timestampTo int64            // Last timestamp the promo was seen.
+	storeIds    map[int]struct{} // Ids of stores that reported that promo.
 }
 
 // Returns the promo-id object that corresponds to the given details. Returns

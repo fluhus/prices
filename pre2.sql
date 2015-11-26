@@ -62,6 +62,8 @@ CREATE TABLE stores (
 );
 .import /cs/icore/amitlavon/stam14/stores.txt stores
 
+-- TODO(amit): Move all timestamp fields to after the ids.
+
 .print stores_meta
 CREATE TABLE stores_meta (
 -- Metadata about stores. Each store may appear several times.

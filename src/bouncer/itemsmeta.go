@@ -11,19 +11,18 @@ import (
 )
 
 var (
-	itemMetaOut    *os.File         // Output file.
-	itemMetaOutBuf *bufio.Writer    // Output buffer.
-	itemMetaChan   chan []*ItemMeta // Used for reporting item-metas.
-	itemMetaDone   chan int         // Indicates when meta reporting is 
-	                                // finished.
-	itemMetaMap    map[int64]int    // Maps ItemId & StoreId to hash.
+	itemMetaOut    *os.File              // Output file.
+	itemMetaOutBuf *bufio.Writer         // Output buffer.
+	itemMetaChan   chan []*ItemMeta      // Used for reporting item-metas.
+	itemMetaDone   chan int              // Indicates when meta reporting is finished.
+	itemMetaMap    map[int][]*itemMetaId // Maps hash to item details.
 )
 
 // Initializes the 'items_meta' table bouncer.
 func initItemsMeta() {
 	itemMetaChan = make(chan []*ItemMeta, runtime.NumCPU())
 	itemMetaDone = make(chan int, 1)
-	itemMetaMap = map[int64]int{}
+	itemMetaMap = map[int][]*itemMetaId{}
 
 	var err error
 	itemMetaOut, err = os.Create(filepath.Join(outDir, "items_meta.txt"))
@@ -76,9 +75,24 @@ func (i *ItemMeta) hash() int {
 	)
 }
 
-// Returns the identifier of an item-meta entry, by item-id and store-id.
-func (i *ItemMeta) id() int64 {
-	return int64(i.ItemId)<<32 + int64(i.StoreId)
+// Identifies a single hashed entry in the hash map.
+type itemMetaId struct {
+	itemId  int
+	storeId int
+}
+
+// Returns the hashed object that was reported with the give details. Returns
+// nil if not found.
+func lastReportedItemMeta(hash, itemId, storeId int) *itemMetaId {
+	candidates := itemMetaMap[hash]
+
+	for _, candidate := range candidates {
+		if candidate.itemId == itemId && candidate.storeId == storeId {
+			return candidate
+		}
+	}
+
+	return nil
 }
 
 // Reports the given metas.
@@ -90,9 +104,12 @@ func ReportItemMetas(is []*ItemMeta) {
 func reportItemMetas(is []*ItemMeta) {
 	for i := range is {
 		h := is[i].hash()
-		last := itemMetaMap[is[i].id()]
-		if h != last {
-			itemMetaMap[is[i].id()] = h
+		last := lastReportedItemMeta(h, is[i].ItemId, is[i].StoreId)
+		if last == nil {
+			itemMetaMap[h] = append(itemMetaMap[h], &itemMetaId{
+				is[i].ItemId,
+				is[i].StoreId,
+			})
 			fmt.Fprintf(itemMetaOutBuf,
 				"%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\n",
 				is[i].Timestamp,
@@ -107,6 +124,8 @@ func reportItemMetas(is []*ItemMeta) {
 				is[i].AllowDiscount,
 				is[i].ItemStatus,
 			)
+		} else {
+			// TODO(amit): Keep a timestampTo field and modify it here.
 		}
 	}
 }
