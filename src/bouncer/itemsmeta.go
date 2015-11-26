@@ -51,7 +51,7 @@ func finalizeItemsMeta() {
 type ItemMeta struct {
 	Timestamp                   int64
 	ItemId                      int
-	StoreId                     int
+	ChainId                     string
 	UpdateTime                  string
 	ItemName                    string
 	ManufacturerItemDescription string
@@ -78,16 +78,16 @@ func (i *ItemMeta) hash() int {
 // Identifies a single hashed entry in the hash map.
 type itemMetaId struct {
 	itemId  int
-	storeId int
+	chainId string
 }
 
 // Returns the hashed object that was reported with the give details. Returns
 // nil if not found.
-func lastReportedItemMeta(hash, itemId, storeId int) *itemMetaId {
+func lastReportedItemMeta(hash int, itemId int, chainId string) *itemMetaId {
 	candidates := itemMetaMap[hash]
 
 	for _, candidate := range candidates {
-		if candidate.itemId == itemId && candidate.storeId == storeId {
+		if candidate.itemId == itemId && candidate.chainId == chainId {
 			return candidate
 		}
 	}
@@ -104,17 +104,17 @@ func ReportItemMetas(is []*ItemMeta) {
 func reportItemMetas(is []*ItemMeta) {
 	for i := range is {
 		h := is[i].hash()
-		last := lastReportedItemMeta(h, is[i].ItemId, is[i].StoreId)
+		last := lastReportedItemMeta(h, is[i].ItemId, is[i].ChainId)
 		if last == nil {
 			itemMetaMap[h] = append(itemMetaMap[h], &itemMetaId{
 				is[i].ItemId,
-				is[i].StoreId,
+				is[i].ChainId,
 			})
 			fmt.Fprintf(itemMetaOutBuf,
 				"%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\n",
 				is[i].Timestamp,
 				is[i].ItemId,
-				is[i].StoreId,
+				is[i].ChainId,
 				is[i].UpdateTime,
 				is[i].ItemName,
 				is[i].ManufacturerItemDescription,

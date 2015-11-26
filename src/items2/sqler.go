@@ -100,7 +100,7 @@ func pricesSqler(data []map[string]string, time int64) []byte {
 		metas[i] = &bouncer.ItemMeta{
 			time,
 			ids[i],
-			sids[i],
+			d["chain_id"],
 			d["update_time"],
 			d["item_name"],
 			d["manufacturer_item_description"],
