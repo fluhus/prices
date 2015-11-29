@@ -2,8 +2,6 @@ package main
 
 // Reporting layer; converts field-maps to table entries.
 
-// TODO(amit): Needs refactoring. This is no longer an SQL generator.
-
 import (
 	"bouncer"
 	"strings"

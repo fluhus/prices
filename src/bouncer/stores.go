@@ -4,7 +4,6 @@ package bouncer
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -86,7 +85,7 @@ func makeStoreId(s *Store) int {
 	storesMap[h] = append(storesMap[h], result)
 	stores = append(stores, s)
 
-	fmt.Fprintf(storesOutBuf, "%d\t%s\t%s\t%s\n",
+	printTsv(storesOutBuf,
 		result+1,
 		s.ChainId,
 		s.SubchainId,

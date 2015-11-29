@@ -4,7 +4,6 @@ package bouncer
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -87,8 +86,7 @@ func makeItemId(i *Item) int {
 	itemsMap[h] = append(itemsMap[h], result)
 	items = append(items, i)
 
-	fmt.Fprintf(itemsOutBuf, "%d\t%s\t%s\t%s\n", result+1, i.ItemType,
-		i.ItemCode, i.ChainId)
+	printTsv(itemsOutBuf, result+1, i.ItemType, i.ItemCode, i.ChainId)
 
 	return result
 }

@@ -4,7 +4,6 @@ package bouncer
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -78,8 +77,7 @@ func finalizePromos() {
 	// Write pending data.
 	for _, pids := range promosMap {
 		for _, pid := range pids {
-			fmt.Fprintf(promosToOutBuf, "%v\t%v\n", pid.id,
-				pid.timestampTo+60*60*24)
+			printTsv(promosToOutBuf, pid.id, pid.timestampTo+60*60*24)
 		}
 	}
 
@@ -203,15 +201,13 @@ func reportPromos(ps []*Promo) {
 				notInPromosItems = "1"
 			} else {
 				for i := range p.ItemIds {
-					fmt.Fprintf(promosItemsOutBuf, "%v\t%v\t%v\n", last.id,
-						p.ItemIds[i], p.GiftItems[i])
+					printTsv(promosItemsOutBuf, last.id, p.ItemIds[i],
+							p.GiftItems[i])
 				}
 			}
 
 			// Report new promo.
-			fmt.Fprintf(promosOutBuf,
-				"%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t"+
-					"%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\n",
+			printTsv(promosOutBuf,
 				last.id,
 				p.Timestamp,
 				0,
@@ -248,7 +244,7 @@ func reportPromos(ps []*Promo) {
 		// Report in promos_stores.
 		if _, ok := last.storeIds[p.StoreId]; !ok {
 			last.storeIds[p.StoreId] = struct{}{}
-			fmt.Fprintf(promosStoresOutBuf, "%v\t%v\n", last.id, p.StoreId)
+			printTsv(promosStoresOutBuf, last.id, p.StoreId)
 		}
 	}
 }

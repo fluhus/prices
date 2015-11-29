@@ -4,7 +4,6 @@ package bouncer
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -110,8 +109,7 @@ func reportItemMetas(is []*ItemMeta) {
 				is[i].ItemId,
 				is[i].ChainId,
 			})
-			fmt.Fprintf(itemMetaOutBuf,
-				"%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\n",
+			printTsv(itemMetaOutBuf,
 				is[i].Timestamp,
 				is[i].ItemId,
 				is[i].ChainId,

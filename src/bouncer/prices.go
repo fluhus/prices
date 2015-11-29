@@ -4,7 +4,6 @@ package bouncer
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -86,7 +85,7 @@ func reportPrices(ps []*Price) {
 		last := pricesMap[ps[i].id()]
 		if h != last {
 			pricesMap[ps[i].id()] = h
-			fmt.Fprintf(pricesOutBuf, "%v\t%v\t%v\t%v\t%v\t%v\t%v\n",
+			printTsv(pricesOutBuf,
 				ps[i].Timestamp,
 				ps[i].ItemId,
 				ps[i].StoreId,

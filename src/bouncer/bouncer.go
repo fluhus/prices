@@ -13,6 +13,7 @@ package bouncer
 import (
 	"fmt"
 	"hash/crc64"
+	"io"
 )
 
 // Root path for data output.
@@ -57,5 +58,15 @@ func hash(a interface{}, b ...interface{}) int {
 	return int(crc.Sum64())
 }
 
-// TODO(amit): Implement a printTsv function.
+// Prints the given values tab-separated, with a new line at the end.
+func printTsv(w io.Writer, values ...interface{}) {
+	for i := range values {
+		if i == 0 {
+			fmt.Fprintf(w, "%v", values[i])
+		} else {
+			fmt.Fprintf(w, "\t%v", values[i])
+		}
+	}
+	fmt.Fprintf(w, "\n")
+}
 

@@ -4,7 +4,6 @@ package bouncer
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -90,8 +89,7 @@ func reportStoreMetas(ss []*StoreMeta) {
 		last := storeMetaMap[ss[i].StoreId]
 		if h != last {
 			storeMetaMap[ss[i].StoreId] = h
-			fmt.Fprintf(storeMetaOutBuf,
-				"%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\t%v\n",
+			printTsv(storeMetaOutBuf,
 				ss[i].Timestamp,
 				ss[i].StoreId,
 				ss[i].BikoretNo,
