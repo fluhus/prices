@@ -61,16 +61,13 @@ How to Use
 ### Downloading Price Data
 
 1. Build the executables.
-2. An executable called `prices` should be in the the `bin` folder. The program
-   downloads all files from all known vendors.
-3. Run `prices` without parameters for usage instructions.
+2. Run `bin/prices`. The program downloads all files from all known vendors.
 
 ### Creating the Database
 
 1. Build the executables.
-2. An executable called `items` should be in the the `bin` folder. The program
-   parses XMLs and outputs SQL statements. It can handle XML, GZIP and ZIP
-   files. Use `items` to generate tab-separated table files.
+2. Run `bin/items`. The program parses XML filess and outputs tab-separated
+   text files.
 3. Import the generated files to your database.
 
 

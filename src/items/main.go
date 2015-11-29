@@ -131,17 +131,17 @@ var args struct {
 func parseArgs() error {
 	// Set flags.
 	check := myflag.Bool("check", "c",
-			"Only check files, do not create output tables.", false)
+			"Only check input files, do not create output tables.", false)
 	filesFile := myflag.String("in", "i", "path",
 			"A file that contains a list of input files, one per line.", "")
 	outDir := myflag.String("out", "o", "path",
-			"Output directory.", ".")
+			"Output directory. Default is current.", ".")
 	forceRaw := myflag.Bool("force-raw", "f",
 			"Force parsing of raw files, instead of reading serialized data.",
 			false)
 	serialize := myflag.Bool("serialize", "s",
 			"Create serialized files of parsed data, for faster loading in " +
-			"the next run.",
+			"the next run. Generated files will have the .gobz suffix.",
 			false)
 	
 	// Parse flags.
@@ -236,7 +236,7 @@ func parseFile(file string) error {
 		if args.serialize {
 		err = gobz.Save(file + ".gobz", items)
 			if err != nil {
-				return fmt.Errorf("Error saving gobz: %v", err)
+				return fmt.Errorf("Error serializing: %v", err)
 			}
 		}
 	}
@@ -294,10 +294,15 @@ func fileChainId(file string) string {
 }
 
 var help =
-`Parses XML files for the supermarket prices projects.
+`Parses XML files for the supermarket price project.
+
+Outputs TSV text files to the output directory. Supports XML, ZIP and GZ
+formats. Do not use GOBZ files as input, use their prefix instead.
 
 Usage:
-items [-c] file1 file2 file3 ...
+items [OPTIONS] file1 file2 file3 ...
+or
+items [OPTIONS] -i <file with file-names>
 
 Arguments:`
 
