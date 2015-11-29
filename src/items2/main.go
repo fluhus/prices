@@ -62,24 +62,17 @@ func main() {
 	
 	// Prepare threads.
 	numOfThreads := runtime.NumCPU()
+	fmt.Println("Running on", numOfThreads, "threads.")
 	runtime.GOMAXPROCS(numOfThreads)
 	fileChan := make(chan string, numOfThreads)
 	doneChan := make(chan int, numOfThreads)
 	errChan := make(chan error, numOfThreads)
-	sqlChan := make(chan []byte, numOfThreads)
 	
 	go func() {  // Pushes file names for parsers.
 		for _, file := range args.files {
 			fileChan <- file
 		}
 		close(fileChan)
-	}()
-	
-	go func() {  // Prints generated SQL to stdout.
-		for sql := range sqlChan {
-			fmt.Printf("%s", sql)
-		}
-		doneChan <- 0
 	}()
 	
 	go func() {  // Prints errors to stderr.
@@ -89,21 +82,17 @@ func main() {
 		doneChan <- 0
 	}()
 	
-	// Parse files.
+	// Go over files.
 	for i := 0; i < numOfThreads; i++ {
 		go func() {
 			for file := range fileChan {
-				// Turn file to SQL.
-				sql, err := parseFile(file)
+				err := parseFile(file)
 				if err != nil {
 					errChan <- fmt.Errorf("%v %s", err, file)
 					continue;
 				} else {
 					errChan <- fmt.Errorf("Success %s", file)
 				}
-				
-				// Send SQL.
-				sqlChan <- sql
 			}
 			
 			doneChan <- 0
@@ -116,9 +105,7 @@ func main() {
 	}
 
 	// Wait for printer threads.
-	close(sqlChan)
 	close(errChan)
-	<-doneChan
 	<-doneChan
 }
 
@@ -144,7 +131,7 @@ var args struct {
 func parseArgs() error {
 	// Set flags.
 	check := myflag.Bool("check", "c",
-			"Only check files, do not print SQL statements.", false)
+			"Only check files, do not create output tables.", false)
 	filesFile := myflag.String("in", "i", "path",
 			"A file that contains a list of input files, one per line.", "")
 	outDir := myflag.String("out", "o", "path",
@@ -192,19 +179,18 @@ func parseArgs() error {
 	return nil
 }
 
-// Does the entire processing for a single file. Returns the SQL that should be
-// passed to the database program.
-func parseFile(file string) ([]byte, error) {
+// Does the entire processing for a single file.
+func parseFile(file string) error {
 	// Extract data-type, timestamp and chain-ID.
 	typ := fileType(file)
 	if typ == "" {
-		return nil, fmt.Errorf(
+		return fmt.Errorf(
 				"Could not infer data type (stores/prices/promos).")
 	}
 	
 	tim := fileTimestamp(file)
 	if tim == -1 {
-		return nil, fmt.Errorf("Could not infer timestamp.")
+		return fmt.Errorf("Could not infer timestamp.")
 	}
 	
 	chainId := fileChainId(file)
@@ -221,13 +207,13 @@ func parseFile(file string) ([]byte, error) {
 		// Load input XML.
 		data, err := load(file)
 		if err != nil {
-			return nil, fmt.Errorf("Error reading input: %v", err)
+			return fmt.Errorf("Error reading input: %v", err)
 		}
 		
 		// Make syntax & encoding corrections.
 		data, err = correctXml(data)
 		if err != nil {
-			return nil, fmt.Errorf("Error correcting XML: %v", err)
+			return fmt.Errorf("Error correcting XML: %v", err)
 		}
 		
 		// Parse items.
@@ -240,25 +226,27 @@ func parseFile(file string) ([]byte, error) {
 		// XMLs.
 		items, err = prsr.parse(data, map[string]string{"chain_id":chainId})
 		if err != nil {
-			return nil, fmt.Errorf("Error parsing file: %v", err)
+			return fmt.Errorf("Error parsing file: %v", err)
 		}
 		if len(items) == 0 {
-			return nil, fmt.Errorf("Error parsing file: 0 items found.")
+			return fmt.Errorf("Error parsing file: 0 items found.")
 		}
 		
 		// Save processed file.
 		if args.serialize {
 		err = gobz.Save(file + ".gobz", items)
 			if err != nil {
-				return nil, fmt.Errorf("Error saving gobz: %v", err)
+				return fmt.Errorf("Error saving gobz: %v", err)
 			}
 		}
 	}
 
 	if args.check {
-		return nil, nil
+		return nil
 	}
-	return sqlers[typ](items, tim), nil
+	
+	reporters[typ](items, tim)
+	return nil
 }
 
 // Infers the type of data in the given file. Can be a full path. Returns either

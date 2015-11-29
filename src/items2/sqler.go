@@ -1,36 +1,33 @@
 package main
 
-// Handles transforming of field maps into SQL queries.
+// Reporting layer; converts field-maps to table entries.
 
 // TODO(amit): Needs refactoring. This is no longer an SQL generator.
 
 import (
 	"bouncer"
 	"strings"
+	"sort"
 )
 
-// ----- SQLER TYPE ------------------------------------------------------------
+// ----- REPORTER TYPE ---------------------------------------------------------
 
-// Takes parsed entries from the XMLs and generates SQL queries for them.
+// Takes parsed entries from the XMLs and reports them to the bouncer.
 // The time argument is used for creating timestamps. It should hold the time
 // the data was published, in seconds since 1/1/1970 (Unix time).
-type sqler func(data []map[string]string, time int64) []byte
+type reporter func(data []map[string]string, time int64)
 
-// All available sqlers.
-var sqlers = map[string]sqler{
-	"stores": storesSqler,
-	"prices": pricesSqler,
-	"promos": promosSqler,
+// All available reporters.
+var reporters = map[string]reporter{
+	"stores": storesReporter,
+	"prices": pricesReporter,
+	"promos": promosReporter,
 }
 
-// ----- CONCRETE SQLERS -------------------------------------------------------
+// ----- CONCRETE REPORTERS ----------------------------------------------------
 
-// Insert commands should be performed in batches, since there is a limit
-// on the maximal insert size in SQLite.
-const batchSize = 500
-
-// Creates SQL statements for stores.
-func storesSqler(data []map[string]string, time int64) []byte {
+// Reporter for stores.
+func storesReporter(data []map[string]string, time int64) {
 	data = escapeQuotes(data)
 
 	// Get store-ids.
@@ -64,12 +61,10 @@ func storesSqler(data []map[string]string, time int64) []byte {
 	}
 
 	bouncer.ReportStoreMetas(metas)
-
-	return nil
 }
 
-// Creates SQL statements for prices.
-func pricesSqler(data []map[string]string, time int64) []byte {
+// Reporter for prices.
+func pricesReporter(data []map[string]string, time int64) {
 	data = escapeQuotes(data)
 
 	// Report stores (just to get ids).
@@ -129,16 +124,10 @@ func pricesSqler(data []map[string]string, time int64) []byte {
 	}
 
 	bouncer.ReportPrices(prices)
-
-	return nil
 }
 
-// Creates SQL statements for promos.
-func promosSqler(data []map[string]string, time int64) []byte {
-	if len(data) == 0 {
-		return nil
-	}
-
+// Reporter for promos.
+func promosReporter(data []map[string]string, time int64) {
 	data = escapeQuotes(data)
 
 	// Get store id.
@@ -220,11 +209,11 @@ func promosSqler(data []map[string]string, time int64) []byte {
 				promos[i].GiftItems[j] = gifts[j]
 			}
 		}
+
+		sort.Sort(&itemsAndGifts{ promos[i].ItemIds, promos[i].GiftItems })
 	}
 
 	bouncer.ReportPromos(promos)
-
-	return nil
 }
 
 // ----- OTHER HELPERS ---------------------------------------------------------
@@ -239,5 +228,24 @@ func escapeQuotes(maps []map[string]string) []map[string]string {
 		}
 	}
 	return result
+}
+
+// Sorting interface for item-IDs and corresponding gift field.
+type itemsAndGifts struct {
+	items []int
+	gifts []string
+}
+
+func (iag *itemsAndGifts) Len() int {
+	return len(iag.items)
+}
+
+func (iag *itemsAndGifts) Less(i, j int) bool {
+	return iag.items[i] < iag.items[j]
+}
+
+func (iag *itemsAndGifts) Swap(i, j int) {
+	iag.items[i], iag.items[j] = iag.items[j], iag.items[i]
+	iag.gifts[i], iag.gifts[j] = iag.gifts[j], iag.gifts[i]
 }
 
