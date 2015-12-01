@@ -3,7 +3,7 @@ package main
 // Capturer type, for looking up field values in XML nodes.
 
 import (
-	"myxml"
+	"github.com/fluhus/gostuff/src/xmlnode"
 	"strings"
 )
 
@@ -15,46 +15,36 @@ type capturer struct {
 
 // Returns all nodes (including input) whos tag equals one of this capturer's
 // tags.
-func (c *capturer) findNodes(node *myxml.Node) []*myxml.Node {
-	nodes := &[]*myxml.Node{}
+func (c *capturer) findNodes(node xmlnode.Node) []xmlnode.Node {
+	nodes := &[]xmlnode.Node{}
 	c.findNodesRec(node, nodes)
 	return *nodes
 }
 
 // Recursive function for findNodes.
-func (c *capturer) findNodesRec(node *myxml.Node, nodes *[]*myxml.Node) {
-	// Ignore text nodes.
-	if node.IsText {
-		return
-	}
-	
+func (c *capturer) findNodesRec(node xmlnode.Node, nodes *[]xmlnode.Node) {
 	// Check if current node matches.
 	for _, tag := range c.tags {
-		if node.Tag == tag {
+		if node.TagName() == tag {
 			*nodes = append(*nodes, node)
 			break
 		}
 	}
 	
 	// Search in children.
-	for _, child := range node.Children {
+	for _, child := range node.Children() {
 		c.findNodesRec(child, nodes)
 	}
 }
 
 // Returns the text value of the first node whos tag matches one of this
 // capturer's tags. The boolean return value indicates if such a node was found.
-func (c *capturer) findValue(node *myxml.Node) (string, bool) {
-	// Ignore text nodes.
-	if node.IsText {
-		return "", false
-	}
-	
+func (c *capturer) findValue(node xmlnode.Node) (string, bool) {
 	// Check if current node matches.
 	for _, tag := range c.tags {
-		if node.Tag == tag {
-			if len(node.Children) > 0 {
-				return node.Children[0].Text, true
+		if node.TagName() == tag {
+			if len(node.Children()) > 0 {
+				return node.Children()[0].Text(), true
 			} else {
 				return "", true
 			}
@@ -62,7 +52,7 @@ func (c *capturer) findValue(node *myxml.Node) (string, bool) {
 	}
 	
 	// Search in children.
-	for _, child := range node.Children {
+	for _, child := range node.Children() {
 		text, ok := c.findValue(child)
 		if ok {
 			return text, true
@@ -75,24 +65,19 @@ func (c *capturer) findValue(node *myxml.Node) (string, bool) {
 
 // Returns all nodes (including input) whos tag equals one of this capturer's
 // tags.
-func (c *capturer) findValues(node *myxml.Node) []string {
+func (c *capturer) findValues(node xmlnode.Node) []string {
 	values := &[]string{}
 	c.findValuesRec(node, values)
 	return *values
 }
 
 // Recursive function for findValues.
-func (c *capturer) findValuesRec(node *myxml.Node, values *[]string) {
-	// Ignore text nodes.
-	if node.IsText {
-		return
-	}
-	
+func (c *capturer) findValuesRec(node xmlnode.Node, values *[]string) {
 	// Check if current node matches.
 	for _, tag := range c.tags {
-		if node.Tag == tag {
-			if len(node.Children) > 0 {
-				*values = append(*values, node.Children[0].Text)
+		if node.TagName() == tag {
+			if len(node.Children()) > 0 {
+				*values = append(*values, node.Children()[0].Text())
 			} else {
 				*values = append(*values, "")
 			}
@@ -101,7 +86,7 @@ func (c *capturer) findValuesRec(node *myxml.Node, values *[]string) {
 	}
 	
 	// Search in children.
-	for _, child := range node.Children {
+	for _, child := range node.Children() {
 		c.findValuesRec(child, values)
 	}
 }

@@ -5,7 +5,7 @@ package main
 import (
 	"fmt"
 	"bytes"
-	"myxml"
+	"github.com/fluhus/gostuff/src/xmlnode"
 	"strings"
 	"regexp"
 )
@@ -36,12 +36,12 @@ type parser struct {
 func (p *parser) parse(text []byte, preset map[string]string) (
 		[]map[string]string, error) {
 	// Create XML node.
-	node, err := myxml.Read(bytes.NewBuffer(text))
+	node, err := xmlnode.ReadAll(bytes.NewBuffer(text))
 	if err != nil {
 		return nil, err
 	}
 	
-	tagsToLower(node)
+	node = newLowercaseNode(node)
 
 	// Initialize result.
 	items := p.divider.findNodes(node)
@@ -74,7 +74,7 @@ func (p *parser) parse(text []byte, preset map[string]string) (
 }
 
 // Generates a map from column name to trimmed value, for each capturer.
-func toMap(c []*capturer, node *myxml.Node) map[string]string {
+func toMap(c []*capturer, node xmlnode.Node) map[string]string {
 	result := map[string]string {}
 	for i := range c {
 		value, _ := c[i].findValue(node)
@@ -85,7 +85,7 @@ func toMap(c []*capturer, node *myxml.Node) map[string]string {
 
 // Generates a map from column name to trimmed repeated values, for each
 // capturer. Repeated values are stored in a single string, separated by ';'.
-func toMapRepeated(c []*capturer, node *myxml.Node) map[string]string {
+func toMapRepeated(c []*capturer, node xmlnode.Node) map[string]string {
 	result := map[string]string {}
 	for i := range c {
 		buf := make([]byte, 0)
@@ -154,11 +154,32 @@ func join(m ...map[string]string) map[string]string {
 	return result
 }
 
-// Converts all tag names under (and including) the given node to lowercase.
-func tagsToLower(node *myxml.Node) {
-	node.Tag = strings.ToLower(node.Tag)
-	for _, child := range node.Children {
-		tagsToLower(child)
-	}
+// An XML node with a lowercase tag name. Used to avoid recalculating lowercase
+// tags for case-insensitive matching.
+type lowercaseNode struct {
+	xmlnode.Node
+	tagName string
 }
+
+// Returns the given node tree wrapped by the LowercaseNode decorator. The input
+// tree will be changed.
+func newLowercaseNode(node xmlnode.Node) xmlnode.Node {
+	children := node.Children()
+	for i := range children {
+		children[i] = newLowercaseNode(children[i])
+	}
+	
+	lower := strings.ToLower(node.TagName())
+	if node.TagName() == lower {
+		return node
+	}
+	
+	return &lowercaseNode {node, lower}
+}
+
+// Override TagName with lowercase variant.
+func (n *lowercaseNode) TagName() string {
+	return n.tagName
+}
+
 
