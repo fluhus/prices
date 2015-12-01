@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"myxml"
 	"strings"
+	"regexp"
 )
 
 // Parses entire XML files and returns maps that map each required field to its
@@ -77,7 +78,7 @@ func toMap(c []*capturer, node *myxml.Node) map[string]string {
 	result := map[string]string {}
 	for i := range c {
 		value, _ := c[i].findValue(node)
-		result[c[i].column] = trim(value)
+		result[c[i].column] = cleanFieldValue(value)
 	}
 	return result
 }
@@ -91,10 +92,10 @@ func toMapRepeated(c []*capturer, node *myxml.Node) map[string]string {
 		values := c[i].findValues(node)
 		for _, value := range values {
 			if len(buf) == 0 {
-				buf = append(buf, trim(value)...)
+				buf = append(buf, cleanFieldValue(value)...)
 			} else {
 				buf = append(buf, ';')
-				buf = append(buf, trim(value)...)
+				buf = append(buf, cleanFieldValue(value)...)
 			}
 		}
 		result[c[i].column] = string(buf)
@@ -124,10 +125,19 @@ func findMissing(m map[string]string) error {
 	}
 }
 
-// Trims whitespaces from a given string.
-func trim(s string) string {
-	return strings.Trim(s, " \t\n\r")
+// Removes non visible ascii and non aleph-bet characters from the given string,
+// replacing them with spaces. Each sequence of those will become a single
+// whitespace.
+// Also trims whitespaces from the beginning and end of the string.
+func cleanFieldValue(s string) string {
+	// TODO(amit): Move unreadable character handling to correctxml.go.
+	return unreadableCharsRegexp.ReplaceAllString(strings.Trim(s, " \t\n\r"),
+			" ")
 }
+
+// Characters to replace with a single space. Includes whitespaces and
+// non-visible ascii/Hebrew characters.
+var unreadableCharsRegexp = regexp.MustCompile("(\\s|[^ -~א-ת])+")
 
 // Returns a unified map that contains the entries from all maps. Overlaps
 // will have the last value encountered. Empty string values are ignored. The
