@@ -3,14 +3,14 @@ package main
 // Concrete parsers for parsing XML files.
 
 // Maps a textual parser type to a parser.
-var parsers = map[string]*parser {
+var parsers = map[string]*parser{
 	"prices": pricesParser,
 	"stores": storesParser,
 	"promos": promosParser,
 }
 
 // Parses price files.
-var pricesParser = &parser {
+var pricesParser = &parser{
 	newCapturer("", "Item", "Product"),
 	newCapturers(
 		":chain_id", "ChainId",
@@ -41,7 +41,7 @@ var pricesParser = &parser {
 }
 
 // Parses store files.
-var storesParser = &parser {
+var storesParser = &parser{
 	newCapturer("", "Store"),
 	newCapturers(
 		":chain_id", "ChainId",
@@ -66,7 +66,7 @@ var storesParser = &parser {
 }
 
 // Parses promo files.
-var promosParser = &parser {
+var promosParser = &parser{
 	newCapturer("", "Promotion", "Sale"),
 	newCapturers(
 		":chain_id", "ChainId",
@@ -105,4 +105,3 @@ var promosParser = &parser {
 		":is_gift_item", "IsGiftItem",
 	),
 }
-

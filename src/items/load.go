@@ -3,13 +3,13 @@ package main
 // An interface for loading data from various file types.
 
 import (
-	"fmt"
 	"archive/zip"
-	"strings"
-	"os"
 	"bufio"
 	"compress/gzip"
+	"fmt"
 	"io/ioutil"
+	"os"
+	"strings"
 )
 
 // Loads data from a file, and decompresses if it is a gzip or a zip.
@@ -32,7 +32,7 @@ func load(file string) ([]byte, error) {
 			return nil, err
 		}
 		return data, nil
-	
+
 	// Zip.
 	case strings.HasSuffix(file, ".zip"):
 		z, err := zip.OpenReader(file)
@@ -40,8 +40,8 @@ func load(file string) ([]byte, error) {
 			return nil, err
 		}
 		if len(z.File) != 1 {
-			return nil, fmt.Errorf("Zip should have 1 file, but has %d " +
-					"instead.", len(z.File))
+			return nil, fmt.Errorf("Zip should have 1 file, but has %d "+
+				"instead.", len(z.File))
 		}
 		f, err := z.File[0].Open()
 		if err != nil {
@@ -53,7 +53,7 @@ func load(file string) ([]byte, error) {
 			return nil, err
 		}
 		return data, nil
-	
+
 	// Plain text.
 	default:
 		f, err := os.Open(file)
@@ -69,4 +69,3 @@ func load(file string) ([]byte, error) {
 		return data, nil
 	}
 }
-

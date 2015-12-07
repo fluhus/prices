@@ -2,19 +2,19 @@
 package main
 
 import (
-	"os"
+	"bouncer"
 	"fmt"
+	"github.com/fluhus/gostuff/ezpprof"
+	"github.com/fluhus/gostuff/gobz"
+	"io/ioutil"
 	"myflag"
-	"strings"
+	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
-	"time"
 	"runtime"
-	"io/ioutil"
-	"github.com/fluhus/gostuff/ezpprof"
-	"bouncer"
-	"github.com/fluhus/gostuff/gobz"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // Determines whether CPU profiling should be performed.
@@ -35,7 +35,7 @@ func main() {
 		pe(myflag.Help())
 		os.Exit(1)
 	}
-	
+
 	// Start profiling?
 	if profileCpu {
 		ezpprof.Start(filepath.Join(args.outDir, "items.cpu.pprof"))
@@ -45,15 +45,15 @@ func main() {
 		defer func() {
 			runtime.GC()
 			ezpprof.Heap(filepath.Join(args.outDir, "items.mem.pprof"))
-		} ()
+		}()
 	}
-	
+
 	// Init bouncer.
 	if !args.check {
 		bouncer.Initialize(args.outDir)
 		defer bouncer.Finalize()
 	}
-	
+
 	// Prepare threads.
 	numOfThreads := runtime.NumCPU()
 	fmt.Println("Running on", numOfThreads, "threads.")
@@ -61,21 +61,21 @@ func main() {
 	fileChan := make(chan string, numOfThreads)
 	doneChan := make(chan int, numOfThreads)
 	errChan := make(chan error, numOfThreads)
-	
-	go func() {  // Pushes file names for parsers.
+
+	go func() { // Pushes file names for parsers.
 		for _, file := range args.files {
 			fileChan <- file
 		}
 		close(fileChan)
 	}()
-	
-	go func() {  // Prints errors to stderr.
+
+	go func() { // Prints errors to stderr.
 		for err := range errChan {
 			pe(err)
 		}
 		doneChan <- 0
 	}()
-	
+
 	// Go over files.
 	for i := 0; i < numOfThreads; i++ {
 		go func() {
@@ -83,16 +83,16 @@ func main() {
 				err := parseFile(file)
 				if err != nil {
 					errChan <- fmt.Errorf("%v %s", err, file)
-					continue;
+					continue
 				} else {
 					errChan <- fmt.Errorf("Success %s", file)
 				}
 			}
-			
+
 			doneChan <- 0
 		}()
 	}
-	
+
 	// Wait for parser threads to finish.
 	for i := 0; i < numOfThreads; i++ {
 		<-doneChan
@@ -114,30 +114,30 @@ func pef(s string, a ...interface{}) {
 }
 
 var args struct {
-	files []string
-	check bool
-	outDir string
-	forceRaw bool
+	files     []string
+	check     bool
+	outDir    string
+	forceRaw  bool
 	serialize bool
-	help bool
+	help      bool
 }
 
 func parseArgs() error {
 	// Set flags.
 	check := myflag.Bool("check", "c",
-			"Only check input files, do not create output tables.", false)
+		"Only check input files, do not create output tables.", false)
 	filesFile := myflag.String("in", "i", "path",
-			"A file that contains a list of input files, one per line.", "")
+		"A file that contains a list of input files, one per line.", "")
 	outDir := myflag.String("out", "o", "path",
-			"Output directory. Default is current.", ".")
+		"Output directory. Default is current.", ".")
 	forceRaw := myflag.Bool("force-raw", "f",
-			"Force parsing of raw files, instead of reading serialized data.",
-			false)
+		"Force parsing of raw files, instead of reading serialized data.",
+		false)
 	serialize := myflag.Bool("serialize", "s",
-			"Create serialized files of parsed data, for faster loading in " +
+		"Create serialized files of parsed data, for faster loading in "+
 			"the next run. Generated files will have the .gobz suffix.",
-			false)
-	
+		false)
+
 	// Parse flags.
 	err := myflag.Parse()
 	if err != nil {
@@ -147,29 +147,29 @@ func parseArgs() error {
 		args.help = true
 		return nil
 	}
-	
+
 	args.outDir = *outDir
 	args.check = *check
 	args.forceRaw = *forceRaw
 	args.serialize = *serialize
 	args.files = myflag.Args()
-	
+
 	// Get file list from file.
 	if *filesFile != "" {
 		text, err := ioutil.ReadFile(*filesFile)
 		if err != nil {
 			return fmt.Errorf("Error reading file-list: %v", err)
 		}
-		
+
 		if len(text) > 0 {
 			args.files = strings.Split(string(text), "\n")
 		}
 	}
-	
+
 	if len(args.files) == 0 {
 		return fmt.Errorf("No input files supplied.")
 	}
-	
+
 	return nil
 }
 
@@ -179,23 +179,23 @@ func parseFile(file string) error {
 	typ := fileType(file)
 	if typ == "" {
 		return fmt.Errorf(
-				"Could not infer data type (stores/prices/promos).")
+			"Could not infer data type (stores/prices/promos).")
 	}
-	
+
 	tim := fileTimestamp(file)
 	if tim == -1 {
 		return fmt.Errorf("Could not infer timestamp.")
 	}
-	
+
 	chainId := fileChainId(file)
-	
+
 	// Attempt to read an already serialized file.
 	var items []map[string]string
 	var err error
 	if !args.forceRaw {
-		err = gobz.Load(file + ".gobz", &items)
+		err = gobz.Load(file+".gobz", &items)
 	}
-	
+
 	// Parse raw file.
 	if args.forceRaw || err != nil {
 		// Load input XML.
@@ -203,32 +203,32 @@ func parseFile(file string) error {
 		if err != nil {
 			return fmt.Errorf("Error reading input: %v", err)
 		}
-		
+
 		// Make syntax & encoding corrections.
 		data, err = correctXml(data)
 		if err != nil {
 			return fmt.Errorf("Error correcting XML: %v", err)
 		}
-		
+
 		// Parse items.
 		prsr := parsers[typ]
 		if prsr == nil {
 			panic("Nil parser for type '" + typ + "'.")
 		}
-		
+
 		// Passing chain-ID because Co-Op don't include that field in their
 		// XMLs.
-		items, err = prsr.parse(data, map[string]string{"chain_id":chainId})
+		items, err = prsr.parse(data, map[string]string{"chain_id": chainId})
 		if err != nil {
 			return fmt.Errorf("Error parsing file: %v", err)
 		}
 		if len(items) == 0 {
 			return fmt.Errorf("Error parsing file: 0 items found.")
 		}
-		
+
 		// Save processed file.
 		if args.serialize {
-		err = gobz.Save(file + ".gobz", items)
+			err = gobz.Save(file+".gobz", items)
 			if err != nil {
 				return fmt.Errorf("Error serializing: %v", err)
 			}
@@ -238,7 +238,7 @@ func parseFile(file string) error {
 	if args.check {
 		return nil
 	}
-	
+
 	reporters[typ](items, tim)
 	return nil
 }
@@ -271,8 +271,8 @@ func fileTimestamp(file string) int64 {
 	hour, _ := strconv.ParseInt(match[1][8:10], 10, 64)
 	minute, _ := strconv.ParseInt(match[1][10:12], 10, 64)
 	t := time.Date(int(year), time.Month(month), int(day), int(hour),
-			int(minute), 0, 0, time.UTC)
-	
+		int(minute), 0, 0, time.UTC)
+
 	return t.Unix()
 }
 
@@ -283,12 +283,11 @@ func fileChainId(file string) string {
 	if match == nil || len(match[1]) != 13 {
 		return ""
 	}
-	
+
 	return match[1]
 }
 
-var help =
-`Parses XML files for the supermarket price project.
+var help = `Parses XML files for the supermarket price project.
 
 Outputs TSV text files to the output directory. Supports XML, ZIP and GZ
 formats. Do not use GOBZ files as input, use their prefix instead.
@@ -299,7 +298,3 @@ or
 items [OPTIONS] -i <file with file-names>
 
 Arguments:`
-
-
-
-

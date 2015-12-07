@@ -4,8 +4,8 @@ package main
 
 import (
 	"bouncer"
-	"strings"
 	"sort"
+	"strings"
 )
 
 // ----- REPORTER TYPE ---------------------------------------------------------
@@ -208,7 +208,7 @@ func promosReporter(data []map[string]string, time int64) {
 			}
 		}
 
-		sort.Sort(&itemsAndGifts{ promos[i].ItemIds, promos[i].GiftItems })
+		sort.Sort(&itemsAndGifts{promos[i].ItemIds, promos[i].GiftItems})
 	}
 
 	bouncer.ReportPromos(promos)
@@ -246,4 +246,3 @@ func (iag *itemsAndGifts) Swap(i, j int) {
 	iag.items[i], iag.items[j] = iag.items[j], iag.items[i]
 	iag.gifts[i], iag.gifts[j] = iag.gifts[j], iag.gifts[i]
 }
-

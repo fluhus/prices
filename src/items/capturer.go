@@ -10,7 +10,7 @@ import (
 // Looks up field values in XML nodes.
 type capturer struct {
 	column string
-	tags []string
+	tags   []string
 }
 
 // Returns all nodes (including input) whos tag equals one of this capturer's
@@ -30,7 +30,7 @@ func (c *capturer) findNodesRec(node xmlnode.Node, nodes *[]xmlnode.Node) {
 			break
 		}
 	}
-	
+
 	// Search in children.
 	for _, child := range node.Children() {
 		c.findNodesRec(child, nodes)
@@ -50,7 +50,7 @@ func (c *capturer) findValue(node xmlnode.Node) (string, bool) {
 			}
 		}
 	}
-	
+
 	// Search in children.
 	for _, child := range node.Children() {
 		text, ok := c.findValue(child)
@@ -58,7 +58,7 @@ func (c *capturer) findValue(node xmlnode.Node) (string, bool) {
 			return text, true
 		}
 	}
-	
+
 	// Not found. :(
 	return "", false
 }
@@ -84,7 +84,7 @@ func (c *capturer) findValuesRec(node xmlnode.Node, values *[]string) {
 			break
 		}
 	}
-	
+
 	// Search in children.
 	for _, child := range node.Children() {
 		c.findValuesRec(child, values)
@@ -99,8 +99,8 @@ func newCapturer(column string, tags ...string) *capturer {
 	for i := range tags {
 		newTags[i] = strings.ToLower(tags[i])
 	}
-	
-	return &capturer {
+
+	return &capturer{
 		newColumn,
 		newTags,
 	}
@@ -114,34 +114,31 @@ func newCapturers(colsTags ...string) []*capturer {
 	if len(colsTags) == 0 {
 		return nil
 	}
-	
+
 	// Check that first element is a column name.
 	if !strings.HasPrefix(colsTags[0], ":") {
 		panic("First element must be a column name (begin with a colon).")
 	}
-	
+
 	result := []*capturer{}
 	lastColumn := 0
-	
+
 	for i, s := range colsTags {
 		if strings.HasPrefix(s, ":") && i > 0 {
 			result = append(result, newCapturer(
 				colsTags[lastColumn][1:],
-				colsTags[lastColumn + 1 : i]...,
+				colsTags[lastColumn+1:i]...,
 			))
-			
+
 			lastColumn = i
 		}
 	}
-	
+
 	// Add last element.
 	result = append(result, newCapturer(
 		colsTags[lastColumn][1:],
-		colsTags[lastColumn + 1 : len(colsTags)]...,
+		colsTags[lastColumn+1:len(colsTags)]...,
 	))
-	
+
 	return result
 }
-
-
-
