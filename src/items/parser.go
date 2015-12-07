@@ -5,7 +5,7 @@ package main
 import (
 	"fmt"
 	"bytes"
-	"github.com/fluhus/gostuff/src/xmlnode"
+	"github.com/fluhus/gostuff/xmlnode"
 	"strings"
 	"regexp"
 )

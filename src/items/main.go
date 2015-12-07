@@ -12,10 +12,9 @@ import (
 	"time"
 	"runtime"
 	"io/ioutil"
-	"mypprof"
-	"runtime/pprof"
+	"github.com/fluhus/gostuff/ezpprof"
 	"bouncer"
-	"gobz"
+	"github.com/fluhus/gostuff/gobz"
 )
 
 // Determines whether CPU profiling should be performed.
@@ -39,18 +38,13 @@ func main() {
 	
 	// Start profiling?
 	if profileCpu {
-		mypprof.Start(filepath.Join(args.outDir, "items.cpu.pprof"))
-		defer mypprof.Stop()
+		ezpprof.Start(filepath.Join(args.outDir, "items.cpu.pprof"))
+		defer ezpprof.Stop()
 	}
 	if profileMem {
 		defer func() {
 			runtime.GC()
-			f, err := os.Create(filepath.Join(args.outDir, "items.mem.pprof"))
-			if err != nil {
-				return
-			}
-			pprof.WriteHeapProfile(f)
-			f.Close()
+			ezpprof.Heap(filepath.Join(args.outDir, "items.mem.pprof"))
 		} ()
 	}
 	

@@ -3,7 +3,7 @@ package main
 // Capturer type, for looking up field values in XML nodes.
 
 import (
-	"github.com/fluhus/gostuff/src/xmlnode"
+	"github.com/fluhus/gostuff/xmlnode"
 	"strings"
 )
 
