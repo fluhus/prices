@@ -197,7 +197,8 @@ func parseFile(file string) error {
 	}
 
 	// Parse raw file.
-	if args.forceRaw || err != nil {
+	if args.forceRaw || err != nil || len(items) == 0 ||
+		items[0]["version"] != parserVersion {
 		// Load input XML.
 		data, err := load(file)
 		if err != nil {
@@ -222,7 +223,7 @@ func parseFile(file string) error {
 		if err != nil {
 			return fmt.Errorf("Error parsing file: %v", err)
 		}
-		if len(items) == 0 {
+		if len(items) <= 1 { // Only version item, no other data.
 			return fmt.Errorf("Error parsing file: 0 items found.")
 		}
 
@@ -239,7 +240,7 @@ func parseFile(file string) error {
 		return nil
 	}
 
-	reporters[typ](items, tim)
+	reporters[typ](items[1:], tim) // Skip version item.
 	return nil
 }
 

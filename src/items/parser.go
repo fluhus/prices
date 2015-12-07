@@ -10,6 +10,11 @@ import (
 	"strings"
 )
 
+// Version of the parser, to detect data that were parsed with an outdated
+// parser so they can be reprocessed. For readability, the version is the time
+// when the parser was last modified.
+const parserVersion = "7/12/2015 13:30"
+
 // Parses entire XML files and returns maps that map each required field to its
 // value.
 type parser struct {
@@ -33,6 +38,11 @@ type parser struct {
 // even those with no values. Returns an error if a mandatory value is missing.
 // The preset argument contains preset values for fields, in case they are not
 // found in the data. If they are found, the values in the data will be used.
+//
+// The first element in the output slice (if no error), is a version item
+// which contains a single key "version" which points to the current parser
+// version. This element contains no other data, so the actual data is in
+// result[1:].
 func (p *parser) parse(text []byte, preset map[string]string) (
 	[]map[string]string, error) {
 	// Create XML node.
@@ -45,7 +55,8 @@ func (p *parser) parse(text []byte, preset map[string]string) (
 
 	// Initialize result.
 	items := p.divider.findNodes(node)
-	result := make([]map[string]string, len(items))
+	result := make([]map[string]string, len(items)+1)
+	result[0] = map[string]string{"version": parserVersion}
 
 	// Handle global fields.
 	globals := join(preset, toMap(p.globalFields, node))
@@ -67,7 +78,7 @@ func (p *parser) parse(text []byte, preset map[string]string) (
 		optional := toMap(p.optionalFields, items[i])
 		repeated := toMapRepeated(p.repeatedFields, items[i])
 
-		result[i] = join(globals, mandatory, optional, repeated)
+		result[i+1] = join(globals, mandatory, optional, repeated)
 	}
 
 	return result, nil
