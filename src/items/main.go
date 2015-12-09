@@ -5,7 +5,6 @@ import (
 	"bouncer"
 	"fmt"
 	"github.com/fluhus/gostuff/ezpprof"
-	"github.com/fluhus/gostuff/gobz"
 	"io/ioutil"
 	"myflag"
 	"os"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"io"
+	"serializer"
 )
 
 // Determines whether CPU profiling should be performed.
@@ -56,8 +57,8 @@ func main() {
 
 	// Prepare threads.
 	numOfThreads := runtime.NumCPU()
+	if numOfThreads > 16 { numOfThreads = 16 }
 	fmt.Println("Running on", numOfThreads, "threads.")
-	runtime.GOMAXPROCS(numOfThreads)
 	fileChan := make(chan string, numOfThreads)
 	doneChan := make(chan int, numOfThreads)
 	errChan := make(chan error, numOfThreads)
@@ -76,11 +77,11 @@ func main() {
 		doneChan <- 0
 	}()
 
-	// Go over files.
+	// Start parser threads.
 	for i := 0; i < numOfThreads; i++ {
 		go func() {
 			for file := range fileChan {
-				err := parseFile(file)
+				err := processFile(file)
 				if err != nil {
 					errChan <- fmt.Errorf("%v %s", err, file)
 					continue
@@ -118,7 +119,6 @@ var args struct {
 	check     bool
 	outDir    string
 	forceRaw  bool
-	serialize bool
 	help      bool
 }
 
@@ -132,10 +132,6 @@ func parseArgs() error {
 		"Output directory. Default is current.", ".")
 	forceRaw := myflag.Bool("force-raw", "f",
 		"Force parsing of raw files, instead of reading serialized data.",
-		false)
-	serialize := myflag.Bool("serialize", "s",
-		"Create serialized files of parsed data, for faster loading in "+
-			"the next run. Generated files will have the .gobz suffix.",
 		false)
 
 	// Parse flags.
@@ -151,7 +147,6 @@ func parseArgs() error {
 	args.outDir = *outDir
 	args.check = *check
 	args.forceRaw = *forceRaw
-	args.serialize = *serialize
 	args.files = myflag.Args()
 
 	// Get file list from file.
@@ -174,7 +169,7 @@ func parseArgs() error {
 }
 
 // Does the entire processing for a single file.
-func parseFile(file string) error {
+func processFile(file string) error {
 	// Extract data-type, timestamp and chain-ID.
 	typ := fileType(file)
 	if typ == "" {
@@ -182,66 +177,96 @@ func parseFile(file string) error {
 			"Could not infer data type (stores/prices/promos).")
 	}
 
+	// TODO(amit): Move timestamp to the data map.
 	tim := fileTimestamp(file)
 	if tim == -1 {
 		return fmt.Errorf("Could not infer timestamp.")
 	}
 
-	chainId := fileChainId(file)
-
 	// Attempt to read an already serialized file.
-	var items []map[string]string
+	var r reporter
+	if !args.check {
+		r = reporters[typ]
+	}
+
 	var err error
 	if !args.forceRaw {
-		err = gobz.Load(file+".gobz", &items)
+		err = reportSerializedFile(file + ".items", r, tim)
 	}
 
 	// Parse raw file.
-	if args.forceRaw || err != nil || len(items) == 0 ||
-		items[0]["version"] != parserVersion {
-		// Load input XML.
-		data, err := load(file)
+	if args.forceRaw || err != nil {
+		err = parseFile(file, parsers[typ])
 		if err != nil {
-			return fmt.Errorf("Error reading input: %v", err)
-		}
-
-		// Make syntax & encoding corrections.
-		data, err = correctXml(data)
-		if err != nil {
-			return fmt.Errorf("Error correcting XML: %v", err)
-		}
-
-		// Parse items.
-		prsr := parsers[typ]
-		if prsr == nil {
-			panic("Nil parser for type '" + typ + "'.")
-		}
-
-		// Passing chain-ID because Co-Op don't include that field in their
-		// XMLs.
-		items, err = prsr.parse(data, map[string]string{"chain_id": chainId})
-		if err != nil {
-			return fmt.Errorf("Error parsing file: %v", err)
-		}
-		if len(items) <= 1 { // Only version item, no other data.
-			return fmt.Errorf("Error parsing file: 0 items found.")
-		}
-
-		// Save processed file.
-		if args.serialize {
-			err = gobz.Save(file+".gobz", items)
-			if err != nil {
-				return fmt.Errorf("Error serializing: %v", err)
-			}
+			return err
 		}
 	}
 
-	if args.check {
-		return nil
+	return reportSerializedFile(file + ".items", r, tim)
+}
+
+// Parses a raw data file and serializes the result.
+func parseFile(file string, prsr *parser) error {
+	// Load input XML.
+	data, err := load(file)
+	if err != nil {
+		return fmt.Errorf("Error reading raw file: %v", err)
 	}
 
-	reporters[typ](items[1:], tim) // Skip version item.
+	// Make syntax & encoding corrections.
+	data = correctXml(data)
+
+	// Passing chain-ID because Co-Op don't include that field in their
+	// XMLs.
+	chainId := fileChainId(file)
+	items, err := prsr.parse(data, map[string]string{"chain_id": chainId})
+	if err != nil {
+		return fmt.Errorf("Error parsing file: %v", err)
+	}
+	if len(items) <= 1 { // Only version item, no other data.
+		return fmt.Errorf("Error parsing file: 0 items found.")
+	}
+
+	// Save processed file.
+	meta := map[string]string{"version":parserVersion}
+	items = append([]map[string]string{meta}, items...)
+		
+	err = serializer.Serialize(file + ".items", items)
+	if err != nil {
+		return fmt.Errorf("Error serializing: %v", err)
+	}
+	
 	return nil
+}
+
+// Reads a serialized file and reports it to the given reporter. If reporter
+// is nil, reads without reporting (for check mode).
+func reportSerializedFile(file string, r reporter, tim int64) error {
+	d := serializer.NewDeserializer(file);
+	
+	// Read metadata.
+	meta := d.Next()
+	if meta == nil {
+		return d.Err()
+	}
+	if meta["version"] != parserVersion {
+		return fmt.Errorf("Mismatching parser version: expected '%s' actual '%s'.",
+			parserVersion, meta["version"])
+	}
+	
+	// Go over items.
+	for item := d.Next(); item != nil; item = d.Next() {
+		if r != nil {
+			r([]map[string]string{item}, tim)
+		}
+	}
+	
+	// EOF is sababa, but other errors should be reported.
+	if d.Err() == io.EOF {
+		return nil
+	} else {
+		return d.Err()
+	}
 }
 
 // Infers the type of data in the given file. Can be a full path. Returns either
@@ -288,10 +313,14 @@ func fileChainId(file string) string {
 	return match[1]
 }
 
+// TODO(amit): Consider moving arguments and help message to a separate file.
+// Help message to display.
 var help = `Parses XML files for the supermarket price project.
 
 Outputs TSV text files to the output directory. Supports XML, ZIP and GZ
-formats. Do not use GOBZ files as input, use their prefix instead.
+formats. Also generates for each input file an intermediate data file with
+the '.items' suffix. DO NOT USE THESE FILES AS INPUT. Use the standard data
+files and the program will automatically read the intermediate if it can.
 
 Usage:
 items [OPTIONS] file1 file2 file3 ...
@@ -299,3 +328,5 @@ or
 items [OPTIONS] -i <file with file-names>
 
 Arguments:`
+
+

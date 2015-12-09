@@ -14,6 +14,7 @@ import (
 // The time argument is used for creating timestamps. It should hold the time
 // the data was published, in seconds since 1/1/1970 (Unix time).
 type reporter func(data []map[string]string, time int64)
+// TODO(amit): Make all reporters receive a single map.
 
 // All available reporters.
 var reporters = map[string]reporter{

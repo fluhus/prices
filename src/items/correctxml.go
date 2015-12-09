@@ -10,14 +10,14 @@ import (
 
 // Converts the given XML to utf-8, and corrects some syntax errors that the
 // publishers make.
-func correctXml(text []byte) ([]byte, error) {
+func correctXml(text []byte) []byte {
 	text = correctEncodingToUtf8(text)
 	text = correctGibberish(text)
 	text = correctUnquotedAttrs(text)
 	text = correctEncodingField(text)
 	text = correctAmpersands(text)
 
-	return text, nil
+	return text
 }
 
 // Encodes the given text in UTF-8.
