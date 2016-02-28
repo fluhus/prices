@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"golang.org/x/net/html/charset"
 	"io/ioutil"
 )
@@ -22,7 +23,11 @@ func correctXml(text []byte) []byte {
 
 // Encodes the given text in UTF-8.
 func correctEncodingToUtf8(text []byte) []byte {
-	r, _ := charset.NewReader(bytes.NewBuffer(text), "application/xml")
+	r, err := charset.NewReader(bytes.NewBuffer(text), "application/xml")
+	if err != nil {
+		fmt.Println("Error converting encoding:", err)
+		return nil
+	}
 	text, _ = ioutil.ReadAll(r)
 	return text
 }
