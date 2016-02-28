@@ -1,15 +1,16 @@
 package main
 
 import (
-	"aggregators"
 	"time"
 	"runtime"
 	"log"
 	"fmt"
 	"bufio"
-	"myflag"
 	"os"
 	"path/filepath"
+	
+	"github.com/fluhus/prices/aggregators"
+	"github.com/fluhus/prices/myflag"
 )
 
 func main() {
