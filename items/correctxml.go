@@ -5,8 +5,9 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"golang.org/x/net/html/charset"
 	"io/ioutil"
+
+	"golang.org/x/net/html/charset"
 )
 
 // Converts the given XML to utf-8, and corrects some syntax errors that the

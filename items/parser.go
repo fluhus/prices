@@ -5,9 +5,10 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/fluhus/gostuff/xmlnode"
 	"regexp"
 	"strings"
+	
+	"github.com/fluhus/gostuff/xmlnode"
 )
 
 // Version of the parser, to detect data that were parsed with an outdated

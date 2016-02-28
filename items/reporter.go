@@ -3,9 +3,10 @@ package main
 // Reporting layer; converts field-maps to table entries.
 
 import (
-	"bouncer"
 	"sort"
 	"strings"
+	
+	"github.com/fluhus/prices/bouncer"
 )
 
 // ----- REPORTER TYPE ---------------------------------------------------------

@@ -2,11 +2,8 @@
 package main
 
 import (
-	"bouncer"
 	"fmt"
-	"github.com/fluhus/gostuff/ezpprof"
 	"io/ioutil"
-	"myflag"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -15,7 +12,11 @@ import (
 	"strings"
 	"time"
 	"io"
-	"serializer"
+	
+	"github.com/fluhus/gostuff/ezpprof"
+	"github.com/fluhus/prices/bouncer"
+	"github.com/fluhus/prices/myflag"
+	"github.com/fluhus/prices/serializer"
 )
 
 // Determines whether CPU profiling should be performed.
