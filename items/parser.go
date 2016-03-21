@@ -14,7 +14,7 @@ import (
 // Version of the parser, to detect data that were parsed with an outdated
 // parser so they can be reprocessed. For readability and uniqueness, the
 // version is the time when the parser was last modified.
-const parserVersion = "8/12/2015 16:30"
+const parserVersion = "20/3/2016 13:00"
 
 // Parses entire XML files and returns maps that map each required field to its
 // value.

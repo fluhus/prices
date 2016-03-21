@@ -42,20 +42,20 @@ var pricesParser = &parser{
 
 // Parses store files.
 var storesParser = &parser{
-	newCapturer("", "Store"),
+	newCapturer("", "Store", "Branch"),
 	newCapturers(
 		":chain_id", "ChainId",
 	),
 	newCapturers(
-		":subchain_id", "SubchainId",
 		":store_id", "StoreId",
-		":bikoret_no", "BikoretNo",
-		":store_type", "StoreType",
+	),
+	newCapturers(
+		":subchain_id", "SubchainId",
 		":chain_name", "ChainName",
 		":subchain_name", "SubchainName",
 		":store_name", "StoreName",
-	),
-	newCapturers(
+		":bikoret_no", "BikoretNo",
+		":store_type", "StoreType",
 		":address", "Address",
 		":city", "City",
 		":zip_code", "ZipCode",

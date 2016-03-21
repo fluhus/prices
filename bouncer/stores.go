@@ -86,7 +86,7 @@ func makeStoreId(s *Store) int {
 	stores = append(stores, s)
 
 	printTsv(storesOutBuf,
-		result+1,
+		result,
 		s.ChainId,
 		s.SubchainId,
 		s.ReportedStoreId)
