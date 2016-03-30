@@ -224,7 +224,7 @@ func parseFile(file string, prsr *parser) error {
 	if err != nil {
 		return fmt.Errorf("Error parsing file: %v", err)
 	}
-	if len(items) <= 1 { // Only version item, no other data.
+	if len(items) == 0 {
 		return fmt.Errorf("Error parsing file: 0 items found.")
 	}
 

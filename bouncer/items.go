@@ -86,7 +86,7 @@ func makeItemId(i *Item) int {
 	itemsMap[h] = append(itemsMap[h], result)
 	items = append(items, i)
 
-	printTsv(itemsOutBuf, result+1, i.ItemType, i.ItemCode, i.ChainId)
+	printTsv(itemsOutBuf, result, i.ItemType, i.ItemCode, i.ChainId)
 
 	return result
 }
