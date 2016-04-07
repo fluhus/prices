@@ -22,6 +22,12 @@ func initItems() {
 	itemsToken <- 0
 
 	itemsMap = map[int][]int{}
+	if _, ok := persistenceData["items"]; ok {
+		items = persistenceData["items"].([]*Item)
+	}
+	if _, ok := persistenceData["itemsMap"]; ok {
+		itemsMap = persistenceData["itemsMap"].(map[int][]int)
+	}
 
 	var err error
 	itemsOut, err = os.Create(filepath.Join(outDir, "items.txt"))
@@ -35,6 +41,9 @@ func initItems() {
 func finalizeItems() {
 	itemsOutBuf.Flush()
 	itemsOut.Close()
+
+	persistenceData["items"] = items
+	persistenceData["itemsMap"] = itemsMap
 }
 
 // A single entry in the 'items' table.
