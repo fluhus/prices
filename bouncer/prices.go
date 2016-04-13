@@ -97,4 +97,3 @@ func reportPrices(ps []*Price) {
 		}
 	}
 }
-

@@ -13,8 +13,7 @@ var (
 	storeMetaOut    *os.File          // Output file.
 	storeMetaOutBuf *bufio.Writer     // Output buffer.
 	storeMetaChan   chan []*StoreMeta // Used for reporting store-metas.
-	storeMetaDone   chan int          // Indicates when meta reporting is
-	                                  // finished.
+	storeMetaDone   chan int          // Indicates when meta reporting is finished.
 	storeMetaMap    map[int]int       // Maps StoreId to hash.
 )
 
@@ -106,4 +105,3 @@ func reportStoreMetas(ss []*StoreMeta) {
 		}
 	}
 }
-

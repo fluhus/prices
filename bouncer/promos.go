@@ -202,7 +202,7 @@ func reportPromos(ps []*Promo) {
 			} else {
 				for i := range p.ItemIds {
 					printTsv(promosItemsOutBuf, last.id, p.ItemIds[i],
-							p.GiftItems[i])
+						p.GiftItems[i])
 				}
 			}
 

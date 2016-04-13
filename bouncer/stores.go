@@ -93,4 +93,3 @@ func makeStoreId(s *Store) int {
 
 	return result
 }
-

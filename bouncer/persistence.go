@@ -3,18 +3,18 @@ package bouncer
 // Handles state persistence for different runs.
 
 import (
-	"path/filepath"
 	"encoding/json"
-	"io/ioutil"
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 // Keeps state for continuing a previous run.
 type stateType struct {
-	Items []*Item
-	ItemsMap map[string][]int
-	ItemMetaMap    map[string][]*itemMetaId
+	Items       []*Item
+	ItemsMap    map[string][]int
+	ItemMetaMap map[string][]*itemMetaId
 }
 
 // Current state.
@@ -39,7 +39,7 @@ func finalizePersistence() {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	// Merge temp files to permanent files.
 	for file := range outFiles {
 		in, err := newFileReader(file + ".temp")
@@ -62,13 +62,16 @@ func finalizePersistence() {
 
 func loadState(file string, a interface{}) error {
 	data, err := ioutil.ReadFile(file)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	return json.Unmarshal(data, a)
 }
 
 func saveState(file string, a interface{}) error {
 	data, err := json.MarshalIndent(a, "", "\t")
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	return ioutil.WriteFile(file, data, 0644)
 }
-

@@ -103,7 +103,7 @@ func newFileWriter(file string) (*fileWriter, error) {
 }
 
 func newFileAppender(file string) (*fileWriter, error) {
-	f, err := os.OpenFile(file, os.O_WRONLY | os.O_APPEND | os.O_CREATE, 0644)
+	f, err := os.OpenFile(file, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	if err != nil {
 		return nil, err
 	}
@@ -133,4 +133,3 @@ func atoi(s string) int {
 func itoa(i int) string {
 	return fmt.Sprint(i)
 }
-

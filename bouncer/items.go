@@ -7,10 +7,10 @@ import (
 )
 
 var (
-	itemsOut    *fileWriter   // Output file.
-	itemsToken  chan int      // Token for synchronizing id generation.
-	items       []*Item       // Reported items.
-	itemsMap    map[int][]int // Item hash-index.
+	itemsOut   *fileWriter   // Output file.
+	itemsToken chan int      // Token for synchronizing id generation.
+	items      []*Item       // Reported items.
+	itemsMap   map[int][]int // Item hash-index.
 )
 
 // Initializes the 'items' table bouncer.
@@ -38,7 +38,7 @@ func initItems() {
 // Finalizes the 'items' table bouncer.
 func finalizeItems() {
 	itemsOut.Close()
-	
+
 	state.Items = items
 
 	rawItemsMap := map[string][]int{}
@@ -101,4 +101,3 @@ func makeItemId(i *Item) int {
 
 	return result
 }
-

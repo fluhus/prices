@@ -8,17 +8,17 @@ import (
 )
 
 var (
-	itemMetaOut    *fileWriter           // Output file.
-	itemMetaChan   chan []*ItemMeta      // Used for reporting item-metas.
-	itemMetaDone   chan int              // Indicates when meta reporting is finished.
-	itemMetaMap    map[int][]*itemMetaId // Maps hash to item details.
+	itemMetaOut  *fileWriter           // Output file.
+	itemMetaChan chan []*ItemMeta      // Used for reporting item-metas.
+	itemMetaDone chan int              // Indicates when meta reporting is finished.
+	itemMetaMap  map[int][]*itemMetaId // Maps hash to item details.
 )
 
 // Initializes the 'items_meta' table bouncer.
 func initItemsMeta() {
 	itemMetaChan = make(chan []*ItemMeta, runtime.NumCPU())
 	itemMetaDone = make(chan int, 1)
-	
+
 	itemMetaMap = map[int][]*itemMetaId{}
 	if state.ItemMetaMap != nil {
 		for key := range state.ItemMetaMap {
@@ -133,4 +133,3 @@ func reportItemMetas(is []*ItemMeta) {
 		}
 	}
 }
-
