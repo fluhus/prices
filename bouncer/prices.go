@@ -3,32 +3,36 @@ package bouncer
 // Handles reporting & bouncing of prices.
 
 import (
-	"bufio"
-	"os"
 	"path/filepath"
 	"runtime"
 )
 
 var (
-	pricesOut    *os.File      // Output file.
-	pricesOutBuf *bufio.Writer // Output buffer.
-	pricesChan   chan []*Price // Used for reporting prices.
-	pricesDone   chan int      // Indicates that price reporting is done.
-	pricesMap    map[int64]int // Maps itemId,storeId to hash.
+	pricesOut  *fileWriter   // Output file.
+	pricesChan chan []*Price // Used for reporting prices.
+	pricesDone chan int      // Indicates that price reporting is done.
+	pricesMap  map[int64]int // Maps itemId,storeId to hash.
 )
 
 // Initializes the 'prices' table bouncer.
 func initPrices() {
 	pricesChan = make(chan []*Price, runtime.NumCPU())
 	pricesDone = make(chan int, 1)
+
 	pricesMap = map[int64]int{}
+	if state.PricesMap != nil {
+		for key := range state.PricesMap {
+			pricesMap[int64(atoi(key))] = state.PricesMap[key]
+		}
+	}
 
 	var err error
-	pricesOut, err = os.Create(filepath.Join(outDir, "prices.txt"))
+	file := filepath.Join(outDir, "prices.txt")
+	pricesOut, err = newFileWriter(file + ".temp")
 	if err != nil {
 		panic(err)
 	}
-	pricesOutBuf = bufio.NewWriter(pricesOut)
+	outFiles[file] = struct{}{}
 
 	go func() {
 		for prices := range pricesChan {
@@ -42,8 +46,10 @@ func initPrices() {
 func finalizePrices() {
 	close(pricesChan)
 	<-pricesDone
-	pricesOutBuf.Flush()
 	pricesOut.Close()
+	for key := range pricesMap {
+		state.PricesMap[itoa(int(key))] = pricesMap[key]
+	}
 }
 
 // A single entry in the 'prices' table.
@@ -85,7 +91,7 @@ func reportPrices(ps []*Price) {
 		last := pricesMap[ps[i].id()]
 		if h != last {
 			pricesMap[ps[i].id()] = h
-			printTsv(pricesOutBuf,
+			printTsv(pricesOut,
 				ps[i].Timestamp,
 				ps[i].ItemId,
 				ps[i].StoreId,

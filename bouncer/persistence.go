@@ -15,6 +15,7 @@ type stateType struct {
 	Items       []*Item
 	ItemsMap    map[string][]int
 	ItemMetaMap map[string][]*itemMetaId
+	PricesMap   map[string]int
 }
 
 // Current state.
