@@ -3,14 +3,11 @@ package bouncer
 // Handles reporting & bouncing of items.
 
 import (
-	"bufio"
-	"os"
 	"path/filepath"
 )
 
 var (
-	itemsOut    *os.File      // Output file.
-	itemsOutBuf *bufio.Writer // Output buffer.
+	itemsOut    *fileWriter   // Output file.
 	itemsToken  chan int      // Token for synchronizing id generation.
 	items       []*Item       // Reported items.
 	itemsMap    map[int][]int // Item hash-index.
@@ -22,28 +19,33 @@ func initItems() {
 	itemsToken <- 0
 
 	itemsMap = map[int][]int{}
-	if _, ok := persistenceData["items"]; ok {
-		items = persistenceData["items"].([]*Item)
+	if state.ItemsMap != nil {
+		for key := range state.ItemsMap {
+			itemsMap[atoi(key)] = state.ItemsMap[key]
+		}
 	}
-	if _, ok := persistenceData["itemsMap"]; ok {
-		itemsMap = persistenceData["itemsMap"].(map[int][]int)
-	}
+	items = state.Items
 
 	var err error
-	itemsOut, err = os.Create(filepath.Join(outDir, "items.txt"))
+	file := filepath.Join(outDir, "items.txt")
+	itemsOut, err = newFileWriter(file + ".temp")
 	if err != nil {
 		panic(err)
 	}
-	itemsOutBuf = bufio.NewWriter(itemsOut)
+	outFiles[file] = struct{}{}
 }
 
 // Finalizes the 'items' table bouncer.
 func finalizeItems() {
-	itemsOutBuf.Flush()
 	itemsOut.Close()
+	
+	state.Items = items
 
-	persistenceData["items"] = items
-	persistenceData["itemsMap"] = itemsMap
+	rawItemsMap := map[string][]int{}
+	for key := range itemsMap {
+		rawItemsMap[itoa(key)] = itemsMap[key]
+	}
+	state.ItemsMap = rawItemsMap
 }
 
 // A single entry in the 'items' table.
@@ -95,7 +97,7 @@ func makeItemId(i *Item) int {
 	itemsMap[h] = append(itemsMap[h], result)
 	items = append(items, i)
 
-	printTsv(itemsOutBuf, result, i.ItemType, i.ItemCode, i.ChainId)
+	printTsv(itemsOut, result, i.ItemType, i.ItemCode, i.ChainId)
 
 	return result
 }

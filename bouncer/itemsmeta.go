@@ -3,15 +3,12 @@ package bouncer
 // Handles reporting & bouncing of item metadata.
 
 import (
-	"bufio"
-	"os"
 	"path/filepath"
 	"runtime"
 )
 
 var (
-	itemMetaOut    *os.File              // Output file.
-	itemMetaOutBuf *bufio.Writer         // Output buffer.
+	itemMetaOut    *fileWriter           // Output file.
 	itemMetaChan   chan []*ItemMeta      // Used for reporting item-metas.
 	itemMetaDone   chan int              // Indicates when meta reporting is finished.
 	itemMetaMap    map[int][]*itemMetaId // Maps hash to item details.
@@ -21,14 +18,21 @@ var (
 func initItemsMeta() {
 	itemMetaChan = make(chan []*ItemMeta, runtime.NumCPU())
 	itemMetaDone = make(chan int, 1)
+	
 	itemMetaMap = map[int][]*itemMetaId{}
+	if state.ItemMetaMap != nil {
+		for key := range state.ItemMetaMap {
+			itemMetaMap[atoi(key)] = state.ItemMetaMap[key]
+		}
+	}
 
 	var err error
-	itemMetaOut, err = os.Create(filepath.Join(outDir, "items_meta.txt"))
+	file := filepath.Join(outDir, "items_meta.txt")
+	itemMetaOut, err = newFileWriter(file + ".temp")
 	if err != nil {
 		panic(err)
 	}
-	itemMetaOutBuf = bufio.NewWriter(itemMetaOut)
+	outFiles[file] = struct{}{}
 
 	go func() {
 		for metas := range itemMetaChan {
@@ -42,8 +46,10 @@ func initItemsMeta() {
 func finalizeItemsMeta() {
 	close(itemMetaChan)
 	<-itemMetaDone
-	itemMetaOutBuf.Flush()
 	itemMetaOut.Close()
+	for key := range itemMetaMap {
+		state.ItemMetaMap[itoa(key)] = itemMetaMap[key]
+	}
 }
 
 // A single entry in the 'items_meta' table.
@@ -76,8 +82,8 @@ func (i *ItemMeta) hash() int {
 
 // Identifies a single hashed entry in the hash map.
 type itemMetaId struct {
-	itemId  int
-	chainId string
+	ItemId  int
+	ChainId string
 }
 
 // Returns the hashed object that was reported with the give details. Returns
@@ -86,7 +92,7 @@ func lastReportedItemMeta(hash int, itemId int, chainId string) *itemMetaId {
 	candidates := itemMetaMap[hash]
 
 	for _, candidate := range candidates {
-		if candidate.itemId == itemId && candidate.chainId == chainId {
+		if candidate.ItemId == itemId && candidate.ChainId == chainId {
 			return candidate
 		}
 	}
@@ -109,7 +115,7 @@ func reportItemMetas(is []*ItemMeta) {
 				is[i].ItemId,
 				is[i].ChainId,
 			})
-			printTsv(itemMetaOutBuf,
+			printTsv(itemMetaOut,
 				is[i].Timestamp,
 				is[i].ItemId,
 				is[i].ChainId,
