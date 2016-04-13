@@ -76,3 +76,12 @@ func saveState(file string, a interface{}) error {
 	}
 	return ioutil.WriteFile(file, data, 0644)
 }
+
+func newTempFileWriter(file string) (*fileWriter, error) {
+	w, err := newFileWriter(file + ".temp")
+	if err != nil {
+		return nil, err
+	}
+	outFiles[file] = struct{}{}
+	return w, nil
+}

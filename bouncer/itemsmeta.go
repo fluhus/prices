@@ -27,12 +27,10 @@ func initItemsMeta() {
 	}
 
 	var err error
-	file := filepath.Join(outDir, "items_meta.txt")
-	itemMetaOut, err = newFileWriter(file + ".temp")
+	itemMetaOut, err = newTempFileWriter(filepath.Join(outDir, "items_meta.txt"))
 	if err != nil {
 		panic(err)
 	}
-	outFiles[file] = struct{}{}
 
 	go func() {
 		for metas := range itemMetaChan {

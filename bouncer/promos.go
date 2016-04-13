@@ -3,25 +3,18 @@ package bouncer
 // Handles reporting & bouncing of promos.
 
 import (
-	"bufio"
-	"os"
 	"path/filepath"
 	"runtime"
 )
 
 var (
-	promosOut          *os.File      // Output file for 'promos'.
-	promosOutBuf       *bufio.Writer // Output buffer for 'promos'.
-	promosItemsOut     *os.File      // Output file for 'promos_items'.
-	promosItemsOutBuf  *bufio.Writer // Output buffer for 'promos_items'.
-	promosStoresOut    *os.File      // Output file for 'promos_stores'.
-	promosStoresOutBuf *bufio.Writer // Output buffer for 'promos_stores'.
-	promosToOut        *os.File      // Output file for 'promos_to'.
-	promosToOutBuf     *bufio.Writer // Output buffer for 'promos_to'.
+	promosOut          *fileWriter      // Output file for 'promos'.
+	promosItemsOut     *fileWriter      // Output file for 'promos_items'.
+	promosStoresOut    *fileWriter      // Output file for 'promos_stores'.
+	promosToOut        *fileWriter      // Output file for 'promos_to'.
 	promosChan         chan []*Promo // Used for reporting promos.
 	promosDone         chan int      // Indicates when promo reporting is finished.
 	nextPromoId        int           // Id to assign to the next new promo.
-
 	promosMap map[int][]*promoId // Maps hash to promo-details.
 )
 
@@ -35,29 +28,25 @@ func initPromos() {
 
 	// Open output files.
 	var err error
-	promosOut, err = os.Create(filepath.Join(outDir, "promos.txt"))
+	promosOut, err = newTempFileWriter(filepath.Join(outDir, "promos.txt"))
 	if err != nil {
 		panic(err)
 	}
-	promosOutBuf = bufio.NewWriter(promosOut)
-
-	promosItemsOut, err = os.Create(filepath.Join(outDir, "promos_items.txt"))
+	promosItemsOut, err = newTempFileWriter(
+		filepath.Join(outDir, "promos_items.txt"))
 	if err != nil {
 		panic(err)
 	}
-	promosItemsOutBuf = bufio.NewWriter(promosItemsOut)
-
-	promosStoresOut, err = os.Create(filepath.Join(outDir, "promos_stores.txt"))
+	promosStoresOut, err = newTempFileWriter(
+		filepath.Join(outDir, "promos_stores.txt"))
 	if err != nil {
 		panic(err)
 	}
-	promosStoresOutBuf = bufio.NewWriter(promosStoresOut)
-
-	promosToOut, err = os.Create(filepath.Join(outDir, "promos_to.txt"))
+	promosToOut, err = newTempFileWriter(
+		filepath.Join(outDir, "promos_to.txt"))
 	if err != nil {
 		panic(err)
 	}
-	promosToOutBuf = bufio.NewWriter(promosToOut)
 
 	// Listen on channel for incoming promos.
 	go func() {
@@ -77,18 +66,14 @@ func finalizePromos() {
 	// Write pending data.
 	for _, pids := range promosMap {
 		for _, pid := range pids {
-			printTsv(promosToOutBuf, pid.id, pid.timestampTo+60*60*24)
+			printTsv(promosToOut, pid.id, pid.timestampTo+60*60*24)
 		}
 	}
 
-	// Flush output buffers and close files.
-	promosOutBuf.Flush()
+	// Close files.
 	promosOut.Close()
-	promosItemsOutBuf.Flush()
 	promosItemsOut.Close()
-	promosStoresOutBuf.Flush()
 	promosStoresOut.Close()
-	promosToOutBuf.Flush()
 	promosToOut.Close()
 }
 
@@ -201,13 +186,13 @@ func reportPromos(ps []*Promo) {
 				notInPromosItems = "1"
 			} else {
 				for i := range p.ItemIds {
-					printTsv(promosItemsOutBuf, last.id, p.ItemIds[i],
+					printTsv(promosItemsOut, last.id, p.ItemIds[i],
 						p.GiftItems[i])
 				}
 			}
 
 			// Report new promo.
-			printTsv(promosOutBuf,
+			printTsv(promosOut,
 				last.id,
 				p.Timestamp,
 				0,
@@ -244,7 +229,7 @@ func reportPromos(ps []*Promo) {
 		// Report in promos_stores.
 		if _, ok := last.storeIds[p.StoreId]; !ok {
 			last.storeIds[p.StoreId] = struct{}{}
-			printTsv(promosStoresOutBuf, last.id, p.StoreId)
+			printTsv(promosStoresOut, last.id, p.StoreId)
 		}
 	}
 }

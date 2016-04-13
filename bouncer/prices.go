@@ -27,12 +27,10 @@ func initPrices() {
 	}
 
 	var err error
-	file := filepath.Join(outDir, "prices.txt")
-	pricesOut, err = newFileWriter(file + ".temp")
+	pricesOut, err = newTempFileWriter(filepath.Join(outDir, "prices.txt"))
 	if err != nil {
 		panic(err)
 	}
-	outFiles[file] = struct{}{}
 
 	go func() {
 		for prices := range pricesChan {

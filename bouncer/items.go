@@ -27,12 +27,10 @@ func initItems() {
 	items = state.Items
 
 	var err error
-	file := filepath.Join(outDir, "items.txt")
-	itemsOut, err = newFileWriter(file + ".temp")
+	itemsOut, err = newTempFileWriter(filepath.Join(outDir, "items.txt"))
 	if err != nil {
 		panic(err)
 	}
-	outFiles[file] = struct{}{}
 }
 
 // Finalizes the 'items' table bouncer.
