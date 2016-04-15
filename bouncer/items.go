@@ -18,13 +18,11 @@ func initItems() {
 	itemsToken = make(chan int, 1)
 	itemsToken <- 0
 
+	items = state.Items
 	itemsMap = map[int][]int{}
 	if state.ItemsMap != nil {
-		for key := range state.ItemsMap {
-			itemsMap[atoi(key)] = state.ItemsMap[key]
-		}
+		itemsMap = stringMapToIntMap(state.ItemsMap).(map[int][]int)
 	}
-	items = state.Items
 
 	var err error
 	itemsOut, err = newTempFileWriter(filepath.Join(outDir, "items.txt"))
@@ -36,14 +34,8 @@ func initItems() {
 // Finalizes the 'items' table bouncer.
 func finalizeItems() {
 	itemsOut.Close()
-
 	state.Items = items
-
-	rawItemsMap := map[string][]int{}
-	for key := range itemsMap {
-		rawItemsMap[itoa(key)] = itemsMap[key]
-	}
-	state.ItemsMap = rawItemsMap
+	state.ItemsMap = intMapToStringMap(itemsMap).(map[string][]int)
 }
 
 // A single entry in the 'items' table.

@@ -21,13 +21,13 @@ func initItemsMeta() {
 
 	itemMetaMap = map[int][]*itemMetaId{}
 	if state.ItemMetaMap != nil {
-		for key := range state.ItemMetaMap {
-			itemMetaMap[atoi(key)] = state.ItemMetaMap[key]
-		}
+		itemMetaMap =
+			stringMapToIntMap(state.ItemMetaMap).(map[int][]*itemMetaId)
 	}
 
 	var err error
-	itemMetaOut, err = newTempFileWriter(filepath.Join(outDir, "items_meta.txt"))
+	itemMetaOut, err =
+		newTempFileWriter(filepath.Join(outDir, "items_meta.txt"))
 	if err != nil {
 		panic(err)
 	}
@@ -45,9 +45,8 @@ func finalizeItemsMeta() {
 	close(itemMetaChan)
 	<-itemMetaDone
 	itemMetaOut.Close()
-	for key := range itemMetaMap {
-		state.ItemMetaMap[itoa(key)] = itemMetaMap[key]
-	}
+	state.ItemMetaMap =
+		intMapToStringMap(itemMetaMap).(map[string][]*itemMetaId)
 }
 
 // A single entry in the 'items_meta' table.

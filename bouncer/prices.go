@@ -11,7 +11,7 @@ var (
 	pricesOut  *fileWriter   // Output file.
 	pricesChan chan []*Price // Used for reporting prices.
 	pricesDone chan int      // Indicates that price reporting is done.
-	pricesMap  map[int64]int // Maps itemId,storeId to hash.
+	pricesMap  map[int]int   // Maps itemId,storeId to hash.
 )
 
 // Initializes the 'prices' table bouncer.
@@ -19,11 +19,9 @@ func initPrices() {
 	pricesChan = make(chan []*Price, runtime.NumCPU())
 	pricesDone = make(chan int, 1)
 
-	pricesMap = map[int64]int{}
+	pricesMap = map[int]int{}
 	if state.PricesMap != nil {
-		for key := range state.PricesMap {
-			pricesMap[int64(atoi(key))] = state.PricesMap[key]
-		}
+		pricesMap = stringMapToIntMap(state.PricesMap).(map[int]int)
 	}
 
 	var err error
@@ -45,9 +43,7 @@ func finalizePrices() {
 	close(pricesChan)
 	<-pricesDone
 	pricesOut.Close()
-	for key := range pricesMap {
-		state.PricesMap[itoa(int(key))] = pricesMap[key]
-	}
+	state.PricesMap = intMapToStringMap(pricesMap).(map[string]int)
 }
 
 // A single entry in the 'prices' table.
@@ -72,8 +68,8 @@ func (p *Price) hash() int {
 }
 
 // Returns the identifier of an price entry, by item-id and store-id.
-func (p *Price) id() int64 {
-	return int64(p.ItemId)<<32 + int64(p.StoreId)
+func (p *Price) id() int {
+	return p.ItemId<<32 + p.StoreId
 }
 
 // Reports the given prices.

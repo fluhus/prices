@@ -16,6 +16,8 @@ type stateType struct {
 	ItemsMap    map[string][]int
 	ItemMetaMap map[string][]*itemMetaId
 	PricesMap   map[string]int
+	NextPromoId int
+	PromosMap   map[string][]*promoId
 }
 
 // Current state.
@@ -77,6 +79,8 @@ func saveState(file string, a interface{}) error {
 	return ioutil.WriteFile(file, data, 0644)
 }
 
+// Creates a new file writer with the '.temp' suffix. The temp file will be
+// appended to the actual file upon finalizing the bouncer.
 func newTempFileWriter(file string) (*fileWriter, error) {
 	w, err := newFileWriter(file + ".temp")
 	if err != nil {
