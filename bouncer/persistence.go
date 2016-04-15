@@ -12,14 +12,15 @@ import (
 
 // Keeps state for continuing a previous run.
 type stateType struct {
-	Items       []*Item
-	ItemsMap    map[string][]int
-	ItemMetaMap map[string][]*itemMetaId
-	PricesMap   map[string]int
-	NextPromoId int
-	PromosMap   map[string][]*promoId
-	Stores      []*Store
-	StoresMap   map[string][]int
+	Items        []*Item
+	ItemsMap     map[string][]int
+	ItemMetaMap  map[string][]*itemMetaId
+	PricesMap    map[string]int
+	NextPromoId  int
+	PromosMap    map[string][]*promoId
+	Stores       []*Store
+	StoresMap    map[string][]int
+	StoreMetaMap map[string]int
 }
 
 // Current state.

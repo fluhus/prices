@@ -3,18 +3,15 @@ package bouncer
 // Handles reporting & bouncing of store metadata.
 
 import (
-	"bufio"
-	"os"
 	"path/filepath"
 	"runtime"
 )
 
 var (
-	storeMetaOut    *os.File          // Output file.
-	storeMetaOutBuf *bufio.Writer     // Output buffer.
-	storeMetaChan   chan []*StoreMeta // Used for reporting store-metas.
-	storeMetaDone   chan int          // Indicates when meta reporting is finished.
-	storeMetaMap    map[int]int       // Maps StoreId to hash.
+	storeMetaOut  *fileWriter       // Output file.
+	storeMetaChan chan []*StoreMeta // Used for reporting store-metas.
+	storeMetaDone chan int          // Indicates when meta reporting is finished.
+	storeMetaMap  map[int]int       // Maps StoreId to hash.
 )
 
 // Initializes the 'stores_meta' table bouncer.
@@ -22,13 +19,15 @@ func initStoresMeta() {
 	storeMetaChan = make(chan []*StoreMeta, runtime.NumCPU())
 	storeMetaDone = make(chan int, 1)
 	storeMetaMap = map[int]int{}
+	if state.StoreMetaMap != nil {
+		storeMetaMap = stringMapToIntMap(state.StoreMetaMap).(map[int]int)
+	}
 
 	var err error
-	storeMetaOut, err = os.Create(filepath.Join(outDir, "stores_meta.txt"))
+	storeMetaOut, err = newTempFileWriter(filepath.Join(outDir, "stores_meta.txt"))
 	if err != nil {
 		panic(err)
 	}
-	storeMetaOutBuf = bufio.NewWriter(storeMetaOut)
 
 	go func() {
 		for metas := range storeMetaChan {
@@ -42,8 +41,8 @@ func initStoresMeta() {
 func finalizeStoresMeta() {
 	close(storeMetaChan)
 	<-storeMetaDone
-	storeMetaOutBuf.Flush()
 	storeMetaOut.Close()
+	state.StoreMetaMap = intMapToStringMap(storeMetaMap).(map[string]int)
 }
 
 // A single entry in the 'stores_meta' table.
@@ -88,7 +87,7 @@ func reportStoreMetas(ss []*StoreMeta) {
 		last := storeMetaMap[ss[i].StoreId]
 		if h != last {
 			storeMetaMap[ss[i].StoreId] = h
-			printTsv(storeMetaOutBuf,
+			printTsv(storeMetaOut,
 				ss[i].Timestamp,
 				ss[i].StoreId,
 				ss[i].BikoretNo,
