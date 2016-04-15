@@ -3,17 +3,14 @@ package bouncer
 // Handles reporting & bouncing of stores.
 
 import (
-	"bufio"
-	"os"
 	"path/filepath"
 )
 
 var (
-	storesOut    *os.File      // Output file.
-	storesOutBuf *bufio.Writer // Output buffer.
-	storeToken   chan int      // Token for synchronizing id generation.
-	stores       []*Store      // Reported stores.
-	storesMap    map[int][]int // Store hash-index.
+	storesOut  *fileWriter   // Output file.
+	storeToken chan int      // Token for synchronizing id generation.
+	stores     []*Store      // Reported stores.
+	storesMap  map[int][]int // Store hash-index.
 )
 
 // Initializes the 'stores' table bouncer.
@@ -21,19 +18,24 @@ func initStores() {
 	storeToken = make(chan int, 1)
 	storesMap = map[int][]int{}
 	storeToken <- 0
+	stores = state.Stores
+	storesMap = map[int][]int{}
+	if state.StoresMap != nil {
+		storesMap = stringMapToIntMap(state.StoresMap).(map[int][]int)
+	}
 
 	var err error
-	storesOut, err = os.Create(filepath.Join(outDir, "stores.txt"))
+	storesOut, err = newTempFileWriter(filepath.Join(outDir, "stores.txt"))
 	if err != nil {
 		panic(err)
 	}
-	storesOutBuf = bufio.NewWriter(storesOut)
 }
 
 // Finalizes the 'stores' table bouncer.
 func finalizeStores() {
-	storesOutBuf.Flush()
 	storesOut.Close()
+	state.Stores = stores
+	state.StoresMap = intMapToStringMap(storesMap).(map[string][]int)
 }
 
 // A single entry in the 'stores' table.
@@ -85,7 +87,7 @@ func makeStoreId(s *Store) int {
 	storesMap[h] = append(storesMap[h], result)
 	stores = append(stores, s)
 
-	printTsv(storesOutBuf,
+	printTsv(storesOut,
 		result,
 		s.ChainId,
 		s.SubchainId,

@@ -18,6 +18,8 @@ type stateType struct {
 	PricesMap   map[string]int
 	NextPromoId int
 	PromosMap   map[string][]*promoId
+	Stores      []*Store
+	StoresMap   map[string][]int
 }
 
 // Current state.
