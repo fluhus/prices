@@ -206,10 +206,10 @@ CREATE TEMP TABLE promos_to (
 );
 .import /cs/icore/amitlavon/stam14/promos_to.txt promos_to
 
-CREATE INDEX promos_to_index ON promos_to(promo_id);
+CREATE INDEX promos_to_index ON promos_to(promo_id, timestamp_to);
 
 UPDATE promos SET timestamp_to = (
-	SELECT timestamp_to FROM promos_to
+	SELECT max(timestamp_to) FROM promos_to
 	WHERE promos_to.promo_id = promos.promo_id
 );
 
