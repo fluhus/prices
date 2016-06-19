@@ -60,7 +60,7 @@ CREATE TABLE stores (
 	subchain_id        text  NOT NULL, -- Subchain number.
 	reported_store_id  text  NOT NULL  -- Store number issued by the chain.
 );
-.import /cs/icore/amitlavon/stam14/stores.txt stores
+.import stores.txt stores
 
 -- TODO(amit): Move all timestamp fields to after the ids.
 
@@ -81,7 +81,7 @@ CREATE TABLE stores_meta (
 	last_update_date text,
 	last_update_time text
 );
-.import /cs/icore/amitlavon/stam14/stores_meta.txt stores_meta
+.import stores_meta.txt stores_meta
 
 .print items
 CREATE TABLE items (
@@ -91,7 +91,7 @@ CREATE TABLE items (
 	item_code  text  NOT NULL, -- Barcode number or internal code.
 	chain_id   text  NOT NULL  -- Empty string for universal.
 );
-.import /cs/icore/amitlavon/stam14/items.txt items
+.import items.txt items
 
 .print items_meta
 CREATE TABLE items_meta (
@@ -111,7 +111,7 @@ CREATE TABLE items_meta (
 	allow_discount                text, -- Is the item allowed in promotions.
 	item_status                   text  -- ???
 );
-.import /cs/icore/amitlavon/stam14/items_meta.txt items_meta
+.import items_meta.txt items_meta
 
 .print prices
 CREATE TABLE prices (
@@ -125,7 +125,7 @@ CREATE TABLE prices (
 	unit_of_measure       text,  -- Gram, liter, etc.
 	quantity              text   -- How many grams/liters etc.
 );
-.import /cs/icore/amitlavon/stam14/prices.txt prices
+.import prices.txt prices
 
 .print promos
 -- TODO(amit): Check is_active field.
@@ -170,7 +170,7 @@ CREATE TABLE promos (
 	not_in_promos_items          int   -- 0 if reported in promos_items, 1 if
 	                                   -- not. (safe)
 );
-.import /cs/icore/amitlavon/stam14/promos.txt promos
+.import promos.txt promos
 
 .print promos_stores
 CREATE TABLE promos_stores (
@@ -179,7 +179,7 @@ CREATE TABLE promos_stores (
 	promo_id int NOT NULL, -- References promos.promo_id. (safe)
 	store_id int NOT NULL  -- References stores.store_id. (safe)
 );
-.import /cs/icore/amitlavon/stam14/promos_stores.txt promos_stores
+.import promos_stores.txt promos_stores
 
 .print promos_items
 CREATE TABLE promos_items (
@@ -194,7 +194,7 @@ CREATE TABLE promos_items (
 	item_id      int NOT NULL, -- References items.item_id. (safe)
 	is_gift_item text
 );
-.import /cs/icore/amitlavon/stam14/promos_items.txt promos_items
+.import promos_items.txt promos_items
 
 .print promos_to
 CREATE TEMP TABLE promos_to (
@@ -204,7 +204,7 @@ CREATE TEMP TABLE promos_to (
 	promo_id     int,
 	timestamp_to int
 );
-.import /cs/icore/amitlavon/stam14/promos_to.txt promos_to
+.import promos_to.txt promos_to
 
 CREATE INDEX promos_to_index ON promos_to(promo_id, timestamp_to);
 
