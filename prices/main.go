@@ -22,6 +22,7 @@ func main() {
 	if err == noArgs {
 		fmt.Print(help)
 		fmt.Print(myflag.Help())
+		fmt.Println(credit)
 		os.Exit(1)
 	}
 	if err != nil {
@@ -166,6 +167,10 @@ prices <out dir>
 
 Flags:
 `
+
+var credit = `Credit:
+Based on the 'prices' project by Amit Lavon.
+https://github.com/fluhus/prices`
 
 // Prints a welcome message and usage instructions to the log.
 func logWelcome() {

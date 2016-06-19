@@ -35,6 +35,7 @@ func main() {
 	if args.help {
 		pe(help)
 		pe(myflag.Help())
+		pe(credit)
 		os.Exit(1)
 	}
 
@@ -315,6 +316,7 @@ func fileChainId(file string) string {
 }
 
 // TODO(amit): Consider moving arguments and help message to a separate file.
+
 // Help message to display.
 var help = `Parses XML files for the supermarket price project.
 
@@ -329,5 +331,9 @@ or
 items [OPTIONS] -i <file with file-names>
 
 Arguments:`
+
+var credit = `Credit:
+Based on the 'prices' project by Amit Lavon.
+https://github.com/fluhus/prices`
 
 
