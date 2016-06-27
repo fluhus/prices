@@ -50,8 +50,7 @@ How to Build
 1. Update GOPATH:
    * **Linux** - `export GOPATH=/path/to/project`
    * **Windows** - `set GOPATH=\path\to\project`
-2. Compile everything. `cd` into project/src folder and execute:
-   `go install ./...`
+2. Download the code: `go get github.com/fluhus/prices/...`
 3. A `bin` folder will be created in the project's folder, containing all
    generated binaries.
 
