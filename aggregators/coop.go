@@ -40,8 +40,9 @@ func (a *coopAggregator) Aggregate(dir string) error {
 			for info := range infos {
 				err := a.download(info.url, dir, info.values)
 				if err != nil {
-					done <- err
-					return
+					log.Printf("Download error for '%v', branch %v: %v",
+						info.url, info.values["branch"][0], err)
+					continue
 				}
 			}
 			
