@@ -12,7 +12,7 @@ from Israeli vendors.
 License
 -------
 
-Copyright (c) 2015-2016 Amit Lavon
+Copyright (c) 2015-2017 Amit Lavon
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -48,8 +48,8 @@ How to Build
 ------------
 
 1. Update GOPATH:
-   * **Linux** - `export GOPATH=/path/to/project`
-   * **Windows** - `set GOPATH=\path\to\project`
+   * **Linux (bash)** - `export GOPATH=/path/to/your/project`
+   * **Windows (cmd)** - `set GOPATH=\path\to\your\project`
 2. Download the code: `go get github.com/fluhus/prices/...`
 3. A `bin` folder will be created in the project's folder, containing all
    generated binaries.
@@ -59,14 +59,12 @@ How to Use
 
 ### Downloading Price Data
 
-1. Build the executables.
-2. Run `bin/prices`. The program downloads all files from all known vendors.
+1. Run `bin/prices`. The program downloads all files from all known vendors.
 
 ### Creating the Database
 
-1. Build the executables.
-2. Run `bin/items`. The program parses XML filess and outputs tab-separated
+1. Run `bin/items`. The program parses XML files and outputs tab-separated
    text files.
-3. Import the generated files to your database.
+2. Import the generated files to your database.
 
 
