@@ -1,6 +1,6 @@
-package aggregators
+package scrapers
 
-// An aggregator for the Co-Op chain.
+// A scraper for the Co-Op chain.
 
 import (
 	"net/http"
@@ -16,14 +16,14 @@ import (
 	urllib "net/url"
 )
 
-type coopAggregator struct{}
+type coopScraper struct{}
 
-// Returns a new Co-Op aggregator.
-func Coop() Aggregator {
-	return &coopAggregator{}
+// Returns a new Co-Op scraper.
+func Coop() Scraper {
+	return &coopScraper{}
 }
 
-func (a *coopAggregator) Aggregate(dir string) error {
+func (a *coopScraper) Scrape(dir string) error {
 	// Create output directory.
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
@@ -76,7 +76,7 @@ type coopFileInfo struct {
 
 // Returns a channel that will yield file-infos for download. The error channel
 // will report when it's finished.
-func (a *coopAggregator) filesForDownload() (chan *coopFileInfo, chan error) {
+func (a *coopScraper) filesForDownload() (chan *coopFileInfo, chan error) {
 	// Instantiate channels.
 	infos := make(chan *coopFileInfo, numberOfThreads)
 	done  := make(chan error, 1)
@@ -146,7 +146,7 @@ func (a *coopAggregator) filesForDownload() (chan *coopFileInfo, chan error) {
 }
 
 // Downloads a given file from Co-Op.
-func (a *coopAggregator) download(url, dir string, values urllib.Values) error {
+func (a *coopScraper) download(url, dir string, values urllib.Values) error {
 	// Open connection to site.
 	res, err := http.PostForm(url, values)
 	if err != nil {

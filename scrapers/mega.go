@@ -1,6 +1,6 @@
-package aggregators
+package scrapers
 
-// An aggregator for the Mega chain.
+// A scraper for the Mega chain.
 
 import (
 	"net/http"
@@ -15,15 +15,15 @@ import (
 // Home page of the Mega price site.
 const megaHome = "http://publishprice.mega.co.il/"
 
-// An aggregator for the Mega chain.
-type megaAggregator struct{}
+// A scraper for the Mega chain.
+type megaScraper struct{}
 
-// Returns a new Mega aggregator.
-func Mega() Aggregator {
-	return &megaAggregator{}
+// Returns a new Mega scraper.
+func Mega() Scraper {
+	return &megaScraper{}
 }
 
-func (a *megaAggregator) Aggregate(dir string) error {
+func (a *megaScraper) Scrape(dir string) error {
 	// Create output directory.
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
@@ -71,7 +71,7 @@ func (a *megaAggregator) Aggregate(dir string) error {
 }
 
 // Returns paths of subdirectories of the price page.
-func (a *megaAggregator) getDirectories() ([]string, error) {
+func (a *megaScraper) getDirectories() ([]string, error) {
 	// Get home page.
 	res, err := http.Get(megaHome)
 	if err != nil {
@@ -105,7 +105,7 @@ func (a *megaAggregator) getDirectories() ([]string, error) {
 
 // Returns paths of files in a subdirectory. The paths are ready for download.
 // dir should be as returned from getDirectories.
-func (a *megaAggregator) getFiles(dir string) ([]string, error) {
+func (a *megaScraper) getFiles(dir string) ([]string, error) {
 	// Get home page.
 	res, err := http.Get(megaHome + dir)
 	if err != nil {
@@ -143,7 +143,7 @@ func (a *megaAggregator) getFiles(dir string) ([]string, error) {
 //
 // This function was created because going over all directories in a single
 // thread takes too long.
-func (a *megaAggregator) getFilesChannel() (files chan *dirFile,
+func (a *megaScraper) getFilesChannel() (files chan *dirFile,
 		done chan error) {
 	// Initialize channels.
 	files = make(chan *dirFile, numberOfThreads)

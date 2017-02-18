@@ -1,6 +1,6 @@
-package aggregators
+package scrapers
 
-// An aggregator for Cerberus-based databases.
+// A scraper for Cerberus-based databases.
 
 import (
 	"encoding/json"
@@ -27,18 +27,18 @@ const (
 	cerberusDownload = cerberusFile + "d/"
 )
 
-// An aggregator for Cerberus-based databases.
-type cerberusAggregator struct {
+// A scraper for Cerberus-based databases.
+type cerberusScraper struct {
 	username string
 	password string
 }
 
-// Returns a new Cerberus aggregator with the given user-name.
-func Cerberus(username, password string) Aggregator {
-	return &cerberusAggregator{username, password}
+// Returns a new Cerberus scraper with the given user-name.
+func Cerberus(username, password string) Scraper {
+	return &cerberusScraper{username, password}
 }
 
-func (a *cerberusAggregator) Aggregate(dir string) error {
+func (a *cerberusScraper) Scrape(dir string) error {
 	// Create output directory.
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
@@ -105,7 +105,7 @@ func (a *cerberusAggregator) Aggregate(dir string) error {
 }
 
 // Returns a logged-in client.
-func (a *cerberusAggregator) login() (*http.Client, error) {
+func (a *cerberusScraper) login() (*http.Client, error) {
 	// NOTE:
 	// THIS IS A TERRIBLE WORKAROUND TO A CERTIFICATE VALIDATION BUG IN THE
 	// SYSTEM. THIS IS BAD AND SHOULD BE FIXED.
@@ -164,7 +164,7 @@ func (a *cerberusAggregator) login() (*http.Client, error) {
 }
 
 // Parses the Get-Cookie field of a Cerberus response.
-func (a *cerberusAggregator) parseCookie(res *http.Response) ([]byte, error) {
+func (a *cerberusScraper) parseCookie(res *http.Response) ([]byte, error) {
 	rawCookie, ok := res.Header["Set-Cookie"]
 	if !ok {
 		return nil, fmt.Errorf("Response does not contain a cookie.")
@@ -178,7 +178,7 @@ func (a *cerberusAggregator) parseCookie(res *http.Response) ([]byte, error) {
 }
 
 // Parses the login token from a Cerberus response body.
-func (a *cerberusAggregator) parseToken(body []byte) ([]byte, error) {
+func (a *cerberusScraper) parseToken(body []byte) ([]byte, error) {
 	token := find(body, "id=\"csrftoken\" value=\"(.*?)\"")
 	if token == nil {
 		return nil, fmt.Errorf("Could not parse login token.")
@@ -187,7 +187,7 @@ func (a *cerberusAggregator) parseToken(body []byte) ([]byte, error) {
 }
 
 // Gets the list of files from Cerberus, using the given logged-in client.
-func (a *cerberusAggregator) getFileList(cl *http.Client) ([]string, error) {
+func (a *cerberusScraper) getFileList(cl *http.Client) ([]string, error) {
 	// Request file list.
 	res, err := cl.PostForm(cerberusFile + "ajax_dir?sEcho=2&iColumns=5&sColumns=%2C%2C%2C%2C&iDisplayStart=0&iDisplayLength=100000&mDataProp_0=fname&sSearch_0=&bRegex_0=false&bSearchable_0=true&bSortable_0=true&mDataProp_1=type&sSearch_1=&bRegex_1=false&bSearchable_1=true&bSortable_1=false&mDataProp_2=size&sSearch_2=&bRegex_2=false&bSearchable_2=true&bSortable_2=true&mDataProp_3=ftime&sSearch_3=&bRegex_3=false&bSearchable_3=true&bSortable_3=true&mDataProp_4=&sSearch_4=&bRegex_4=false&bSearchable_4=true&bSortable_4=false&sSearch=&bRegex=false&iSortingCols=0&cd=%2F", nil)
 	if err != nil {
@@ -220,7 +220,7 @@ func (a *cerberusAggregator) getFileList(cl *http.Client) ([]string, error) {
 }
 
 // Returns a slice with only the file names that are relevant for downloading.
-func (a *cerberusAggregator) filterFileNames(files []string) []string {
+func (a *cerberusScraper) filterFileNames(files []string) []string {
 	acceptedPattern := regexp.MustCompile("^((Price|Promo).*gz|Stores.*xml)$")
 	result := []string{}
 	

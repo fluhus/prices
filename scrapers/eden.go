@@ -1,6 +1,6 @@
-package aggregators
+package scrapers
 
-// An aggregator for Eden Teva Market.
+// A scraper for Eden Teva Market.
 
 import (
 	"bytes"
@@ -18,15 +18,15 @@ const edenHome = "http://operations.edenteva.co.il/Prices/index"
 // Prefix of download URLs.
 const edenFile = "http://operations.edenteva.co.il/Prices/"
 
-// Aggregates data from Eden Teva Market.
-type edenAggregator struct {}
+// Scrapes data from Eden Teva Market.
+type edenScraper struct {}
 
-// Returns a new Eden Teva Market aggregator.
-func Eden() Aggregator {
-	return &edenAggregator{}
+// Returns a new Eden Teva Market scraper.
+func Eden() Scraper {
+	return &edenScraper{}
 }
 
-func (a *edenAggregator) Aggregate(dir string) error {
+func (a *edenScraper) Scrape(dir string) error {
 	// Create output directory.
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
@@ -79,7 +79,7 @@ func (a *edenAggregator) Aggregate(dir string) error {
 }
 
 // Returns a list of all files in Eden's page.
-func (a *edenAggregator) fileList() ([]string, error) {
+func (a *edenScraper) fileList() ([]string, error) {
 	// Get homepage.
 	res, err := http.Get(edenHome)
 	if err != nil {

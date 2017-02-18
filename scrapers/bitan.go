@@ -1,6 +1,6 @@
-package aggregators
+package scrapers
 
-// An aggregator for Yeinot Bitan.
+// A scraper for Yeinot Bitan.
 
 import (
 	"net/http"
@@ -17,15 +17,15 @@ const bitanHome = "http://www.ybitan.co.il/pirce_update"
 // Prefix of download URLs.
 const bitanFile = "http://www.ybitan.co.il/upload/"
 
-// Aggregates data from Yeinot Bitan.
-type bitanAggregator struct {}
+// Scrapes data from Yeinot Bitan.
+type bitanScraper struct {}
 
-// Returns a new Yeinot Bitan aggregator.
-func Bitan() Aggregator {
-	return &bitanAggregator{}
+// Returns a new Yeinot Bitan scraper.
+func Bitan() Scraper {
+	return &bitanScraper{}
 }
 
-func (a *bitanAggregator) Aggregate(dir string) error {
+func (a *bitanScraper) Scrape(dir string) error {
 	// Create output directory.
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
@@ -78,7 +78,7 @@ func (a *bitanAggregator) Aggregate(dir string) error {
 }
 
 // Returns a list of all files in Bitan's page.
-func (a *bitanAggregator) fileList() ([]string, error) {
+func (a *bitanScraper) fileList() ([]string, error) {
 	// Get homepage.
 	res, err := http.Get(bitanHome)
 	if err != nil {

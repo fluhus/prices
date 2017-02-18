@@ -1,6 +1,6 @@
-package aggregators
+package scrapers
 
-// Not an aggregator. Counts chains on the authority's page, to alert when new
+// Not a scraper. Counts chains on the authority's page, to alert when new
 // chains are added.
 
 import (

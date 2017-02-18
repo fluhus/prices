@@ -1,6 +1,6 @@
-package aggregators
+package scrapers
 
-// An aggregator for Nibit-based chains.
+// A scraper for Nibit-based chains.
 
 import (
 	"net/http"
@@ -28,25 +28,25 @@ const (
 	Lahav   = "7290058179503"
 )
 
-// Aggregates data from Nibit.
-type nibitAggregator struct {
+// Scrapes data from Nibit.
+type nibitScraper struct {
 	chain string  // Name of chain.
 	days  int     // How many days from now back it should download.
 }
 
-// Returns a new Nibit aggregator. Chain is an ID. Days is how many days back
+// Returns a new Nibit scraper. Chain is an ID. Days is how many days back
 // from today it should download. days=1 means today only, days=2 means today
 // and yesterday, etc. A value lesser than 1 will cause a panic.
-func Nibit(chain string, days int) Aggregator {
+func Nibit(chain string, days int) Scraper {
 	// Check days.
 	if days < 1 {
 		panic(fmt.Sprintf("Bad number of days: %d. Must be positive.", days))
 	}
 	
-	return &nibitAggregator{chain, days}
+	return &nibitScraper{chain, days}
 }
 
-func (a *nibitAggregator) Aggregate(dir string) error {
+func (a *nibitScraper) Scrape(dir string) error {
 	// Create output directory.
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
@@ -72,7 +72,7 @@ func (a *nibitAggregator) Aggregate(dir string) error {
 }
 
 // Returns a client with a session ID cookie.
-func (a *nibitAggregator) startSession() (*http.Client, error) {
+func (a *nibitScraper) startSession() (*http.Client, error) {
 	// Get homepage.
 	res, err := http.Head(nibitPage)
 	if err != nil {
@@ -95,7 +95,7 @@ func (a *nibitAggregator) startSession() (*http.Client, error) {
 
 // Parses the session ID cookie of the given response. Returns empty strings
 // if not found.
-func (a *nibitAggregator) parseSessionCookie(res *http.Response) (name,
+func (a *nibitScraper) parseSessionCookie(res *http.Response) (name,
 		value string) {
 	// Check for Set-Cookie field.
 	if len(res.Header["Set-Cookie"]) == 0 {
@@ -111,7 +111,7 @@ func (a *nibitAggregator) parseSessionCookie(res *http.Response) (name,
 }
 
 // Downloads all available files for the given date.
-func (a *nibitAggregator) download(cl *http.Client, date, dir string) error {
+func (a *nibitScraper) download(cl *http.Client, date, dir string) error {
 	// Get homepage.
 	res, err := cl.Get(nibitPage)
 	if err != nil {
@@ -226,7 +226,7 @@ type nibitFileInfo struct {
 
 // Parses form values from the given response body. Before using the result for
 // a POST request, make sure to set the date and action values.
-func (a *nibitAggregator) formValues(body []byte) urllib.Values {
+func (a *nibitScraper) formValues(body []byte) urllib.Values {
 	re := regexp.MustCompile("<input type=\"hidden\" name=\"[^\"]*\" " +
 			"id=\"([^\"]*)\" value=\"([^\"]*)\"")
 	match := re.FindAllSubmatch(body, -1)
@@ -249,44 +249,44 @@ func (a *nibitAggregator) formValues(body []byte) urllib.Values {
 }
 
 // Returns a string representation of the given time, as a date for Nibit form.
-func (a *nibitAggregator) formatDate(t time.Time) string {
+func (a *nibitScraper) formatDate(t time.Time) string {
 	return fmt.Sprintf("%02d/%02d/%d", t.Day(), t.Month(), t.Year())
 }
 
 // Sets the date field of the form.
-func (a *nibitAggregator) setFormDate(values urllib.Values, date string) {
+func (a *nibitScraper) setFormDate(values urllib.Values, date string) {
 	values["ctl00$MainContent$txtDate"] = []string{date}
 }
 
 // Sets action to 'search'.
-func (a *nibitAggregator) setFormActionSearch(values urllib.Values) {
+func (a *nibitScraper) setFormActionSearch(values urllib.Values) {
 	delete(values, "ctl00$MainContent$btnNext1")
 	delete(values, "ctl00$MainContent$btnPrev1")
 	values["ctl00$MainContent$btnSearch"] = []string{"חיפוש"}
 }
 
 // Removes action.
-func (a *nibitAggregator) clearFormAction(values urllib.Values) {
+func (a *nibitScraper) clearFormAction(values urllib.Values) {
 	delete(values, "ctl00$MainContent$btnNext1")
 	delete(values, "ctl00$MainContent$btnPrev1")
 	delete(values, "ctl00$MainContent$btnSearch")
 }
 
 // Sets the chain field of the form. Give "-1" for all chains.
-func (a *nibitAggregator) setFormChain(values urllib.Values,
+func (a *nibitScraper) setFormChain(values urllib.Values,
 		chain string) {
 	values["ctl00$MainContent$chain"] = []string{chain}
 }
 
 // Sets the target for downloading.
-func (a *nibitAggregator) setFormTarget(values urllib.Values, target int) {
+func (a *nibitScraper) setFormTarget(values urllib.Values, target int) {
 	values["__EVENTTARGET"] = []string{fmt.Sprintf(
 			"ctl00$MainContent$repeater$ctl%02d$lblDownloadFile", target)}
 }
 
 // Returns a shallow copy of the given values. Keys can be added and removed
 // safely.
-func (a *nibitAggregator) copyValues(values urllib.Values) urllib.Values {
+func (a *nibitScraper) copyValues(values urllib.Values) urllib.Values {
 	result := map[string][]string{}
 	for m := range values {
 		result[m] = values[m]

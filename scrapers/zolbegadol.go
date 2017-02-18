@@ -1,6 +1,6 @@
-package aggregators
+package scrapers
 
-// An aggregator for the Zol-Begadol chain.
+// A scraper for the Zol-Begadol chain.
 
 import (
 	"net/http"
@@ -15,15 +15,15 @@ import (
 // Home page of the Zol-Begadol price site.
 const zolbegadolHome = "http://zolvebegadol.com/"
 
-// An aggregator for the Zol-Begadol chain.
-type zolbegadolAggregator struct{}
+// A scraper for the Zol-Begadol chain.
+type zolbegadolScraper struct{}
 
-// Returns a new Zol-Begadol aggregator.
-func Zolbegadol() Aggregator {
-	return &zolbegadolAggregator{}
+// Returns a new Zol-Begadol scraper.
+func Zolbegadol() Scraper {
+	return &zolbegadolScraper{}
 }
 
-func (a *zolbegadolAggregator) Aggregate(dir string) error {
+func (a *zolbegadolScraper) Scrape(dir string) error {
 	// Create output directory.
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
@@ -71,7 +71,7 @@ func (a *zolbegadolAggregator) Aggregate(dir string) error {
 }
 
 // Returns paths of subdirectories of the price page.
-func (a *zolbegadolAggregator) getDirectories() ([]string, error) {
+func (a *zolbegadolScraper) getDirectories() ([]string, error) {
 	// Get home page.
 	res, err := http.Get(zolbegadolHome)
 	if err != nil {
@@ -105,7 +105,7 @@ func (a *zolbegadolAggregator) getDirectories() ([]string, error) {
 
 // Returns paths of files in a subdirectory. The paths are ready for download.
 // dir should be as returned from getDirectories.
-func (a *zolbegadolAggregator) getFiles(dir string) ([]string, error) {
+func (a *zolbegadolScraper) getFiles(dir string) ([]string, error) {
 	// Get home page.
 	res, err := http.Get(zolbegadolHome + dir)
 	if err != nil {
@@ -143,7 +143,7 @@ func (a *zolbegadolAggregator) getFiles(dir string) ([]string, error) {
 //
 // This function was created because going over all directories in a single
 // thread takes too long.
-func (a *zolbegadolAggregator) getFilesChannel() (files chan *dirFile,
+func (a *zolbegadolScraper) getFilesChannel() (files chan *dirFile,
 		done chan error) {
 	// Initialize channels.
 	files = make(chan *dirFile, numberOfThreads)

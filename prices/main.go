@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	
-	"github.com/fluhus/prices/aggregators"
+	"github.com/fluhus/prices/scrapers"
 	"github.com/fluhus/prices/myflag"
 )
 
@@ -49,7 +49,7 @@ func main() {
 	logWelcome()
 	
 	// Check that number of chains matches number of tasks.
-	chainCount, err := aggregators.CountChains()
+	chainCount, err := scrapers.CountChains()
 	if err != nil {
 		log.Printf("Chain count error: %v", err)
 	} else {
@@ -60,18 +60,18 @@ func main() {
 		}
 	}
 	
-	// Perform aggregation tasks.
+	// Perform scraping tasks.
 	t := time.Now()
 	
 	for _, task := range tasks {
-		// A task may be nil, to make a placeholder for a future aggregator.
+		// A task may be nil, to make a placeholder for a future scraper.
 		if task == nil { continue }
 	
 		tt := time.Now()
 		log.SetPrefix(task.name + " ")
 		log.Printf("Starting %s.", task.name)
 		
-		err := task.agg.Aggregate(filepath.Join(args.dir, task.dir))
+		err := task.scrp.Scrape(filepath.Join(args.dir, task.dir))
 		if err != nil {
 			log.Printf("Finished with error: %v", err)
 		} else {
@@ -85,34 +85,34 @@ func main() {
 	log.Printf("Operation is complete. Time took: %v", time.Now().Sub(t))
 }
 
-// A single aggregation task.
-type aggTask struct {
-	agg  aggregators.Aggregator  // Performer of aggregation.
-	name string                  // For logging.
-	dir  string                  // Directory to which to download files.
+// A single scraping task.
+type scrapingTask struct {
+	scrp  scrapers.Scraper  // Performer of scraping.
+	name  string            // For logging.
+	dir   string            // Directory to which to download files.
 }
 
 // Holds tasks to perform by the main program. Tasks will be performed
 // sequentially. Use a nil value to make a placeholder, for chain counting.
-var tasks = []*aggTask {
-	&aggTask{ aggregators.Cerberus("TivTaam", ""), "TivTaam", "tivtaam" },
-	&aggTask{ aggregators.Shufersal(), "Shufersal", "shufersal" },
-	&aggTask{ aggregators.Cerberus("DorAlon", ""), "DorAlon", "doralon" },
-	&aggTask{ aggregators.Cerberus("osherad", ""), "OsherAd", "osherad" },
-	&aggTask{ aggregators.Mega(), "Mega", "mega" },
-	&aggTask{ aggregators.Cerberus("HaziHinam", ""), "HaziHinam", "hazihinam" },
-	&aggTask{ aggregators.Cerberus("Keshet", ""), "Keshet", "keshet" },
-	&aggTask{ aggregators.Cerberus("RamiLevi", ""), "RamiLevi", "ramilevi" },
-	&aggTask{ aggregators.Cerberus("SuperDosh", ""), "SuperDosh", "superdosh" },
-	&aggTask{ aggregators.Cerberus("Yohananof", ""), "Yohananof", "yohananof" },
-	&aggTask{ aggregators.Eden(), "Eden", "eden" },
-	&aggTask{ aggregators.Bitan(), "Bitan", "bitan" },
-	&aggTask{ aggregators.Nibit(aggregators.Victory, 7), "Victory", "victory" },
-	&aggTask{ aggregators.Nibit(aggregators.Hashook, 7), "Hashook", "hashook" },
-	&aggTask{ aggregators.Nibit(aggregators.Lahav, 7), "Lahav", "lahav" },
-	&aggTask{ aggregators.Coop(), "Coop", "coop" },
-	&aggTask{ aggregators.Cerberus("freshmarket_sn", "f_efrd"), "Freshmarket", "freshmarket" },
-	&aggTask{ aggregators.Zolbegadol(), "ZolBegadol", "zolbegadol" },
+var tasks = []*scrapingTask {
+	&scrapingTask{ scrapers.Cerberus("TivTaam", ""), "TivTaam", "tivtaam" },
+	&scrapingTask{ scrapers.Shufersal(), "Shufersal", "shufersal" },
+	&scrapingTask{ scrapers.Cerberus("DorAlon", ""), "DorAlon", "doralon" },
+	&scrapingTask{ scrapers.Cerberus("osherad", ""), "OsherAd", "osherad" },
+	&scrapingTask{ scrapers.Mega(), "Mega", "mega" },
+	&scrapingTask{ scrapers.Cerberus("HaziHinam", ""), "HaziHinam", "hazihinam" },
+	&scrapingTask{ scrapers.Cerberus("Keshet", ""), "Keshet", "keshet" },
+	&scrapingTask{ scrapers.Cerberus("RamiLevi", ""), "RamiLevi", "ramilevi" },
+	&scrapingTask{ scrapers.Cerberus("SuperDosh", ""), "SuperDosh", "superdosh" },
+	&scrapingTask{ scrapers.Cerberus("Yohananof", ""), "Yohananof", "yohananof" },
+	&scrapingTask{ scrapers.Eden(), "Eden", "eden" },
+	&scrapingTask{ scrapers.Bitan(), "Bitan", "bitan" },
+	&scrapingTask{ scrapers.Nibit(scrapers.Victory, 7), "Victory", "victory" },
+	&scrapingTask{ scrapers.Nibit(scrapers.Hashook, 7), "Hashook", "hashook" },
+	&scrapingTask{ scrapers.Nibit(scrapers.Lahav, 7), "Lahav", "lahav" },
+	&scrapingTask{ scrapers.Coop(), "Coop", "coop" },
+	&scrapingTask{ scrapers.Cerberus("freshmarket_sn", "f_efrd"), "Freshmarket", "freshmarket" },
+	&scrapingTask{ scrapers.Zolbegadol(), "ZolBegadol", "zolbegadol" },
 }
 
 // Returns the name that should be given to the log file.

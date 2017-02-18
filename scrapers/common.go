@@ -1,8 +1,8 @@
 // Deals with downloading data files from the different servers, with specific
 // configurations for each chain.
-package aggregators
+package scrapers
 
-// Common utilities for all aggregators.
+// Common utilities for all scrapers.
 
 import (
 	"bufio"
@@ -19,14 +19,14 @@ import (
 )
 
 
-// ----- AGGREGATOR TYPE -------------------------------------------------------
+// ----- SCRAPER TYPE ---------------------------------------------------------
 
-// An aggregator downloads data files for a specific chain.
-type Aggregator interface {
+// A scraper downloads data files for a specific chain.
+type Scraper interface {
 	// Downloads all available data files into the specified directory. An
-	// aggregator may decide to omit downloading already existing files. An
-	// aggregator may use several threads for its work.
-	Aggregate(dir string) error
+	// scraper may decide to omit downloading already existing files. An
+	// scraper may use several threads for its work.
+	Scrape(dir string) error
 }
 
 
