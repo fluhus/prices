@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -11,8 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"io"
-	
+
 	"github.com/fluhus/gostuff/ezpprof"
 	"github.com/fluhus/prices/bouncer"
 	"github.com/fluhus/prices/myflag"
@@ -59,7 +59,9 @@ func main() {
 
 	// Prepare threads.
 	numOfThreads := runtime.NumCPU()
-	if numOfThreads > 16 { numOfThreads = 16 }
+	if numOfThreads > 16 {
+		numOfThreads = 16
+	}
 	fmt.Println("Running on", numOfThreads, "threads.")
 	fileChan := make(chan string, numOfThreads)
 	doneChan := make(chan int, numOfThreads)
@@ -117,11 +119,11 @@ func pef(s string, a ...interface{}) {
 }
 
 var args struct {
-	files     []string
-	check     bool
-	outDir    string
-	forceRaw  bool
-	help      bool
+	files    []string
+	check    bool
+	outDir   string
+	forceRaw bool
+	help     bool
 }
 
 func parseArgs() error {
@@ -193,7 +195,7 @@ func processFile(file string) error {
 
 	var err error
 	if !args.forceRaw {
-		err = reportSerializedFile(file + ".items", r, tim)
+		err = reportSerializedFile(file+".items", r, tim)
 	}
 
 	// Parse raw file.
@@ -204,7 +206,7 @@ func processFile(file string) error {
 		}
 	}
 
-	return reportSerializedFile(file + ".items", r, tim)
+	return reportSerializedFile(file+".items", r, tim)
 }
 
 // Parses a raw data file and serializes the result.
@@ -230,22 +232,22 @@ func parseFile(file string, prsr *parser) error {
 	}
 
 	// Save processed file.
-	meta := map[string]string{"version":parserVersion}
+	meta := map[string]string{"version": parserVersion}
 	items = append([]map[string]string{meta}, items...)
-		
-	err = serializer.Serialize(file + ".items", items)
+
+	err = serializer.Serialize(file+".items", items)
 	if err != nil {
 		return fmt.Errorf("Error serializing: %v", err)
 	}
-	
+
 	return nil
 }
 
 // Reads a serialized file and reports it to the given reporter. If reporter
 // is nil, reads without reporting (for check mode).
 func reportSerializedFile(file string, r reporter, tim int64) error {
-	d := serializer.NewDeserializer(file);
-	
+	d := serializer.NewDeserializer(file)
+
 	// Read metadata.
 	meta := d.Next()
 	if meta == nil {
@@ -255,14 +257,14 @@ func reportSerializedFile(file string, r reporter, tim int64) error {
 		return fmt.Errorf("Mismatching parser version: expected '%s' actual '%s'.",
 			parserVersion, meta["version"])
 	}
-	
+
 	// Go over items.
 	for item := d.Next(); item != nil; item = d.Next() {
 		if r != nil {
 			r([]map[string]string{item}, tim)
 		}
 	}
-	
+
 	// EOF is sababa, but other errors should be reported.
 	if d.Err() == io.EOF {
 		return nil
@@ -335,5 +337,3 @@ Arguments:`
 var credit = `Credit:
 Based on the 'prices' project by Amit Lavon.
 https://github.com/fluhus/prices`
-
-
