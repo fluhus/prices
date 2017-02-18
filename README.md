@@ -63,7 +63,7 @@ How to Use
 
 ### Creating the Database
 
-1. Run `bin/items`. The program parses XML files and outputs tab-separated
+1. Run `bin/parse`. The program parses XML files and outputs tab-separated
    text files.
 2. Import the generated files to your database.
 
