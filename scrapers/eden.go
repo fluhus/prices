@@ -4,12 +4,12 @@ package scrapers
 
 import (
 	"bytes"
-	"net/http"
-	"io/ioutil"
 	"fmt"
-	"regexp"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
 // Homepage for file list.
@@ -19,7 +19,7 @@ const edenHome = "http://operations.edenteva.co.il/Prices/index"
 const edenFile = "http://operations.edenteva.co.il/Prices/"
 
 // Scrapes data from Eden Teva Market.
-type edenScraper struct {}
+type edenScraper struct{}
 
 // Returns a new Eden Teva Market scraper.
 func Eden() Scraper {
@@ -32,38 +32,38 @@ func (a *edenScraper) Scrape(dir string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to make dir: %v", err)
 	}
-	
+
 	fileList, err := a.fileList()
 	if err != nil {
 		return fmt.Errorf("Failed to get file list: %v", err)
 	}
-	
+
 	// Start pusher thread.
 	files := make(chan string)
-	done  := make(chan error)
+	done := make(chan error)
 	go func() {
 		for _, file := range fileList {
 			files <- file
 		}
 		close(files)
 	}()
-	
+
 	// Start downloader threads.
 	for i := 0; i < numberOfThreads; i++ {
 		go func() {
 			for file := range files {
-				_, err := downloadIfNotExists(edenFile + file,
-						filepath.Join(dir, file), nil)
+				_, err := downloadIfNotExists(edenFile+file,
+					filepath.Join(dir, file), nil)
 				if err != nil {
 					done <- err
 					return
 				}
 			}
-			
+
 			done <- err
 		}()
 	}
-	
+
 	// Wait for downloaders.
 	for i := 0; i < numberOfThreads; i++ {
 		e := <-done
@@ -71,10 +71,11 @@ func (a *edenScraper) Scrape(dir string) error {
 			err = e
 		}
 	}
-	
+
 	// Drain pusher thread.
-	for range files {}
-	
+	for range files {
+	}
+
 	return nil
 }
 
@@ -90,26 +91,24 @@ func (a *edenScraper) fileList() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read homepage: %v", err)
 	}
-	
+
 	// Parse links.
 	result := []string{}
 	files := regexp.MustCompile("<a href=\"(.*?)\"").FindAllSubmatch(body, -1)
 	if len(files) == 0 {
 		return nil, fmt.Errorf("Got 0 files.")
 	}
-	
+
 	for _, file := range files {
 		// All links should end with '.zip'. A change in that condition means
 		// that the homepage had changed.
 		if !bytes.HasSuffix(file[1], []byte(".zip")) {
 			return nil, fmt.Errorf("Found a link that's not a zip file: %s",
-					file[1])
+				file[1])
 		}
-		
+
 		result = append(result, string(file[1]))
 	}
-	
+
 	return result, nil
 }
-
-

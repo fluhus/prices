@@ -3,15 +3,15 @@ package scrapers
 // A scraper for the Shufersal chain.
 
 import (
-	"net/http"
-	"io/ioutil"
 	"fmt"
+	"html"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
-	"path/filepath"
-	"log"
-	"os"
-	"html"
 )
 
 // A scraper for the Shufersal chain.
@@ -34,17 +34,17 @@ func (a *shufersalScraper) Scrape(dir string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to get page 1: %v", err)
 	}
-	
+
 	numberOfPages := a.parseLastPageNumber(page)
 	if numberOfPages == -1 {
 		return fmt.Errorf("Failed to parse number of pages.")
 	}
 	log.Printf("Parsing %d pages.", numberOfPages)
-	
+
 	// Download!
 	numChan := make(chan int, numberOfThreads)
 	done := make(chan error, numberOfThreads)
-	
+
 	for i := 0; i < numberOfThreads; i++ {
 		go func() {
 			for i := range numChan {
@@ -55,14 +55,14 @@ func (a *shufersalScraper) Scrape(dir string) error {
 					done <- err
 					return
 				}
-				
+
 				entries, err := a.parsePage(page)
 				if err != nil {
 					done <- err
 					return
 				}
 				log.Printf("Page %d has %d entries.", i, len(entries))
-				
+
 				// Download entries.
 				for _, entry := range entries {
 					to := filepath.Join(dir, entry.file)
@@ -73,11 +73,11 @@ func (a *shufersalScraper) Scrape(dir string) error {
 					}
 				}
 			}
-			
+
 			done <- nil
 		}()
 	}
-	
+
 	// Give page numbers.
 	go func() {
 		for i := 1; i <= numberOfPages; i++ {
@@ -85,7 +85,7 @@ func (a *shufersalScraper) Scrape(dir string) error {
 		}
 		close(numChan)
 	}()
-	
+
 	// Join threads.
 	for i := 0; i < numberOfThreads; i++ {
 		e := <-done
@@ -93,9 +93,10 @@ func (a *shufersalScraper) Scrape(dir string) error {
 			err = e
 		}
 	}
-	
+
 	// Drain num channel.
-	for range numChan {}
+	for range numChan {
+	}
 
 	return err
 }
@@ -103,13 +104,15 @@ func (a *shufersalScraper) Scrape(dir string) error {
 // Returns the body of the n'th page in Shufersal's site.
 func (a *shufersalScraper) getPage(n int) ([]byte, error) {
 	res, err := http.Get(fmt.Sprintf("http://prices.shufersal.co.il/?page=%d",
-			n))
-	if err != nil { return nil, err }
+		n))
+	if err != nil {
+		return nil, err
+	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Bad response status: %s", res.Status)
 	}
-	
+
 	return ioutil.ReadAll(res.Body)
 }
 
@@ -122,30 +125,30 @@ type shufersalEntry struct {
 
 // Parses entries out of the given page body. Returns an error if parsing fails.
 func (a *shufersalScraper) parsePage(page []byte) ([]*shufersalEntry,
-		error) {
+	error) {
 	result := []*shufersalEntry{}
-	
+
 	// Some regular expressions.
 	pageSplitter := regexp.MustCompile("(?s)<tr.*?</tr>")
 	rowSplitter := regexp.MustCompile("(?s)<td>(.*?)</td>")
 	urlGetter := regexp.MustCompile("^<a href=\"(.*?)\"")
 	fileGetter := regexp.MustCompile("^[^?]*/([^/?]*)?")
-	
+
 	rows := pageSplitter.FindAll(page, -1)
-	if len(rows) < 3 {  // Should have at least one entry.
+	if len(rows) < 3 { // Should have at least one entry.
 		return nil, fmt.Errorf("Bad number of rows: %d, expected at least 3.",
-				len(rows))
+			len(rows))
 	}
-	
-	rows = rows[2:]  // Skip header and footer.
+
+	rows = rows[2:] // Skip header and footer.
 	for _, row := range rows {
 		// Split row to columns.
 		fields := rowSplitter.FindAllSubmatch(row, -1)
 		if len(fields) != 8 {
 			return nil, fmt.Errorf("Bad number of fields: %d, expected 8.",
-					len(fields))
+				len(fields))
 		}
-		
+
 		// Parse fields.
 		index, err := strconv.Atoi(string(fields[7][1]))
 		if err != nil {
@@ -159,7 +162,7 @@ func (a *shufersalScraper) parsePage(page []byte) ([]*shufersalEntry,
 		if file == nil {
 			return nil, fmt.Errorf("cannot not find file name in: %s", url[1])
 		}
-		
+
 		// Append new entry.
 		entry := &shufersalEntry{}
 		entry.index = index
@@ -167,7 +170,7 @@ func (a *shufersalScraper) parsePage(page []byte) ([]*shufersalEntry,
 		entry.file = string(file[1])
 		result = append(result, entry)
 	}
-	
+
 	return result, nil
 }
 
@@ -175,16 +178,16 @@ func (a *shufersalScraper) parsePage(page []byte) ([]*shufersalEntry,
 func (a *shufersalScraper) parseLastPageNumber(page []byte) int {
 	// log.Print(string(page))
 	re := regexp.MustCompile("<a [^>]*?href=\"/\\?page=(\\d+)")
-	
+
 	match := re.FindAllSubmatch(page, -1)
 	if len(match) == 0 {
 		return -1
 	}
-	
-	num, err := strconv.Atoi(string(match[len(match) - 1][1]))
+
+	num, err := strconv.Atoi(string(match[len(match)-1][1]))
 	if err != nil {
 		return -1
 	}
-	
+
 	return num
 }

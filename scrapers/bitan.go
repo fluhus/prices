@@ -3,12 +3,12 @@ package scrapers
 // A scraper for Yeinot Bitan.
 
 import (
-	"net/http"
-	"io/ioutil"
 	"fmt"
-	"regexp"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 )
 
 // Homepage for file list.
@@ -18,7 +18,7 @@ const bitanHome = "http://www.ybitan.co.il/pirce_update"
 const bitanFile = "http://www.ybitan.co.il/upload/"
 
 // Scrapes data from Yeinot Bitan.
-type bitanScraper struct {}
+type bitanScraper struct{}
 
 // Returns a new Yeinot Bitan scraper.
 func Bitan() Scraper {
@@ -31,38 +31,38 @@ func (a *bitanScraper) Scrape(dir string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to make dir: %v", err)
 	}
-	
+
 	fileList, err := a.fileList()
 	if err != nil {
 		return fmt.Errorf("Failed to get file list: %v", err)
 	}
-	
+
 	// Start pusher thread.
 	files := make(chan string)
-	done  := make(chan error)
+	done := make(chan error)
 	go func() {
 		for _, file := range fileList {
 			files <- file
 		}
 		close(files)
 	}()
-	
+
 	// Start downloader threads.
 	for i := 0; i < numberOfThreads; i++ {
 		go func() {
 			for file := range files {
-				_, err := downloadIfNotExists(bitanFile + file,
-						filepath.Join(dir, file), nil)
+				_, err := downloadIfNotExists(bitanFile+file,
+					filepath.Join(dir, file), nil)
 				if err != nil {
 					done <- err
 					return
 				}
 			}
-			
+
 			done <- nil
 		}()
 	}
-	
+
 	// Wait for downloaders.
 	for i := 0; i < numberOfThreads; i++ {
 		e := <-done
@@ -70,10 +70,11 @@ func (a *bitanScraper) Scrape(dir string) error {
 			err = e
 		}
 	}
-	
+
 	// Drain pusher thread.
-	for range files {}
-	
+	for range files {
+	}
+
 	return err
 }
 
@@ -89,20 +90,18 @@ func (a *bitanScraper) fileList() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read homepage: %v", err)
 	}
-	
+
 	// Parse links.
 	result := []string{}
 	files := regexp.MustCompile(
-			"<a href=\"/upload/(.*?\\.zip)\"").FindAllSubmatch(body, -1)
+		"<a href=\"/upload/(.*?\\.zip)\"").FindAllSubmatch(body, -1)
 	if len(files) == 0 {
 		return nil, fmt.Errorf("Got 0 files.")
 	}
-	
+
 	for _, file := range files {
 		result = append(result, string(file[1]))
 	}
-	
+
 	return result, nil
 }
-
-

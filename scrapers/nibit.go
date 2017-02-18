@@ -3,22 +3,22 @@ package scrapers
 // A scraper for Nibit-based chains.
 
 import (
-	"net/http"
-	"io/ioutil"
 	"fmt"
-	"regexp"
-	"time"
+	"io/ioutil"
+	"log"
+	"net/http"
+	urllib "net/url"
 	"os"
 	"path/filepath"
-	"log"
-	urllib "net/url"
+	"regexp"
+	"time"
 )
 
 const (
-	nibitHome = "http://matrixcatalog.co.il/"                // For cookies.
-	nibitPage = nibitHome + "NBCompetitionRegulations.aspx"  // For queries.
+	nibitHome     = "http://matrixcatalog.co.il/"               // For cookies.
+	nibitPage     = nibitHome + "NBCompetitionRegulations.aspx" // For queries.
 	nibitDownload = "http://matrixcatalog.co.il/" +
-			"CompetitionRegulationsFiles/latest/"            // For downloads.
+		"CompetitionRegulationsFiles/latest/" // For downloads.
 )
 
 // Chain ID's for filtering.
@@ -30,8 +30,8 @@ const (
 
 // Scrapes data from Nibit.
 type nibitScraper struct {
-	chain string  // Name of chain.
-	days  int     // How many days from now back it should download.
+	chain string // Name of chain.
+	days  int    // How many days from now back it should download.
 }
 
 // Returns a new Nibit scraper. Chain is an ID. Days is how many days back
@@ -42,7 +42,7 @@ func Nibit(chain string, days int) Scraper {
 	if days < 1 {
 		panic(fmt.Sprintf("Bad number of days: %d. Must be positive.", days))
 	}
-	
+
 	return &nibitScraper{chain, days}
 }
 
@@ -52,7 +52,7 @@ func (a *nibitScraper) Scrape(dir string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to make dir: %v", err)
 	}
-	
+
 	log.Print("Starting session.")
 	cl, err := a.startSession()
 	if err != nil {
@@ -60,14 +60,14 @@ func (a *nibitScraper) Scrape(dir string) error {
 	}
 
 	for i := 0; i < a.days; i++ {
-		date := a.formatDate(time.Now().AddDate(0, 0, -i * 1))
+		date := a.formatDate(time.Now().AddDate(0, 0, -i*1))
 		log.Printf("Downloading files from %s.", date)
 		err = a.download(cl, date, dir)
 		if err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -80,30 +80,30 @@ func (a *nibitScraper) startSession() (*http.Client, error) {
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Failed to request homepage: Bad response " +
-				"status: %s", res.Status)
+		return nil, fmt.Errorf("Failed to request homepage: Bad response "+
+			"status: %s", res.Status)
 	}
-	
+
 	// Parse cookie.
 	name, value := a.parseSessionCookie(res)
 	if name == "" || value == "" {
 		return nil, fmt.Errorf("Failed to get session ID.")
 	}
-	
+
 	return &http.Client{Jar: singleCookieJar(nibitHome, name, value)}, nil
 }
 
 // Parses the session ID cookie of the given response. Returns empty strings
 // if not found.
 func (a *nibitScraper) parseSessionCookie(res *http.Response) (name,
-		value string) {
+	value string) {
 	// Check for Set-Cookie field.
 	if len(res.Header["Set-Cookie"]) == 0 {
 		return "", ""
 	}
-	
+
 	match := regexp.MustCompile("^([^;=]+)=([^;]+)").FindStringSubmatch(
-			res.Header["Set-Cookie"][0])
+		res.Header["Set-Cookie"][0])
 	if match == nil {
 		return "", ""
 	}
@@ -126,13 +126,13 @@ func (a *nibitScraper) download(cl *http.Client, date, dir string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to read page body: %v", err)
 	}
-	
+
 	// Update form values.
 	values := a.formValues(body)
 	a.setFormDate(values, date)
 	a.setFormChain(values, a.chain)
 	a.setFormActionSearch(values)
-		
+
 	// Send post - to get files for specific date and chain.
 	res, err = cl.PostForm(nibitPage, values)
 	if err != nil {
@@ -147,23 +147,23 @@ func (a *nibitScraper) download(cl *http.Client, date, dir string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to read page body: %v", err)
 	}
-		
+
 	a.clearFormAction(values)
-		
+
 	// Parse table.
 	rowsRe := regexp.MustCompile("(?s)<tr>(.*?)</tr>")
 	colsRe := regexp.MustCompile("(?s)<td>(.*?)</td>")
-	
+
 	rows := rowsRe.FindAllSubmatch(body, -1)
 	if len(rows) == 0 {
 		return fmt.Errorf("Found 0 files on page.")
 	}
 	log.Printf("Found %d rows (including header).", len(rows))
 	// (There can be days with no files, so no error for 0 files.)
-	
+
 	infos := make(chan *nibitFileInfo, numberOfThreads)
-	done  := make(chan error, numberOfThreads)
-	
+	done := make(chan error, numberOfThreads)
+
 	// Start pusher thread.
 	go func() {
 		fileNumber := 1
@@ -171,72 +171,75 @@ func (a *nibitScraper) download(cl *http.Client, date, dir string) error {
 		for _, row := range rows {
 			// Break into columns.
 			cols := colsRe.FindAllSubmatch(row[1], -1)
-			if len(cols) == 0 { continue }  // Maybe a header.
-			
+			if len(cols) == 0 {
+				continue
+			} // Maybe a header.
+
 			info := &nibitFileInfo{string(cols[0][1]) + ".xml.gz",
-					fileNumber}
+				fileNumber}
 			fileNumber++
-			
+
 			infos <- info
 		}
-		
+
 		close(infos)
 	}()
-	
+
 	// Start downloader threads.
 	for i := 0; i < numberOfThreads; i++ {
 		go func() {
 			for info := range infos {
-				_, err := downloadIfNotExists(nibitDownload + info.name,
-						filepath.Join(dir, info.name), cl)
+				_, err := downloadIfNotExists(nibitDownload+info.name,
+					filepath.Join(dir, info.name), cl)
 				if err != nil {
 					done <- fmt.Errorf("Failed to download '%s': %v",
-							info.name, err)
+						info.name, err)
 					return
 				}
 			}
-			
+
 			done <- nil
 		}()
 	}
-	
+
 	// Wait for downloaders.
 	for i := 0; i < numberOfThreads; i++ {
-		e := <- done
+		e := <-done
 		if e != nil {
 			err = e
 		}
 	}
-	
+
 	// Drain pusher thread.
-	for range infos {}
-	
+	for range infos {
+	}
+
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
 // Information needed to download a file.
 type nibitFileInfo struct {
-	name   string  // Name by which to save on disk.
-	target int     // Event to send to server.
+	name   string // Name by which to save on disk.
+	target int    // Event to send to server.
 }
 
 // Parses form values from the given response body. Before using the result for
 // a POST request, make sure to set the date and action values.
 func (a *nibitScraper) formValues(body []byte) urllib.Values {
 	re := regexp.MustCompile("<input type=\"hidden\" name=\"[^\"]*\" " +
-			"id=\"([^\"]*)\" value=\"([^\"]*)\"")
+		"id=\"([^\"]*)\" value=\"([^\"]*)\"")
 	match := re.FindAllSubmatch(body, -1)
-	
+
 	// Get hidden form values.
 	result := map[string][]string{}
 	for _, m := range match {
 		result[string(m[1])] = []string{string(m[2])}
 	}
-	
+
 	// Add visible form values.
 	result["ctl00$txtSearchProduct"] = []string{""}
 	result["ctl00$TextArea"] = []string{""}
@@ -274,14 +277,14 @@ func (a *nibitScraper) clearFormAction(values urllib.Values) {
 
 // Sets the chain field of the form. Give "-1" for all chains.
 func (a *nibitScraper) setFormChain(values urllib.Values,
-		chain string) {
+	chain string) {
 	values["ctl00$MainContent$chain"] = []string{chain}
 }
 
 // Sets the target for downloading.
 func (a *nibitScraper) setFormTarget(values urllib.Values, target int) {
 	values["__EVENTTARGET"] = []string{fmt.Sprintf(
-			"ctl00$MainContent$repeater$ctl%02d$lblDownloadFile", target)}
+		"ctl00$MainContent$repeater$ctl%02d$lblDownloadFile", target)}
 }
 
 // Returns a shallow copy of the given values. Keys can be added and removed
@@ -293,4 +296,3 @@ func (a *nibitScraper) copyValues(values urllib.Values) urllib.Values {
 	}
 	return urllib.Values(result)
 }
-

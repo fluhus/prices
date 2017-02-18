@@ -4,10 +4,10 @@ package scrapers
 // chains are added.
 
 import (
-	"net/http"
-	"regexp"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"regexp"
 )
 
 // Page with table of chains.
@@ -24,20 +24,19 @@ func CountChains() (int, error) {
 	if res.StatusCode != http.StatusOK {
 		return 0, fmt.Errorf("Got status: %s", res.Status)
 	}
-	
+
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return 0, fmt.Errorf("Failed to read body: %v", err)
 	}
-	
+
 	// Parse page.
-	rows := regexp.MustCompile("<tr class=\"ms-rteTable(Even|Odd|Footer)Row" +
-			"-mytable\">").FindAllSubmatch(body, -1)
-	
+	rows := regexp.MustCompile("<tr class=\"ms-rteTable(Even|Odd|Footer)Row"+
+		"-mytable\">").FindAllSubmatch(body, -1)
+
 	if len(rows) == 0 {
 		return 0, fmt.Errorf("Found 0 chains; page structure may have changed.")
 	}
-	
+
 	return len(rows), nil
 }
-

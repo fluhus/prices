@@ -11,13 +11,12 @@ import (
 	"log"
 	"net/http"
 	"net/http/cookiejar"
+	urllib "net/url"
 	"os"
 	"regexp"
-	"strconv"
 	"runtime"
-	urllib "net/url"
+	"strconv"
 )
-
 
 // ----- SCRAPER TYPE ---------------------------------------------------------
 
@@ -28,7 +27,6 @@ type Scraper interface {
 	// scraper may use several threads for its work.
 	Scrape(dir string) error
 }
-
 
 // ----- COMMON UTILITIES ------------------------------------------------------
 
@@ -46,9 +44,13 @@ func find(text []byte, exp string) []byte {
 // url is malformed.
 func singleCookieJar(url, name, value string) http.CookieJar {
 	jar, err := cookiejar.New(nil)
-	if err != nil { panic(err.Error()) }
+	if err != nil {
+		panic(err.Error())
+	}
 	pathUrl, err := urllib.Parse(url)
-	if err != nil { panic(err.Error()) }
+	if err != nil {
+		panic(err.Error())
+	}
 	jar.SetCookies(pathUrl, []*http.Cookie{&http.Cookie{
 		Name: name, Value: value}})
 	return jar
@@ -74,10 +76,16 @@ func fileSize(path string) int64 {
 // information is available.
 func responseSize(res *http.Response) int64 {
 	field, ok := res.Header["Content-Length"]
-	if !ok { return -1 }
-	if len(field) != 1 { return -1 }
+	if !ok {
+		return -1
+	}
+	if len(field) != 1 {
+		return -1
+	}
 	size, err := strconv.ParseInt(field[0], 0, 64)
-	if err != nil { return -1 }
+	if err != nil {
+		return -1
+	}
 	return size
 }
 
@@ -89,12 +97,12 @@ func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 	if cl == nil {
 		cl = &http.Client{}
 	}
-	
+
 	// Check if file already exists.
 	if fileExists(to) && fileSize(to) != 0 {
 		return false, nil
 	}
-	
+
 	// Request file.
 	res, err := cl.Get(url)
 	if err != nil {
@@ -104,9 +112,9 @@ func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 	if res.StatusCode != http.StatusOK {
 		return false, fmt.Errorf("Got bad response status: %s", res.Status)
 	}
-	
+
 	log.Printf("Downloading '%s' to '%s'.", url, to)
-	
+
 	// Open output file.
 	out, err := os.Create(to)
 	if err != nil {
@@ -115,13 +123,13 @@ func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 	defer out.Close()
 	buf := bufio.NewWriter(out)
 	defer buf.Flush()
-	
+
 	// Download!
 	_, err = io.Copy(buf, res.Body)
 	if err != nil {
 		return false, fmt.Errorf("Failed to save file: %v", err)
 	}
-	
+
 	return true, nil
 }
 
@@ -129,17 +137,17 @@ func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 // logged-in sessions, or nil to start a new session. Values will be used as
 // POST form values. Returns true iff file was downloaded.
 func downloadIfNotExistsPost(url, to string, cl *http.Client,
-		values urllib.Values) (bool, error) {
+	values urllib.Values) (bool, error) {
 	// Instantiate client.
 	if cl == nil {
 		cl = &http.Client{}
 	}
-	
+
 	// Check if file already exists.
 	if fileExists(to) && fileSize(to) != 0 {
 		return false, nil
 	}
-	
+
 	// Request file.
 	res, err := cl.PostForm(url, values)
 	if err != nil {
@@ -149,9 +157,9 @@ func downloadIfNotExistsPost(url, to string, cl *http.Client,
 	if res.StatusCode != http.StatusOK {
 		return false, fmt.Errorf("Got bad response status: %s", res.Status)
 	}
-	
+
 	log.Printf("Downloading '%s' to '%s'.", url, to)
-	
+
 	// Open output file.
 	out, err := os.Create(to)
 	if err != nil {
@@ -160,18 +168,18 @@ func downloadIfNotExistsPost(url, to string, cl *http.Client,
 	defer out.Close()
 	buf := bufio.NewWriter(out)
 	defer buf.Flush()
-	
+
 	// Download!
 	_, err = io.Copy(buf, res.Body)
 	if err != nil {
 		return false, fmt.Errorf("Failed to save file: %v", err)
 	}
-	
+
 	return true, nil
 }
 
 // A directory and a file. Surprised? So are we!
 type dirFile struct {
-	dir string
+	dir  string
 	file string
 }

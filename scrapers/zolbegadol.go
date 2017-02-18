@@ -3,13 +3,13 @@ package scrapers
 // A scraper for the Zol-Begadol chain.
 
 import (
-	"net/http"
-	"io/ioutil"
 	"fmt"
-	"regexp"
-	"path/filepath"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
+	"path/filepath"
+	"regexp"
 )
 
 // Home page of the Zol-Begadol price site.
@@ -29,38 +29,39 @@ func (a *zolbegadolScraper) Scrape(dir string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to make dir: %v", err)
 	}
-	
+
 	// Start downloader threads.
 	files, filesErr := a.getFilesChannel()
 	done := make(chan error, numberOfThreads)
-	
+
 	for i := 0; i < numberOfThreads; i++ {
 		go func() {
 			for df := range files {
 				to := filepath.Join(dir, df.file)
-				_, err := downloadIfNotExists(zolbegadolHome + df.dir + df.file,
-						to, nil)
+				_, err := downloadIfNotExists(zolbegadolHome+df.dir+df.file,
+					to, nil)
 				if err != nil {
 					done <- err
 					return
 				}
 			}
-			
+
 			done <- nil
 		}()
 	}
-	
+
 	// Wait for threads to finish (including pusher thread).
 	for i := 0; i < numberOfThreads; i++ {
-		e := <- done
+		e := <-done
 		if e != nil {
 			err = e
 		}
 	}
-	
+
 	// Drain file channel.
-	for range files {}
-	
+	for range files {
+	}
+
 	// Check for errors in file getter.
 	e := <-filesErr
 	if e != nil {
@@ -81,25 +82,25 @@ func (a *zolbegadolScraper) getDirectories() ([]string, error) {
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Failed to get page (status %s).", res.Status)
 	}
-	
+
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Parse directory names.
 	re := regexp.MustCompile("<a href=\"(201\\d{5}/)\"")
 	match := re.FindAllSubmatch(body, -1)
-	
+
 	if len(match) == 0 {
 		return nil, fmt.Errorf("Found no directories.")
 	}
-	
+
 	dirs := make([]string, len(match))
 	for i := range match {
 		dirs[i] = string(match[i][1]) + "/gz/"
 	}
-	
+
 	return dirs, nil
 }
 
@@ -115,7 +116,7 @@ func (a *zolbegadolScraper) getFiles(dir string) ([]string, error) {
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Failed to get page (status %s).", res.Status)
 	}
-	
+
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
@@ -124,16 +125,16 @@ func (a *zolbegadolScraper) getFiles(dir string) ([]string, error) {
 	// Parse file names.
 	re := regexp.MustCompile("<a href=\"([^\"]*\\.gz)\"")
 	match := re.FindAllSubmatch(body, -1)
-	
+
 	if len(match) == 0 {
 		return nil, fmt.Errorf("Found no files in directory '%s'.", dir)
 	}
-	
+
 	files := make([]string, len(match))
 	for i := range match {
 		files[i] = string(match[i][1])
 	}
-	
+
 	return files, nil
 }
 
@@ -144,11 +145,11 @@ func (a *zolbegadolScraper) getFiles(dir string) ([]string, error) {
 // This function was created because going over all directories in a single
 // thread takes too long.
 func (a *zolbegadolScraper) getFilesChannel() (files chan *dirFile,
-		done chan error) {
+	done chan error) {
 	// Initialize channels.
 	files = make(chan *dirFile, numberOfThreads)
 	done = make(chan error, 1)
-		
+
 	// Get files for download.
 	dirs, err := a.getDirectories()
 	if err != nil {
@@ -162,11 +163,11 @@ func (a *zolbegadolScraper) getFilesChannel() (files chan *dirFile,
 		return
 	}
 	log.Printf("Found %d directories.", len(dirs))
-	
+
 	// Create pusher threads.
 	dirChan := make(chan string, numberOfThreads)
 	pushDones := make(chan error, numberOfThreads)
-	
+
 	for i := 0; i < numberOfThreads; i++ {
 		go func() {
 			for dir := range dirChan {
@@ -178,20 +179,20 @@ func (a *zolbegadolScraper) getFilesChannel() (files chan *dirFile,
 				}
 				if len(fileList) == 0 {
 					pushDones <- fmt.Errorf("Found 0 files in directory %s.",
-							dir)
+						dir)
 					return
 				}
-				
+
 				// Push files into channel.
 				for _, file := range fileList {
 					files <- &dirFile{dir, file}
 				}
 			}
-			
+
 			pushDones <- nil
 		}()
 	}
-	
+
 	// Dir pusher thread.
 	go func() {
 		for _, dir := range dirs {
@@ -199,7 +200,7 @@ func (a *zolbegadolScraper) getFilesChannel() (files chan *dirFile,
 		}
 		close(dirChan)
 	}()
-	
+
 	// Waiter thread.
 	go func() {
 		// Wait for pusher threads.
@@ -212,13 +213,14 @@ func (a *zolbegadolScraper) getFilesChannel() (files chan *dirFile,
 		}
 		done <- err
 		close(done)
-		
+
 		// Drain dir pusher.
-		for range dirChan {}
-		
+		for range dirChan {
+		}
+
 		// We're done!
 		close(files)
 	}()
-	
+
 	return
 }
