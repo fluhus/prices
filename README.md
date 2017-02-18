@@ -59,7 +59,7 @@ How to Use
 
 ### Downloading Price Data
 
-1. Run `bin/prices`. The program downloads all files from all known vendors.
+1. Run `bin/scrape`. The program downloads all files from all known vendors.
 
 ### Creating the Database
 
