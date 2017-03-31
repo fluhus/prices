@@ -12,10 +12,10 @@ import (
 )
 
 // Homepage for file list.
-const bitanHome = "http://www.ybitan.co.il/pirce_update"
+const bitanHome = "http://info.ybitan.co.il/pirce_update"
 
 // Prefix of download URLs.
-const bitanFile = "http://www.ybitan.co.il/upload/"
+const bitanFile = "http://info.ybitan.co.il/upload/"
 
 // Scrapes data from Yeinot Bitan.
 type bitanScraper struct{}
