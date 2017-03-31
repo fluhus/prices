@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -159,6 +160,9 @@ func parseArgs() error {
 		if err != nil {
 			return fmt.Errorf("Error reading file-list: %v", err)
 		}
+
+		// Remove carriage return, generated in Windows files, to avoid errors.
+		text = bytes.Replace(text, []byte("\r"), []byte(""), -1)
 
 		if len(text) > 0 {
 			args.files = strings.Split(string(text), "\n")
