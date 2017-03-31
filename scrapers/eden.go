@@ -60,7 +60,7 @@ func (a *edenScraper) Scrape(dir string) error {
 				}
 			}
 
-			done <- err
+			done <- nil
 		}()
 	}
 
