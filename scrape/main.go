@@ -127,8 +127,9 @@ func logFileName() string {
 
 // Holds parsed command-line arguments.
 var args struct {
-	dir    string // Where to download files.
-	stdout *bool  // Log to stdout?
+	dir    string  // Where to download files.
+	stdout *bool   // Log to stdout?
+	from   *string // Download starting from this date.
 }
 
 // Signifies that no args were given.
@@ -139,10 +140,18 @@ var noArgs = fmt.Errorf("")
 func parseArgs() error {
 	args.stdout = myflag.Bool("stdout", "", "Log to stdout instead of log"+
 		" file.", false)
+	args.from = myflag.String("from", "", "time", "Download files from this time"+
+		" and on. Format: YYYYMMDDhhmm. Default: Download all files.", "")
 
 	err := myflag.Parse()
 	if err != nil {
 		return err
+	}
+	if *args.from != "" {
+		err = scrapers.SetFromTimestamp(*args.from)
+		if err != nil {
+			return err
+		}
 	}
 
 	a := myflag.Args()

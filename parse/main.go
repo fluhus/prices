@@ -291,15 +291,16 @@ func fileType(file string) string {
 
 // Infers the timestamp of a file according to its name. Returns -1 if failed.
 func fileTimestamp(file string) int64 {
-	match := regexp.MustCompile("\\D(201\\d+)").FindStringSubmatch(file)
-	if match == nil || len(match[1]) != 12 {
+	match := regexp.MustCompile("(\\D|^)(20\\d{10})(\\D|$)").FindStringSubmatch(filepath.Base(file))
+	if match == nil || len(match[2]) != 12 {
 		return -1
 	}
-	year, _ := strconv.ParseInt(match[1][0:4], 10, 64)
-	month, _ := strconv.ParseInt(match[1][4:6], 10, 64)
-	day, _ := strconv.ParseInt(match[1][6:8], 10, 64)
-	hour, _ := strconv.ParseInt(match[1][8:10], 10, 64)
-	minute, _ := strconv.ParseInt(match[1][10:12], 10, 64)
+	digits := match[2]
+	year, _ := strconv.ParseInt(digits[0:4], 10, 64)
+	month, _ := strconv.ParseInt(digits[4:6], 10, 64)
+	day, _ := strconv.ParseInt(digits[6:8], 10, 64)
+	hour, _ := strconv.ParseInt(digits[8:10], 10, 64)
+	minute, _ := strconv.ParseInt(digits[10:12], 10, 64)
 	t := time.Date(int(year), time.Month(month), int(day), int(hour),
 		int(minute), 0, 0, time.UTC)
 

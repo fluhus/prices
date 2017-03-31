@@ -13,9 +13,11 @@ import (
 	"net/http/cookiejar"
 	urllib "net/url"
 	"os"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
+	"time"
 )
 
 // ----- SCRAPER TYPE ---------------------------------------------------------
@@ -93,6 +95,10 @@ func responseSize(res *http.Response) int64 {
 // logged-in sessions, or nil to start a new session. Returns true iff file was
 // downloaded.
 func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
+	if ts := fileTimestamp(to); ts != -1 && ts < fromTimestamp {
+		return false, nil
+	}
+
 	// Instantiate client.
 	if cl == nil {
 		cl = &http.Client{}
@@ -138,6 +144,10 @@ func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 // POST form values. Returns true iff file was downloaded.
 func downloadIfNotExistsPost(url, to string, cl *http.Client,
 	values urllib.Values) (bool, error) {
+	if ts := fileTimestamp(to); ts != -1 && ts < fromTimestamp {
+		return false, nil
+	}
+
 	// Instantiate client.
 	if cl == nil {
 		cl = &http.Client{}
@@ -182,4 +192,39 @@ func downloadIfNotExistsPost(url, to string, cl *http.Client,
 type dirFile struct {
 	dir  string
 	file string
+}
+
+// ----- TIMESTAMP HANDLING ---------------------------------------------------
+
+// fromTimestamp is the minimal time from which we start downloading. Files
+// older than this timestamp are ignored.
+var fromTimestamp int64 = -1
+
+// SetFromTimestamp sets the minimal time from which files will be downloaded.
+// Files older that this timestamp are ignored. Format is "YYYYMMDDhhmm".
+func SetFromTimestamp(s string) error {
+	t := fileTimestamp(s)
+	if t == -1 {
+		return fmt.Errorf("bad timestamp: %q, expected %q", s, "YYYYMMDDhhmm")
+	}
+	fromTimestamp = t
+	return nil
+}
+
+// Infers the timestamp of a file according to its name. Returns -1 if failed.
+func fileTimestamp(file string) int64 {
+	match := regexp.MustCompile("(\\D|^)(20\\d{10})(\\D|$)").FindStringSubmatch(filepath.Base(file))
+	if match == nil || len(match[2]) != 12 {
+		return -1
+	}
+	digits := match[2]
+	year, _ := strconv.ParseInt(digits[0:4], 10, 64)
+	month, _ := strconv.ParseInt(digits[4:6], 10, 64)
+	day, _ := strconv.ParseInt(digits[6:8], 10, 64)
+	hour, _ := strconv.ParseInt(digits[8:10], 10, 64)
+	minute, _ := strconv.ParseInt(digits[10:12], 10, 64)
+	t := time.Date(int(year), time.Month(month), int(day), int(hour),
+		int(minute), 0, 0, time.UTC)
+
+	return t.Unix()
 }
