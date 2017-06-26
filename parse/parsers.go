@@ -18,7 +18,6 @@ var pricesParser = &parser{
 		":store_id", "StoreId",
 	),
 	newCapturers(
-		":update_time", "PriceUpdateDate",
 		":item_code", "ItemCode",
 		":item_name", "ItemName",
 		":price", "ItemPrice",
@@ -36,6 +35,7 @@ var pricesParser = &parser{
 		":unit_of_measure_price", "UnitOfMeasurePrice",
 		":allow_discount", "AllowDiscount",
 		":item_status", "ItemStatus",
+		":update_time", "PriceUpdateDate",
 	),
 	nil,
 }
