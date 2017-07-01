@@ -2,10 +2,8 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,7 +14,6 @@ import (
 
 	"github.com/fluhus/gostuff/ezpprof"
 	"github.com/fluhus/prices/bouncer"
-	"github.com/fluhus/prices/myflag"
 	"github.com/fluhus/prices/serializer"
 )
 
@@ -27,34 +24,23 @@ const profileCpu = false
 const profileMem = false
 
 func main() {
-	// Handle arguments.
-	err := parseArgs()
-	if err != nil {
-		pe("Error parsing arguments:", err)
-		os.Exit(1)
-	}
-	if args.help {
-		pe(help)
-		pe(myflag.Help())
-		pe(credit)
-		os.Exit(1)
-	}
+	parseArgs()
 
 	// Start profiling?
 	if profileCpu {
-		ezpprof.Start(filepath.Join(args.outDir, "items.cpu.pprof"))
+		ezpprof.Start(filepath.Join(args.OutDir, "items.cpu.pprof"))
 		defer ezpprof.Stop()
 	}
 	if profileMem {
 		defer func() {
 			runtime.GC()
-			ezpprof.Heap(filepath.Join(args.outDir, "items.mem.pprof"))
+			ezpprof.Heap(filepath.Join(args.OutDir, "items.mem.pprof"))
 		}()
 	}
 
 	// Init bouncer.
-	if !args.check {
-		bouncer.Initialize(args.outDir)
+	if !args.Check {
+		bouncer.Initialize(args.OutDir)
 		defer bouncer.Finalize()
 	}
 
@@ -69,7 +55,7 @@ func main() {
 	errChan := make(chan error, numOfThreads)
 
 	go func() { // Pushes file names for parsers.
-		for _, file := range args.files {
+		for _, file := range args.Files {
 			fileChan <- file
 		}
 		close(fileChan)
@@ -119,63 +105,6 @@ func pef(s string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, s, a...)
 }
 
-var args struct {
-	files    []string
-	check    bool
-	outDir   string
-	forceRaw bool
-	help     bool
-}
-
-func parseArgs() error {
-	// Set flags.
-	check := myflag.Bool("check", "c",
-		"Only check input files, do not create output tables.", false)
-	filesFile := myflag.String("in", "i", "path",
-		"A file that contains a list of input files, one per line.", "")
-	outDir := myflag.String("out", "o", "path",
-		"Output directory. Default is current.", ".")
-	forceRaw := myflag.Bool("force-raw", "f",
-		"Force parsing of raw files, instead of reading serialized data.",
-		false)
-
-	// Parse flags.
-	err := myflag.Parse()
-	if err != nil {
-		return err
-	}
-	if !myflag.HasAny() {
-		args.help = true
-		return nil
-	}
-
-	args.outDir = *outDir
-	args.check = *check
-	args.forceRaw = *forceRaw
-	args.files = myflag.Args()
-
-	// Get file list from file.
-	if *filesFile != "" {
-		text, err := ioutil.ReadFile(*filesFile)
-		if err != nil {
-			return fmt.Errorf("Error reading file-list: %v", err)
-		}
-
-		// Remove carriage return, generated in Windows files, to avoid errors.
-		text = bytes.Replace(text, []byte("\r"), []byte(""), -1)
-
-		if len(text) > 0 {
-			args.files = strings.Split(string(text), "\n")
-		}
-	}
-
-	if len(args.files) == 0 {
-		return fmt.Errorf("No input files supplied.")
-	}
-
-	return nil
-}
-
 // Does the entire processing for a single file.
 func processFile(file string) error {
 	// Extract data-type, timestamp and chain-ID.
@@ -193,17 +122,17 @@ func processFile(file string) error {
 
 	// Attempt to read an already serialized file.
 	var r reporter
-	if !args.check {
+	if !args.Check {
 		r = reporters[typ]
 	}
 
 	var err error
-	if !args.forceRaw {
+	if !args.ForceRaw {
 		err = reportSerializedFile(file+".items", r, tim)
 	}
 
 	// Parse raw file.
-	if args.forceRaw || err != nil {
+	if args.ForceRaw || err != nil {
 		err = parseFile(file, parsers[typ])
 		if err != nil {
 			return err
@@ -321,24 +250,3 @@ func fileChainId(file string) string {
 
 	return match[1]
 }
-
-// TODO(amit): Consider moving arguments and help message to a separate file.
-
-// Help message to display.
-var help = `Parses XML files for the supermarket price project.
-
-Outputs TSV text files to the output directory. Supports XML, ZIP and GZ
-formats. Also generates for each input file an intermediate data file with
-the '.items' suffix. DO NOT USE THESE FILES AS INPUT. Use the standard data
-files and the program will automatically read the intermediate if it can.
-
-Usage:
-items [OPTIONS] file1 file2 file3 ...
-or
-items [OPTIONS] -i <file with file-names>
-
-Arguments:`
-
-var credit = `Credit:
-Based on the 'prices' project by Amit Lavon.
-https://github.com/fluhus/prices`
