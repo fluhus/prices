@@ -8,14 +8,14 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/fluhus/gostuff/ezpprof"
 	"github.com/fluhus/prices/bouncer"
 	"github.com/fluhus/prices/serializer"
 )
+
+// TODO(amit): Switch to logging with the log package instead of prints.
 
 // Determines whether CPU profiling should be performed.
 const profileCpu = false
@@ -25,6 +25,11 @@ const profileMem = false
 
 func main() {
 	parseArgs()
+	inputFiles, err := organizeInputFiles()
+	if err != nil {
+		pe(err)
+		os.Exit(2)
+	}
 
 	// Start profiling?
 	if profileCpu {
@@ -50,12 +55,12 @@ func main() {
 		numOfThreads = 16
 	}
 	fmt.Println("Running on", numOfThreads, "threads.")
-	fileChan := make(chan string, numOfThreads)
+	fileChan := make(chan *fileAndTime, numOfThreads)
 	doneChan := make(chan int, numOfThreads)
 	errChan := make(chan error, numOfThreads)
 
 	go func() { // Pushes file names for parsers.
-		for _, file := range args.Files {
+		for _, file := range inputFiles {
 			fileChan <- file
 		}
 		close(fileChan)
@@ -74,10 +79,10 @@ func main() {
 			for file := range fileChan {
 				err := processFile(file)
 				if err != nil {
-					errChan <- fmt.Errorf("%v %s", err, file)
+					errChan <- fmt.Errorf("%v %s", err, file.file)
 					continue
 				} else {
-					errChan <- fmt.Errorf("Success %s", file)
+					errChan <- fmt.Errorf("Success %s", file.file)
 				}
 			}
 
@@ -106,18 +111,12 @@ func pef(s string, a ...interface{}) {
 }
 
 // Does the entire processing for a single file.
-func processFile(file string) error {
-	// Extract data-type, timestamp and chain-ID.
-	typ := fileType(file)
+func processFile(file *fileAndTime) error {
+	// Extract data-type.
+	typ := fileType(file.file)
 	if typ == "" {
 		return fmt.Errorf(
 			"Could not infer data type (stores/prices/promos).")
-	}
-
-	// TODO(amit): Move timestamp to the data map.
-	tim := fileTimestamp(file)
-	if tim == -1 {
-		return fmt.Errorf("Could not infer timestamp.")
 	}
 
 	// Attempt to read an already serialized file.
@@ -126,20 +125,23 @@ func processFile(file string) error {
 		r = reporters[typ]
 	}
 
+	// Try to load a parsed file.
 	var err error
 	if !args.ForceRaw {
-		err = reportSerializedFile(file+".items", r, tim)
+		// TODO(amit): Change ".items" suffix to something more self-descriptive.
+		// Perhaps ".parsed"?
+		err = reportSerializedFile(file.file+".items", r, file.time)
 	}
 
 	// Parse raw file.
 	if args.ForceRaw || err != nil {
-		err = parseFile(file, parsers[typ])
+		err = parseFile(file.file, parsers[typ])
 		if err != nil {
 			return err
 		}
 	}
 
-	return reportSerializedFile(file+".items", r, tim)
+	return reportSerializedFile(file.file+".items", r, file.time)
 }
 
 // Parses a raw data file and serializes the result.
@@ -220,24 +222,6 @@ func fileType(file string) string {
 	default:
 		return ""
 	}
-}
-
-// Infers the timestamp of a file according to its name. Returns -1 if failed.
-func fileTimestamp(file string) int64 {
-	match := regexp.MustCompile("(\\D|^)(20\\d{10})(\\D|$)").FindStringSubmatch(filepath.Base(file))
-	if match == nil || len(match[2]) != 12 {
-		return -1
-	}
-	digits := match[2]
-	year, _ := strconv.ParseInt(digits[0:4], 10, 64)
-	month, _ := strconv.ParseInt(digits[4:6], 10, 64)
-	day, _ := strconv.ParseInt(digits[6:8], 10, 64)
-	hour, _ := strconv.ParseInt(digits[8:10], 10, 64)
-	minute, _ := strconv.ParseInt(digits[10:12], 10, 64)
-	t := time.Date(int(year), time.Month(month), int(day), int(hour),
-		int(minute), 0, 0, time.UTC)
-
-	return t.Unix()
 }
 
 // Infers the chain-ID of a file according to its name. Returns an empty string

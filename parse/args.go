@@ -62,9 +62,7 @@ the '.items' suffix. DO NOT USE THESE FILES AS INPUT. Use the standard data
 files and the program will automatically read the intermediate if it can.
 
 Usage:
-items [OPTIONS] file1 file2 file3 ...
-or
-items [OPTIONS] -i <file with file-names>
+items [OPTIONS] file/dir1 file/dir2 file/dir3 ...
 
 Arguments:`
 
