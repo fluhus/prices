@@ -11,13 +11,10 @@ import (
 	"time"
 
 	"github.com/fluhus/prices/myflag"
-	"github.com/fluhus/prices/scrapers"
+	"github.com/fluhus/prices/scrape/scrapers"
 )
 
 func main() {
-	// Set number of CPUs to max.
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
 	// Parse arguments.
 	err := parseArgs()
 	if err == noArgs {
