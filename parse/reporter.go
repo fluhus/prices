@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/fluhus/prices/bouncer"
+	"github.com/fluhus/prices/parse/bouncer"
 )
 
 // ----- REPORTER TYPE ---------------------------------------------------------

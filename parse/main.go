@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/fluhus/gostuff/ezpprof"
-	"github.com/fluhus/prices/bouncer"
+	"github.com/fluhus/prices/parse/bouncer"
 	"github.com/fluhus/prices/serializer"
 )
 
