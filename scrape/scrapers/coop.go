@@ -24,12 +24,6 @@ func Coop() Scraper {
 }
 
 func (a *coopScraper) Scrape(dir string) error {
-	// Create output directory.
-	err := os.MkdirAll(dir, 0700)
-	if err != nil {
-		return fmt.Errorf("Failed to make dir: %v", err)
-	}
-
 	// Get files for download.
 	infos, infosDone := a.filesForDownload()
 
@@ -51,6 +45,7 @@ func (a *coopScraper) Scrape(dir string) error {
 	}
 
 	// Wait for downloaders to finish.
+	var err error
 	for i := 0; i < numberOfThreads; i++ {
 		e := <-done
 		if e != nil {

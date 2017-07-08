@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -23,12 +22,6 @@ func Shufersal() Scraper {
 }
 
 func (a *shufersalScraper) Scrape(dir string) error {
-	// Create output directory.
-	err := os.MkdirAll(dir, 0700)
-	if err != nil {
-		return fmt.Errorf("Failed to make dir: %v", err)
-	}
-
 	// Get number of pages from the first page.
 	page, err := a.getPage(1)
 	if err != nil {

@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"regexp"
 )
@@ -24,12 +23,6 @@ func Mega() Scraper {
 }
 
 func (a *megaScraper) Scrape(dir string) error {
-	// Create output directory.
-	err := os.MkdirAll(dir, 0700)
-	if err != nil {
-		return fmt.Errorf("Failed to make dir: %v", err)
-	}
-
 	// Start downloader threads.
 	files, filesErr := a.getFilesChannel()
 	done := make(chan error, numberOfThreads)
@@ -51,6 +44,7 @@ func (a *megaScraper) Scrape(dir string) error {
 	}
 
 	// Wait for threads to finish (including pusher thread).
+	var err error
 	for i := 0; i < numberOfThreads; i++ {
 		e := <-done
 		if e != nil {

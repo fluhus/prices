@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	urllib "net/url"
-	"os"
 	"path/filepath"
 	"regexp"
 	"time"
@@ -47,12 +46,6 @@ func Nibit(chain string, days int) Scraper {
 }
 
 func (a *nibitScraper) Scrape(dir string) error {
-	// Create output directory.
-	err := os.MkdirAll(dir, 0700)
-	if err != nil {
-		return fmt.Errorf("Failed to make dir: %v", err)
-	}
-
 	log.Print("Starting session.")
 	cl, err := a.startSession()
 	if err != nil {

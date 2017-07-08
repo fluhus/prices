@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 	"regexp"
 )
@@ -26,12 +25,6 @@ func Bitan() Scraper {
 }
 
 func (a *bitanScraper) Scrape(dir string) error {
-	// Create output directory.
-	err := os.MkdirAll(dir, 0700)
-	if err != nil {
-		return fmt.Errorf("Failed to make dir: %v", err)
-	}
-
 	fileList, err := a.fileList()
 	if err != nil {
 		return fmt.Errorf("Failed to get file list: %v", err)

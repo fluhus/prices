@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/fluhus/prices/myflag"
@@ -71,7 +70,7 @@ func main() {
 		log.SetPrefix(task.name + " ")
 		log.Printf("Starting %s.", task.name)
 
-		err := task.scrp.Scrape(filepath.Join(args.dir, task.dir))
+		err := task.scrp.Scrape(filepath.Join(args.dir, "{{date}}", task.dir))
 		if err != nil {
 			log.Printf("Finished with error: %v", err)
 		} else {
@@ -128,6 +127,8 @@ var args struct {
 	stdout *bool   // Log to stdout?
 	from   *string // Download starting from this date.
 }
+
+// TODO(amit): Switch to using flug instead of myflag.
 
 // Signifies that no args were given.
 var noArgs = fmt.Errorf("")

@@ -17,6 +17,8 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 )
 
@@ -95,8 +97,15 @@ func responseSize(res *http.Response) int64 {
 // logged-in sessions, or nil to start a new session. Returns true iff file was
 // downloaded.
 func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
-	if ts := fileTimestamp(to); ts != -1 && ts < fromTimestamp {
+	to = expandPath(to)
+	if ts := fileTimestamp(to); ts == -1 || ts < fromTimestamp {
 		return false, nil
+	}
+
+	// Create output directory.
+	err := mkdir(filepath.Dir(to))
+	if err != nil {
+		return false, fmt.Errorf("Failed to make dir: %v", err)
 	}
 
 	// Instantiate client.
@@ -144,8 +153,15 @@ func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 // POST form values. Returns true iff file was downloaded.
 func downloadIfNotExistsPost(url, to string, cl *http.Client,
 	values urllib.Values) (bool, error) {
-	if ts := fileTimestamp(to); ts != -1 && ts < fromTimestamp {
+	to = expandPath(to)
+	if ts := fileTimestamp(to); ts == -1 || ts < fromTimestamp {
 		return false, nil
+	}
+
+	// Create output directory.
+	err := mkdir(filepath.Dir(to))
+	if err != nil {
+		return false, fmt.Errorf("Failed to make dir: %v", err)
 	}
 
 	// Instantiate client.
@@ -194,6 +210,15 @@ type dirFile struct {
 	file string
 }
 
+// mkdirLock ensures that calls to os.MkDir are made sequentially.
+var mkdirLock sync.Mutex
+
+func mkdir(path string) error {
+	mkdirLock.Lock()
+	defer mkdirLock.Unlock()
+	return os.MkdirAll(path, 0700)
+}
+
 // ----- TIMESTAMP HANDLING ---------------------------------------------------
 
 // fromTimestamp is the minimal time from which we start downloading. Files
@@ -227,4 +252,19 @@ func fileTimestamp(file string) int64 {
 		int(minute), 0, 0, time.UTC)
 
 	return t.Unix()
+}
+
+// expandPath replaces {{date}} in a path with an actual date, inferred from its timestamp.
+// If no timestamp can be inferred, returns the path as is.
+func expandPath(p string) string {
+	ts := fileTimestamp(p)
+	date := ""
+	if ts == -1 {
+		date = "unknown-date"
+	} else {
+		t := time.Unix(ts, 0)
+		date = t.Format("2006-01-02")
+	}
+	p = strings.Replace(p, "{{date}}", date, -1)
+	return p
 }

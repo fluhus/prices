@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 	"regexp"
 )
@@ -39,12 +38,6 @@ func Cerberus(username, password string) Scraper {
 }
 
 func (a *cerberusScraper) Scrape(dir string) error {
-	// Create output directory.
-	err := os.MkdirAll(dir, 0700)
-	if err != nil {
-		return fmt.Errorf("Failed to make directory: %v", err)
-	}
-
 	// Login to Cerberus.
 	cl, err := a.login()
 	if err != nil {
@@ -109,9 +102,10 @@ func (a *cerberusScraper) Scrape(dir string) error {
 
 // Returns a logged-in client.
 func (a *cerberusScraper) login() (*http.Client, error) {
-	// NOTE:
+	// TODO(amit):
 	// THIS IS A TERRIBLE WORKAROUND TO A CERTIFICATE VALIDATION BUG IN THE
-	// SYSTEM. THIS IS BAD AND SHOULD BE FIXED.
+	// HUJI COMPUTER SYSTEM. THIS IS INSECURE AND SHOULD BE FIXED.
+
 	// cl := &http.Client {}
 	cl := &http.Client{
 		Transport: &http.Transport{
