@@ -3,21 +3,20 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"regexp"
+
+	"github.com/fluhus/flug"
 )
 
 func main() {
-	// Parse command-line argument.
-	latex := false
-	if len(os.Args) > 1 && os.Args[1] == "-latex" {
-		latex = true
-	}
+	parseArgs()
 
 	// Read schema.
-	pe("Reading SQLite schema from stdin...\n(use with -latex argument for latex output)")
+	pe("Reading SQLite schema from stdin...\n(run with -help argument for help)")
 	text, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		pe("Error reading schema:", err)
@@ -29,14 +28,43 @@ func main() {
 	if err != nil {
 		pe("Error parsing schema:", err)
 		os.Exit(2)
-	} else {
-		for _, t := range tables {
-			if latex {
-				fmt.Printf("%s", t.latex())
-			} else {
-				fmt.Printf("%s", t.html())
-			}
+	}
+	for _, t := range tables {
+		switch args.Format {
+		case "html":
+			fmt.Printf("%s", t.html())
+		case "latex":
+			fmt.Printf("%s", t.latex())
+		default:
+			pe("NOT SUPPORTED YET: " + args.Format)
+			os.Exit(2)
 		}
+	}
+}
+
+var args = struct {
+	Help   bool   `flug:"help,Show help message."`
+	Format string `flug:"format,Output format: text, html, latex, or json."`
+}{false, "text"}
+
+// parseArgs parses command line arguments. Exits on error.
+func parseArgs() {
+	flug.Register(&args)
+	flag.Parse()
+
+	if args.Help {
+		pe("Creates documentation from the DB schema.")
+		pe("Reads from stdin and prints to stdout.")
+		pe()
+		pe("Arguments:")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+	switch args.Format {
+	case "text", "html", "latex", "json":
+	default:
+		pef("Error: unsupported format: %q\n", args.Format)
+		os.Exit(1)
 	}
 }
 
