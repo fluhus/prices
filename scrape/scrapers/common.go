@@ -22,6 +22,12 @@ import (
 	"time"
 )
 
+const (
+	// User agent to use when scraping.
+	userAgent = "AmitLavonBot/1.0 (doctor_troll@walla.co.il) " +
+		"Price Transparency Project (github.com/fluhus/prices)"
+)
+
 // ----- SCRAPER TYPE ---------------------------------------------------------
 
 // A scraper downloads data files for a specific chain.
@@ -93,6 +99,35 @@ func responseSize(res *http.Response) int64 {
 	return size
 }
 
+// httpGet sends a GET request, with program-specific settings. If client is null,
+// uses the default client.
+func httpGet(url string, c *http.Client) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	if c == nil {
+		c = http.DefaultClient
+	}
+	req.Header.Set("User-Agent", userAgent)
+	return c.Do(req)
+}
+
+// httpPost sends a POST request, with program-specific settings. If client is null,
+// uses the default client.
+func httpPost(url string, values urllib.Values, c *http.Client) (*http.Response, error) {
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.PostForm = values
+	if c == nil {
+		c = http.DefaultClient
+	}
+	req.Header.Set("User-Agent", userAgent)
+	return c.Do(req)
+}
+
 // Downloads a file iff the 'to' path does not exist. Give a client for
 // logged-in sessions, or nil to start a new session. Returns true iff file was
 // downloaded.
@@ -119,7 +154,7 @@ func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 	}
 
 	// Request file.
-	res, err := cl.Get(url)
+	res, err := httpGet(url, cl)
 	if err != nil {
 		return false, fmt.Errorf("Failed to request file: %v", err)
 	}
@@ -175,7 +210,7 @@ func downloadIfNotExistsPost(url, to string, cl *http.Client,
 	}
 
 	// Request file.
-	res, err := cl.PostForm(url, values)
+	res, err := httpPost(url, values, cl)
 	if err != nil {
 		return false, fmt.Errorf("Failed to request file: %v", err)
 	}

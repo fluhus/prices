@@ -114,7 +114,7 @@ func (a *cerberusScraper) login() (*http.Client, error) {
 	}
 
 	// Get login page.
-	res, err := cl.Get(cerberusHome)
+	res, err := httpGet(cerberusHome, cl)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get homepage: %v", err)
 	}
@@ -141,14 +141,15 @@ func (a *cerberusScraper) login() (*http.Client, error) {
 	jar := singleCookieJar(cerberusHome, "cftpSID", string(cookie))
 	cl.Jar = jar
 
-	res2, err := cl.PostForm(
+	res2, err := httpPost(
 		cerberusUser,
 		map[string][]string{
 			"csrftoken": []string{string(token)},
 			"username":  []string{a.username},
 			"password":  []string{a.password},
 			"Submit":    []string{"Sign in"},
-		})
+		},
+		cl)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to post: %v", err)
 	}
@@ -192,7 +193,7 @@ func (a *cerberusScraper) parseToken(body []byte) ([]byte, error) {
 // Gets the list of files from Cerberus, using the given logged-in client.
 func (a *cerberusScraper) getFileList(cl *http.Client) ([]string, error) {
 	// Request file list.
-	res, err := cl.PostForm(cerberusFile+"ajax_dir?sEcho=2&iColumns=5&sColumns=%2C%2C%2C%2C&iDisplayStart=0&iDisplayLength=100000&mDataProp_0=fname&sSearch_0=&bRegex_0=false&bSearchable_0=true&bSortable_0=true&mDataProp_1=type&sSearch_1=&bRegex_1=false&bSearchable_1=true&bSortable_1=false&mDataProp_2=size&sSearch_2=&bRegex_2=false&bSearchable_2=true&bSortable_2=true&mDataProp_3=ftime&sSearch_3=&bRegex_3=false&bSearchable_3=true&bSortable_3=true&mDataProp_4=&sSearch_4=&bRegex_4=false&bSearchable_4=true&bSortable_4=false&sSearch=&bRegex=false&iSortingCols=0&cd=%2F", nil)
+	res, err := httpPost(cerberusFile+"ajax_dir?sEcho=2&iColumns=5&sColumns=%2C%2C%2C%2C&iDisplayStart=0&iDisplayLength=100000&mDataProp_0=fname&sSearch_0=&bRegex_0=false&bSearchable_0=true&bSortable_0=true&mDataProp_1=type&sSearch_1=&bRegex_1=false&bSearchable_1=true&bSortable_1=false&mDataProp_2=size&sSearch_2=&bRegex_2=false&bSearchable_2=true&bSortable_2=true&mDataProp_3=ftime&sSearch_3=&bRegex_3=false&bSearchable_3=true&bSortable_3=true&mDataProp_4=&sSearch_4=&bRegex_4=false&bSearchable_4=true&bSortable_4=false&sSearch=&bRegex=false&iSortingCols=0&cd=%2F", nil, cl)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to post request: %v", err)
 	}

@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"path/filepath"
 	"regexp"
 )
@@ -75,7 +74,7 @@ func (a *edenScraper) Scrape(dir string) error {
 // Returns a list of all files in Eden's page.
 func (a *edenScraper) fileList() ([]string, error) {
 	// Get homepage.
-	res, err := http.Get(edenHome)
+	res, err := httpGet(edenHome, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get homepage: %v", err)
 	}

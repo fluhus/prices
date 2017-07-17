@@ -92,8 +92,8 @@ func (a *coopScraper) filesForDownload() (chan *coopFileInfo, chan error) {
 		}
 
 		// Get branches.
-		res, err := http.PostForm(
-			"http://coopisrael.coop/ajax/search_branch", nil)
+		res, err := httpPost(
+			"http://coopisrael.coop/ajax/search_branch", nil, nil)
 		if err != nil {
 			err = fmt.Errorf("Failed to request branches: %v", err)
 			return
@@ -144,7 +144,7 @@ func (a *coopScraper) filesForDownload() (chan *coopFileInfo, chan error) {
 // Downloads a given file from Co-Op.
 func (a *coopScraper) download(url, dir string, values urllib.Values) error {
 	// Open connection to site.
-	res, err := http.PostForm(url, values)
+	res, err := httpPost(url, values, nil)
 	if err != nil {
 		return err
 	}

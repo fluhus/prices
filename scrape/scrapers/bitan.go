@@ -5,7 +5,6 @@ package scrapers
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"path/filepath"
 	"regexp"
 )
@@ -74,7 +73,7 @@ func (a *bitanScraper) Scrape(dir string) error {
 // Returns a list of all files in Bitan's page.
 func (a *bitanScraper) fileList() ([]string, error) {
 	// Get homepage.
-	res, err := http.Get(bitanHome)
+	res, err := httpGet(bitanHome, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to get homepage: %v", err)
 	}

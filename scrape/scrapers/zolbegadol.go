@@ -68,7 +68,7 @@ func (a *zolbegadolScraper) Scrape(dir string) error {
 // Returns paths of subdirectories of the price page.
 func (a *zolbegadolScraper) getDirectories() ([]string, error) {
 	// Get home page.
-	res, err := http.Get(zolbegadolHome)
+	res, err := httpGet(zolbegadolHome, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (a *zolbegadolScraper) getDirectories() ([]string, error) {
 // dir should be as returned from getDirectories.
 func (a *zolbegadolScraper) getFiles(dir string) ([]string, error) {
 	// Get home page.
-	res, err := http.Get(zolbegadolHome + dir)
+	res, err := httpGet(zolbegadolHome+dir, nil)
 	if err != nil {
 		return nil, err
 	}

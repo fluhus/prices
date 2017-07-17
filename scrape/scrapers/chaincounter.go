@@ -6,17 +6,22 @@ package scrapers
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"regexp"
 )
 
-// Page with table of chains.
-const chainsPage = "http://www.economy.gov.il/Trade/ConsumerProtection/Pages/PriceTransparencyRegulations.aspx"
+const (
+	// Page with table of chains.
+	chainsPage = "http://economy.gov.il/Trade/ConsumerProtection/Pages/PriceTransparencyRegulations.aspx"
+)
 
 // Counts rows in the chain table on the authority's page.
 func CountChains() (int, error) {
+	log.Println("Checking MOE site for number of chains.")
+
 	// Get page.
-	res, err := http.Get(chainsPage)
+	res, err := httpGet(chainsPage, nil)
 	if err != nil {
 		return 0, err
 	}

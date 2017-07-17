@@ -106,7 +106,7 @@ func (a *nibitScraper) parseSessionCookie(res *http.Response) (name,
 // Downloads all available files for the given date.
 func (a *nibitScraper) download(cl *http.Client, date, dir string) error {
 	// Get homepage.
-	res, err := cl.Get(nibitPage)
+	res, err := httpGet(nibitPage, cl)
 	if err != nil {
 		return fmt.Errorf("Failed to read page: %v", err)
 	}
@@ -127,7 +127,7 @@ func (a *nibitScraper) download(cl *http.Client, date, dir string) error {
 	a.setFormActionSearch(values)
 
 	// Send post - to get files for specific date and chain.
-	res, err = cl.PostForm(nibitPage, values)
+	res, err = httpPost(nibitPage, values, cl)
 	if err != nil {
 		return fmt.Errorf("Failed to read page: %v", err)
 	}

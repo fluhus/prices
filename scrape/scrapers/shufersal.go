@@ -96,8 +96,8 @@ func (a *shufersalScraper) Scrape(dir string) error {
 
 // Returns the body of the n'th page in Shufersal's site.
 func (a *shufersalScraper) getPage(n int) ([]byte, error) {
-	res, err := http.Get(fmt.Sprintf("http://prices.shufersal.co.il/?page=%d",
-		n))
+	res, err := httpGet(fmt.Sprintf("http://prices.shufersal.co.il/?page=%d",
+		n), nil)
 	if err != nil {
 		return nil, err
 	}

@@ -68,7 +68,7 @@ func (a *megaScraper) Scrape(dir string) error {
 // Returns paths of subdirectories of the price page.
 func (a *megaScraper) getDirectories() ([]string, error) {
 	// Get home page.
-	res, err := http.Get(megaHome)
+	res, err := httpGet(megaHome, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (a *megaScraper) getDirectories() ([]string, error) {
 // dir should be as returned from getDirectories.
 func (a *megaScraper) getFiles(dir string) ([]string, error) {
 	// Get home page.
-	res, err := http.Get(megaHome + dir)
+	res, err := httpGet(megaHome+dir, nil)
 	if err != nil {
 		return nil, err
 	}

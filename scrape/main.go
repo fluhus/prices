@@ -51,6 +51,7 @@ func main() {
 		log.Printf("Chain count error: %v", err)
 	} else {
 		if chainCount != len(tasks) {
+			// TODO(amit): Improve this error message.
 			log.Printf("Chain count error: Found %d chains but there are %d"+
 				" tasks. To silence this error, place a nil placeholder"+
 				" in the task list.", chainCount, len(tasks))
