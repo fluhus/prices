@@ -8,6 +8,7 @@ from Israeli vendors.
 2. [Requirements](#requirements)
 3. [How to Build](#how-to-build)
 4. [How to Use](#how-to-use)
+5. [Contributors](#contributors)
 
 License
 -------
@@ -47,9 +48,11 @@ Requirements
 How to Build
 ------------
 
+**No need to clone this repository yourself.**
+
 1. Update GOPATH:
-   * **Linux (bash)** - `export GOPATH=/path/to/your/project`
    * **Windows (cmd)** - `set GOPATH=\path\to\your\project`
+   * **Linux (bash)** - `export GOPATH=/path/to/your/project`
 2. Download the code: `go get github.com/fluhus/prices/...`
 3. A `bin` folder will be created in the project's folder, containing all
    generated binaries.
@@ -67,4 +70,36 @@ How to Use
    text files.
 2. Import the generated files to your database.
 
+Contributors
+------------
 
+This project started at the Hebrew University of Jerusalem, carried out by
+Amit Lavon, under the supervision of Dr. Aviv Zohar and Prof. Noam Nissan.
+Now it is maintained independently by Amit Lavon.
+
+Lists are ordered alphabetically.
+
+### Coding
+
+* Amit Lavon
+
+### Schema Design
+
+* Amit Lavon
+* Dr. Aviv Zohar
+* Ayelet Sapirstein
+* Dr. Dafna Shahaf
+* Gali Noti
+* Prof. Noam Nissan
+* Prof. Sara Cohen
+* Yoni Sidi
+
+### Testing & Data Curation
+
+* Amit Lavon
+* Asaf Kott
+* Ayelet Sapirstein
+* Dr. Dafna Shahaf
+* Emanuel Marcu
+* Gali Noti
+* Yoni Sidi
