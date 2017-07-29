@@ -4,24 +4,20 @@ package bouncer
 
 import (
 	"path/filepath"
+	"sync"
 )
 
 var (
-	itemsOut   *fileWriter   // Output file.
-	itemsToken chan int      // Token for synchronizing id generation.
-	items      []*Item       // Reported items.
-	itemsMap   map[int][]int // Item hash-index.
+	itemsOut  *fileWriter // Output file.
+	itemsLock sync.Mutex  // For synchronizing id generation.
+	items     map[int]int // From item hash to item id.
 )
 
 // Initializes the 'items' table bouncer.
 func initItems() {
-	itemsToken = make(chan int, 1)
-	itemsToken <- 0
-
-	items = state.Items
-	itemsMap = map[int][]int{}
-	if state.ItemsMap != nil {
-		itemsMap = stringMapToIntMap(state.ItemsMap).(map[int][]int)
+	items = map[int]int{}
+	if state.Items != nil {
+		items = stringMapToIntMap(state.Items).(map[int]int)
 	}
 
 	var err error
@@ -34,8 +30,7 @@ func initItems() {
 // Finalizes the 'items' table bouncer.
 func finalizeItems() {
 	itemsOut.Close()
-	state.Items = items
-	state.ItemsMap = intMapToStringMap(itemsMap).(map[string][]int)
+	state.Items = intMapToStringMap(items).(map[string]int)
 }
 
 // A single entry in the 'items' table.
@@ -50,22 +45,15 @@ func (i *Item) hash() int {
 	return hash(i.ItemType, i.ItemCode, i.ChainId)
 }
 
-// Returns true only if all fields are equal.
-func (i *Item) equals(j *Item) bool {
-	return i.ItemType == j.ItemType &&
-		i.ItemCode == j.ItemCode &&
-		i.ChainId == j.ChainId
-}
-
 // Returns a slice of item ids for the given items. Generates new ids if
 // necessary. Thread safe.
 func MakeItemIds(is []*Item) []int {
-	<-itemsToken
+	itemsLock.Lock()
+	defer itemsLock.Unlock()
 	result := make([]int, len(is))
 	for i := range is {
 		result[i] = makeItemId(is[i])
 	}
-	itemsToken <- 0
 	return result
 }
 
@@ -73,21 +61,16 @@ func MakeItemIds(is []*Item) []int {
 func makeItemId(i *Item) int {
 	// Look up in hash table.
 	h := i.hash()
-	candidates := itemsMap[h]
-
-	// Compare to candidates.
-	for _, c := range candidates {
-		if i.equals(items[c]) {
-			return c
-		}
+	id, ok := items[h]
+	if ok {
+		return id
 	}
 
 	// Not found - assign new id and print it.
-	result := len(items)
-	itemsMap[h] = append(itemsMap[h], result)
-	items = append(items, i)
+	id = len(items) + 1 // 1-based id's.
+	items[h] = id
 
-	printTsv(itemsOut, result, i.ItemType, i.ItemCode, i.ChainId)
+	printTsv(itemsOut, id, i.ItemType, i.ItemCode, i.ChainId)
 
-	return result
+	return id
 }
