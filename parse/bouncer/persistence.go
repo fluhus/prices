@@ -13,7 +13,7 @@ import (
 // Keeps state for continuing a previous run.
 type stateType struct {
 	Items        map[string]int
-	ItemMetaMap  map[string][]*itemMetaId
+	ItemMetaMap  map[string]struct{}
 	PricesMap    map[string]int
 	NextPromoId  int
 	PromosMap    map[string][]*promoId
