@@ -297,7 +297,7 @@ func expandPath(p string) string {
 	if ts == -1 {
 		date = "unknown-date"
 	} else {
-		t := time.Unix(ts, 0)
+		t := time.Unix(ts, 0).UTC()
 		date = t.Format("2006-01-02")
 	}
 	p = strings.Replace(p, "{{date}}", date, -1)

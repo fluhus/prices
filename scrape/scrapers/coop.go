@@ -35,7 +35,7 @@ func (a *coopScraper) Scrape(dir string) error {
 				err := a.download(info.url, dir, info.values)
 				if err != nil {
 					log.Printf("Download error for '%v', branch %v: %v",
-						info.url, info.values["branch"][0], err)
+						info.url, info.values["branch"], err)
 					continue
 				}
 			}
@@ -163,7 +163,7 @@ func (a *coopScraper) download(url, dir string, values urllib.Values) error {
 		return fmt.Errorf("No file name in response.")
 	}
 	fileName += ".gz"
-	to := filepath.Join(dir, fileName)
+	to := expandPath(filepath.Join(dir, fileName))
 
 	log.Printf("Downloading '%s' to '%s'.", url, to)
 
