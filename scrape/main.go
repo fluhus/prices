@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"flag"
 	"path/filepath"
 	"time"
 
-	"github.com/fluhus/prices/myflag"
+	"github.com/fluhus/flug"
 	"github.com/fluhus/prices/scrape/scrapers"
 )
 
@@ -17,9 +18,9 @@ func main() {
 	// Parse arguments.
 	err := parseArgs()
 	if err == noArgs {
-		fmt.Print(help)
-		fmt.Print(myflag.Help())
-		fmt.Println(credit)
+		fmt.Fprintln(os.Stderr, help)
+		flag.PrintDefaults()
+		fmt.Fprintln(os.Stderr, "\n" + credit)
 		os.Exit(1)
 	}
 	if err != nil {
@@ -27,8 +28,8 @@ func main() {
 	}
 
 	// Open logging output file.
-	if !*args.stdout {
-		logsDir := filepath.Join(args.dir, "logs")
+	if !args.Stdout {
+		logsDir := filepath.Join(args.Dir, "logs")
 		err = os.MkdirAll(logsDir, 0700)
 		if err != nil {
 			log.Fatal("Filed to create output dir:", err)
@@ -71,7 +72,7 @@ func main() {
 		log.SetPrefix(task.name + " ")
 		log.Printf("Starting %s.", task.name)
 
-		err := task.scrp.Scrape(filepath.Join(args.dir, "{{date}}", task.dir))
+		err := task.scrp.Scrape(filepath.Join(args.Dir, "{{date}}", task.dir))
 		if err != nil {
 			log.Printf("Finished with error: %v", err)
 		} else {
@@ -124,12 +125,11 @@ func logFileName() string {
 
 // Holds parsed command-line arguments.
 var args struct {
-	dir    string  // Where to download files.
-	stdout *bool   // Log to stdout?
-	from   *string // Download starting from this date.
+	Dir    string  // Where to download files.
+	Stdout bool   `flug:"stdout,Log to stdout instead of log file."`
+	From   string `flug:"from,Download files from this time and on. Format: YYYYMMDDhhmm. (default download all files)"`
 }
 
-// TODO(amit): Switch to using flug instead of myflag.
 
 // Signifies that no args were given.
 var noArgs = fmt.Errorf("")
@@ -137,35 +137,28 @@ var noArgs = fmt.Errorf("")
 // Parses arguments and places their values in the args struct. If an error
 // returns, args are invalid.
 func parseArgs() error {
-	args.stdout = myflag.Bool("stdout", "", "Log to stdout instead of log"+
-		" file.", false)
-	args.from = myflag.String("from", "", "time", "Download files from this time"+
-		" and on. Format: YYYYMMDDhhmm. Default: Download all files.", "")
-
-	err := myflag.Parse()
-	if err != nil {
-		return err
-	}
-	if *args.from != "" {
-		err = scrapers.SetFromTimestamp(*args.from)
+	flug.Register(&args)
+	flag.Parse()
+	
+	// Parse timestamp.
+	if args.From != "" {
+		err := scrapers.SetFromTimestamp(args.From)
 		if err != nil {
 			return err
 		}
 	}
 
-	a := myflag.Args()
-
 	// No args.
-	if len(a) == 0 {
+	if len(flag.Args()) == 0 {
 		return noArgs
 	}
 
 	// Too many args.
-	if len(a) > 1 {
+	if len(flag.Args()) > 1 {
 		return fmt.Errorf("To many arguments were given.")
 	}
 
-	args.dir = a[0]
+	args.Dir = flag.Args()[0]
 
 	return nil
 }
@@ -176,8 +169,7 @@ var help = `Downloads price data from stores.
 Usage:
 prices <out dir>
 
-Flags:
-`
+Flags:`
 
 var credit = `Credit:
 Based on the 'prices' project by Amit Lavon.
