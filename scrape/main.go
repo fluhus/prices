@@ -3,10 +3,10 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
 	"os"
-	"flag"
 	"path/filepath"
 	"time"
 
@@ -20,7 +20,7 @@ func main() {
 	if err == noArgs {
 		fmt.Fprintln(os.Stderr, help)
 		flag.PrintDefaults()
-		fmt.Fprintln(os.Stderr, "\n" + credit)
+		fmt.Fprintln(os.Stderr, "\n"+credit)
 		os.Exit(1)
 	}
 	if err != nil {
@@ -125,11 +125,10 @@ func logFileName() string {
 
 // Holds parsed command-line arguments.
 var args struct {
-	Dir    string  // Where to download files.
+	Dir    string // Where to download files.
 	Stdout bool   `flug:"stdout,Log to stdout instead of log file."`
 	From   string `flug:"from,Download files from this time and on. Format: YYYYMMDDhhmm. (default download all files)"`
 }
-
 
 // Signifies that no args were given.
 var noArgs = fmt.Errorf("")
@@ -139,7 +138,7 @@ var noArgs = fmt.Errorf("")
 func parseArgs() error {
 	flug.Register(&args)
 	flag.Parse()
-	
+
 	// Parse timestamp.
 	if args.From != "" {
 		err := scrapers.SetFromTimestamp(args.From)
