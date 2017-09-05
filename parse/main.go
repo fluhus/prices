@@ -51,9 +51,6 @@ func main() {
 
 	// Prepare threads.
 	numOfThreads := runtime.NumCPU()
-	if numOfThreads > 16 {
-		numOfThreads = 16
-	}
 	fmt.Println("Running on", numOfThreads, "threads.")
 	fileChan := make(chan *fileAndTime, numOfThreads)
 	doneChan := make(chan int, numOfThreads)
