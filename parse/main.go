@@ -56,21 +56,23 @@ func main() {
 	doneChan := make(chan int, numOfThreads)
 	errChan := make(chan error, numOfThreads)
 
-	go func() { // Pushes file names for parsers.
+	// Pushes file names to worker threads.
+	go func() {
 		for _, file := range inputFiles {
 			fileChan <- file
 		}
 		close(fileChan)
 	}()
 
-	go func() { // Prints errors to stderr.
+	// Prints errors to stderr. Each processed file is reported here, including success.
+	go func() {
 		for err := range errChan {
 			pe(err)
 		}
 		doneChan <- 0
 	}()
 
-	// Start parser threads.
+	// Start worker threads.
 	for i := 0; i < numOfThreads; i++ {
 		go func() {
 			for file := range fileChan {
@@ -78,9 +80,8 @@ func main() {
 				if err != nil {
 					errChan <- fmt.Errorf("%v %s", err, file.file)
 					continue
-				} else {
-					errChan <- fmt.Errorf("Success %s", file.file)
 				}
+				errChan <- fmt.Errorf("success %s", file.file)
 			}
 
 			doneChan <- 0
@@ -113,7 +114,7 @@ func processFile(file *fileAndTime) error {
 	typ := fileType(file.file)
 	if typ == "" {
 		return fmt.Errorf(
-			"Could not infer data type (stores/prices/promos).")
+			"could not infer data type (stores/prices/promos).")
 	}
 
 	// Attempt to read an already serialized file.
@@ -146,7 +147,7 @@ func parseFile(file string, prsr *parser) error {
 	// Load input XML.
 	data, err := load(file)
 	if err != nil {
-		return fmt.Errorf("Error reading raw file: %v", err)
+		return fmt.Errorf("error reading raw file: %v", err)
 	}
 
 	// Make syntax & encoding corrections.
@@ -157,10 +158,10 @@ func parseFile(file string, prsr *parser) error {
 	chainId := fileChainId(file)
 	items, err := prsr.parse(data, map[string]string{"chain_id": chainId})
 	if err != nil {
-		return fmt.Errorf("Error parsing file: %v", err)
+		return fmt.Errorf("error parsing file: %v", err)
 	}
 	if len(items) == 0 {
-		return fmt.Errorf("Error parsing file: 0 items found.")
+		return fmt.Errorf("error parsing file: 0 items found.")
 	}
 
 	// Save processed file.
@@ -169,7 +170,7 @@ func parseFile(file string, prsr *parser) error {
 
 	err = serializer.Serialize(file+".items", items)
 	if err != nil {
-		return fmt.Errorf("Error serializing: %v", err)
+		return fmt.Errorf("error serializing: %v", err)
 	}
 
 	return nil
@@ -186,7 +187,9 @@ func reportSerializedFile(file string, r reporter, tim int64) error {
 		return d.Err()
 	}
 	if meta["version"] != parserVersion {
-		return fmt.Errorf("Mismatching parser version: expected '%s' actual '%s'.",
+		// This means that the parser was updated after the file was serialized,
+		// so this serialized file is invalid.
+		return fmt.Errorf("mismatching parser version: expected '%s' actual '%s'.",
 			parserVersion, meta["version"])
 	}
 
@@ -197,7 +200,7 @@ func reportSerializedFile(file string, r reporter, tim int64) error {
 		}
 	}
 
-	// EOF is sababa, but other errors should be reported.
+	// EOF is ok, but other errors should be reported.
 	if d.Err() == io.EOF {
 		return nil
 	} else {
