@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/fluhus/flug"
@@ -62,17 +64,19 @@ func main() {
 	// Perform scraping tasks.
 	t := time.Now()
 
-	for _, task := range tasks {
+	for _, chain := range args.ChainList {
+		scrp := tasks[chain]
+
 		// A task may be nil, to make a placeholder for a future scraper.
-		if task == nil {
+		if scrp == nil {
 			continue
 		}
 
 		tt := time.Now()
-		log.SetPrefix(task.name + " ")
-		log.Printf("Starting %s.", task.name)
+		log.SetPrefix(chain + " ")
+		log.Printf("Starting %s.", chain)
 
-		err := task.scrp.Scrape(filepath.Join(args.Dir, "{{date}}", task.dir))
+		err := scrp.Scrape(filepath.Join(args.Dir, "{{date}}", chain))
 		if err != nil {
 			log.Printf("Finished with error: %v", err)
 		} else {
@@ -86,34 +90,29 @@ func main() {
 	log.Printf("Operation is complete. Time took: %v", time.Now().Sub(t))
 }
 
-// A single scraping task.
-type scrapingTask struct {
-	scrp scrapers.Scraper // Performer of scraping.
-	name string           // For logging.
-	dir  string           // Directory to which to download files.
-}
-
-// Holds tasks to perform by the main program. Tasks will be performed
-// sequentially. Use a nil value to make a placeholder, for chain counting.
-var tasks = []*scrapingTask{
-	&scrapingTask{scrapers.Cerberus("TivTaam", ""), "TivTaam", "tivtaam"},
-	&scrapingTask{scrapers.Shufersal(), "Shufersal", "shufersal"},
-	&scrapingTask{scrapers.Cerberus("DorAlon", ""), "DorAlon", "doralon"},
-	&scrapingTask{scrapers.Cerberus("osherad", ""), "OsherAd", "osherad"},
-	&scrapingTask{scrapers.Mega(), "Mega", "mega"},
-	&scrapingTask{scrapers.Cerberus("HaziHinam", ""), "HaziHinam", "hazihinam"},
-	&scrapingTask{scrapers.Cerberus("Keshet", ""), "Keshet", "keshet"},
-	&scrapingTask{scrapers.Cerberus("RamiLevi", ""), "RamiLevi", "ramilevi"},
-	&scrapingTask{scrapers.Cerberus("SuperDosh", ""), "SuperDosh", "superdosh"},
-	&scrapingTask{scrapers.Cerberus("Yohananof", ""), "Yohananof", "yohananof"},
-	&scrapingTask{scrapers.Eden(), "Eden", "eden"},
-	&scrapingTask{scrapers.Bitan(), "Bitan", "bitan"},
-	&scrapingTask{scrapers.Nibit(scrapers.Victory, 7), "Victory", "victory"},
-	&scrapingTask{scrapers.Nibit(scrapers.Hashook, 7), "Hashook", "hashook"},
-	&scrapingTask{scrapers.Nibit(scrapers.Lahav, 7), "Lahav", "lahav"},
-	&scrapingTask{scrapers.Coop(), "Coop", "coop"},
-	&scrapingTask{scrapers.Cerberus("freshmarket_sn", "f_efrd"), "Freshmarket", "freshmarket"},
-	&scrapingTask{scrapers.Zolbegadol(), "ZolBegadol", "zolbegadol"},
+// Holds tasks to perform by the main program. Tasks will be performed ordered
+// by flag value, or alphabetically if chains flag is empty.
+//
+// Use a nil value to make a placeholder, for chain counting.
+var tasks = map[string]scrapers.Scraper{
+	"tivtaam":     scrapers.Cerberus("TivTaam", ""),
+	"shufersal":   scrapers.Shufersal(),
+	"doralon":     scrapers.Cerberus("DorAlon", ""),
+	"osherad":     scrapers.Cerberus("osherad", ""),
+	"mega":        scrapers.Mega(),
+	"hazihinam":   scrapers.Cerberus("HaziHinam", ""),
+	"keshet":      scrapers.Cerberus("Keshet", ""),
+	"ramilevi":    scrapers.Cerberus("RamiLevi", ""),
+	"superdosh":   scrapers.Cerberus("SuperDosh", ""),
+	"yohananof":   scrapers.Cerberus("Yohananof", ""),
+	"eden":        scrapers.Eden(),
+	"bitan":       scrapers.Bitan(),
+	"victory":     scrapers.Nibit(scrapers.Victory, 7),
+	"hashook":     scrapers.Nibit(scrapers.Hashook, 7),
+	"lahav":       scrapers.Nibit(scrapers.Lahav, 7),
+	"coop":        scrapers.Coop(),
+	"freshmarket": scrapers.Cerberus("freshmarket_sn", "f_efrd"),
+	"zolbegadol":  scrapers.Zolbegadol(),
 }
 
 // Returns the name that should be given to the log file.
@@ -125,9 +124,11 @@ func logFileName() string {
 
 // Holds parsed command-line arguments.
 var args struct {
-	Dir    string // Where to download files.
-	Stdout bool   `flug:"stdout,Log to stdout instead of log file."`
-	From   string `flug:"from,Download files from this time and on. Format: YYYYMMDDhhmm. (default download all files)"`
+	Dir       string   // Where to download files.
+	ChainList []string // List of chain names to include in this run, parsed from Chains.
+	Stdout    bool     `flug:"stdout,Log to stdout instead of log file."`
+	From      string   `flug:"from,Download files from this time and on. Format: YYYYMMDDhhmm. (default download all files)"`
+	Chains    string   `flug:"chains,Comma separated chain names to include in this run. (default all)"`
 }
 
 // Signifies that no args were given.
@@ -147,6 +148,22 @@ func parseArgs() error {
 		}
 	}
 
+	// Parse chains.
+	if args.Chains == "" {
+		for chain := range tasks {
+			args.ChainList = append(args.ChainList, chain)
+		}
+		sort.Strings(args.ChainList)
+	} else {
+		// TODO(amit): Handle duplicates.
+		args.ChainList = strings.Split(args.Chains, ",")
+		for _, chain := range args.ChainList {
+			if tasks[chain] == nil {
+				return fmt.Errorf("unrecognized chain name: %q", chain)
+			}
+		}
+	}
+
 	// No args.
 	if len(flag.Args()) == 0 {
 		return noArgs
@@ -154,7 +171,7 @@ func parseArgs() error {
 
 	// Too many args.
 	if len(flag.Args()) > 1 {
-		return fmt.Errorf("To many arguments were given.")
+		return fmt.Errorf("too many arguments were given.")
 	}
 
 	args.Dir = flag.Args()[0]
@@ -184,15 +201,5 @@ func logWelcome() {
 	log.Print("To search for times, use grep 'took'.")
 
 	// Print chain names.
-	chains := ""
-	for i := range tasks {
-		if tasks[i] == nil {
-			continue
-		}
-		if i > 0 {
-			chains += ", "
-		}
-		chains += tasks[i].name
-	}
-	log.Print("Chains in this run: ", chains)
+	log.Print("Chains in this run: ", strings.Join(args.ChainList, ", "))
 }
