@@ -44,7 +44,6 @@ func organizeInputFiles() ([]*fileAndTime, error) {
 		for _, p := range dir {
 			// TODO(amit): Change ".items" to a constant.
 			if strings.HasSuffix(p, ".items") { // Ignore parsed intermediates.
-				pe("Skipping parsed intermediate:", p)
 				continue
 			}
 			paths[p] = struct{}{}
