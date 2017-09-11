@@ -66,8 +66,10 @@ func main() {
 
 	// Prints errors to stderr. Each processed file is reported here, including success.
 	go func() {
+		i := 0
 		for err := range errChan {
-			pe(err)
+			i++
+			pef("%v (%v/%v %v%%)\n", err, i, len(inputFiles), i*100/len(inputFiles))
 		}
 		doneChan <- 0
 	}()
