@@ -87,7 +87,7 @@ func reportStoreMetas(ss []*StoreMeta) {
 		last := storeMetaMap[ss[i].StoreId]
 		if h != last {
 			storeMetaMap[ss[i].StoreId] = h
-			printTsv(storeMetaOut,
+			storeMetaOut.printCsv(
 				ss[i].Timestamp,
 				ss[i].StoreId,
 				ss[i].BikoretNo,

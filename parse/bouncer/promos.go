@@ -70,7 +70,7 @@ func finalizePromos() {
 
 	for _, pids := range promosMap {
 		for _, pid := range pids {
-			printTsv(promosToOut, pid.Id, pid.TimestampTo+60*60*24)
+			promosToOut.printCsv(pid.Id, pid.TimestampTo+60*60*24)
 		}
 	}
 
@@ -227,13 +227,13 @@ func reportPromos(ps []*Promo) {
 				notInPromosItems = "1"
 			} else {
 				for i := range p.ItemIds {
-					printTsv(promosItemsOut, last.Id, p.ItemIds[i],
+					promosItemsOut.printCsv(last.Id, p.ItemIds[i],
 						p.GiftItems[i])
 				}
 			}
 
 			// Report new promo.
-			printTsv(promosOut,
+			promosOut.printCsv(
 				last.Id,
 				p.Timestamp,
 				0,
@@ -270,7 +270,7 @@ func reportPromos(ps []*Promo) {
 		// Report in promos_stores.
 		if _, ok := last.StoreIds[p.StoreId]; !ok {
 			last.StoreIds[p.StoreId] = struct{}{}
-			printTsv(promosStoresOut, last.Id, p.StoreId)
+			promosStoresOut.printCsv(last.Id, p.StoreId)
 		}
 	}
 }

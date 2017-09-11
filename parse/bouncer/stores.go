@@ -87,7 +87,7 @@ func makeStoreId(s *Store) int {
 	storesMap[h] = append(storesMap[h], result)
 	stores = append(stores, s)
 
-	printTsv(storesOut,
+	storesOut.printCsv(
 		result,
 		s.ChainId,
 		s.SubchainId,

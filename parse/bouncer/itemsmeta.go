@@ -96,7 +96,7 @@ func reportItemMetas(is []*ItemMeta) {
 			return
 		}
 		itemMetaMap[h] = struct{}{}
-		printTsv(itemMetaOut,
+		itemMetaOut.printCsv(
 			is[i].Timestamp,
 			is[i].ItemId,
 			is[i].ChainId,

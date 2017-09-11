@@ -85,7 +85,7 @@ func reportPrices(ps []*Price) {
 		last := pricesMap[ps[i].id()]
 		if h != last {
 			pricesMap[ps[i].id()] = h
-			printTsv(pricesOut,
+			pricesOut.printCsv(
 				ps[i].Timestamp,
 				ps[i].ItemId,
 				ps[i].StoreId,

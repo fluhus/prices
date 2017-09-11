@@ -1,4 +1,4 @@
-// Handles data reporting and bouncing. Reports data in TSV files, while
+// Handles data reporting and bouncing. Reports data in CSV files, while
 // bouncing off repeating data entries.
 //
 // Prior to calls to this package, one should call the Initialize() function.
@@ -12,9 +12,9 @@ package bouncer
 
 import (
 	"bufio"
+	"encoding/csv"
 	"fmt"
 	"hash/crc64"
-	"io"
 	"os"
 	"strconv"
 )
@@ -60,37 +60,27 @@ func hash(a interface{}, b ...interface{}) int {
 	return int(crc.Sum64())
 }
 
-// Prints the given values tab-separated, with a new line at the end.
-func printTsv(w io.Writer, values ...interface{}) {
-	for i := range values {
-		if i == 0 {
-			fmt.Fprintf(w, "%v", values[i])
-		} else {
-			fmt.Fprintf(w, "\t%v", values[i])
-		}
-	}
-	fmt.Fprintf(w, "\n")
-}
-
 // A buffered closable file writer.
 type fileWriter struct {
-	file *os.File
-	*bufio.Writer
+	f             *os.File    // Underlying file.
+	csv           *csv.Writer // For writing CSV.
+	*bufio.Writer             // For direct writing.
 }
 
 // A buffered closable file reader.
 type fileReader struct {
-	file *os.File
+	f *os.File
 	*bufio.Reader
 }
 
-func (f *fileWriter) Close() {
-	f.Flush()
-	f.file.Close()
+func (w *fileWriter) Close() {
+	w.csv.Flush()
+	w.Flush()
+	w.f.Close()
 }
 
-func (f *fileReader) Close() {
-	f.file.Close()
+func (r *fileReader) Close() {
+	r.f.Close()
 }
 
 func newFileWriter(file string) (*fileWriter, error) {
@@ -99,7 +89,8 @@ func newFileWriter(file string) (*fileWriter, error) {
 		return nil, err
 	}
 	buf := bufio.NewWriter(f)
-	return &fileWriter{f, buf}, nil
+
+	return &fileWriter{f, csv.NewWriter(buf), buf}, nil
 }
 
 func newFileAppender(file string) (*fileWriter, error) {
@@ -108,7 +99,7 @@ func newFileAppender(file string) (*fileWriter, error) {
 		return nil, err
 	}
 	buf := bufio.NewWriter(f)
-	return &fileWriter{f, buf}, nil
+	return &fileWriter{f, csv.NewWriter(buf), buf}, nil
 }
 
 func newFileReader(file string) (*fileReader, error) {
@@ -118,6 +109,15 @@ func newFileReader(file string) (*fileReader, error) {
 	}
 	buf := bufio.NewReader(f)
 	return &fileReader{f, buf}, nil
+}
+
+// Prints the given values comma-separated, with a new line at the end.
+func (w *fileWriter) printCsv(values ...interface{}) {
+	records := make([]string, 0, len(values))
+	for _, v := range values {
+		records = append(records, fmt.Sprint(v))
+	}
+	w.csv.Write(records)
 }
 
 // Converts string to int and panics on failure.

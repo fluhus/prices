@@ -70,7 +70,7 @@ func makeItemId(i *Item) int {
 	id = len(items) + 1 // 1-based id's.
 	items[h] = id
 
-	printTsv(itemsOut, id, i.ItemType, i.ItemCode, i.ChainId)
+	itemsOut.printCsv(id, i.ItemType, i.ItemCode, i.ChainId)
 
 	return id
 }
