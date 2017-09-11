@@ -10,10 +10,18 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"sync"
 )
+
+// loadLock synchronizes calls to load(), to prevent hard-drive from being
+// accessed in parallel.
+var loadLock sync.Mutex
 
 // Loads data from a file, and decompresses if it is a gzip or a zip.
 func load(file string) ([]byte, error) {
+	loadLock.Lock()
+	defer loadLock.Unlock()
+
 	switch {
 	// Gzip.
 	case strings.HasSuffix(file, ".gz"):
