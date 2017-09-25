@@ -183,7 +183,7 @@ func parseArgs() error {
 var help = `Downloads price data from stores.
 
 Usage:
-prices <out dir>
+scrape <out dir>
 
 Flags:`
 
