@@ -116,15 +116,18 @@ func httpGet(url string, c *http.Client) (*http.Response, error) {
 // httpPost sends a POST request, with program-specific settings. If client is null,
 // uses the default client.
 func httpPost(url string, values urllib.Values, c *http.Client) (*http.Response, error) {
-	req, err := http.NewRequest("POST", url, nil)
+	req, err := http.NewRequest("POST", url, strings.NewReader(values.Encode()))
 	if err != nil {
 		return nil, err
 	}
-	req.PostForm = values
+	if values != nil && len(values) > 0 {
+		// Allowing to send POST data by URL, if no values.
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+	req.Header.Set("User-Agent", userAgent)
 	if c == nil {
 		c = http.DefaultClient
 	}
-	req.Header.Set("User-Agent", userAgent)
 	return c.Do(req)
 }
 

@@ -132,13 +132,13 @@ func (a *cerberusScraper) login() (*http.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	cookie, err := a.parseCookie(res)
+	preCookie, err := a.parseCookie(res)
 	if err != nil {
 		return nil, err
 	}
 
 	// Login!
-	jar := singleCookieJar(cerberusHome, "cftpSID", string(cookie))
+	jar := singleCookieJar(cerberusHome, "cftpSID", string(preCookie))
 	cl.Jar = jar
 
 	res2, err := httpPost(
@@ -151,18 +151,24 @@ func (a *cerberusScraper) login() (*http.Client, error) {
 		},
 		cl)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to post: %v", err)
+		return nil, fmt.Errorf("Post returned error: %v", err)
 	}
 	defer res2.Body.Close()
+	if res2.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Post returned error: status: %v", res2.Status)
+	}
 
 	// Get second cookie.
-	cookie, err = a.parseCookie(res2)
+	postCookie, err := a.parseCookie(res2)
 	if err != nil {
 		return nil, err
 	}
+	if string(preCookie) == string(postCookie) {
+		return nil, fmt.Errorf("Got the same cookie like before login.")
+	}
 
 	// Update client with new cookie.
-	cl.Jar = singleCookieJar(cerberusHome, "cftpSID", string(cookie))
+	cl.Jar = singleCookieJar(cerberusHome, "cftpSID", string(postCookie))
 
 	return cl, nil
 }
@@ -196,6 +202,9 @@ func (a *cerberusScraper) getFileList(cl *http.Client) ([]string, error) {
 	res, err := httpPost(cerberusFile+"ajax_dir?sEcho=2&iColumns=5&sColumns=%2C%2C%2C%2C&iDisplayStart=0&iDisplayLength=100000&mDataProp_0=fname&sSearch_0=&bRegex_0=false&bSearchable_0=true&bSortable_0=true&mDataProp_1=type&sSearch_1=&bRegex_1=false&bSearchable_1=true&bSortable_1=false&mDataProp_2=size&sSearch_2=&bRegex_2=false&bSearchable_2=true&bSortable_2=true&mDataProp_3=ftime&sSearch_3=&bRegex_3=false&bSearchable_3=true&bSortable_3=true&mDataProp_4=&sSearch_4=&bRegex_4=false&bSearchable_4=true&bSortable_4=false&sSearch=&bRegex=false&iSortingCols=0&cd=%2F", nil, cl)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to post request: %v", err)
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Got bad response status: %s", res.Status)
 	}
 
 	// Parse file list.
