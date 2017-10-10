@@ -136,7 +136,7 @@ func httpPost(url string, values urllib.Values, c *http.Client) (*http.Response,
 // downloaded.
 func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 	to = expandPath(to)
-	if ts := fileTimestamp(to); ts == -1 || ts < fromTimestamp {
+	if !shouldDownloadFile(to) {
 		return false, nil
 	}
 
@@ -192,7 +192,7 @@ func downloadIfNotExists(url, to string, cl *http.Client) (bool, error) {
 func downloadIfNotExistsPost(url, to string, cl *http.Client,
 	values urllib.Values) (bool, error) {
 	to = expandPath(to)
-	if ts := fileTimestamp(to); ts == -1 || ts < fromTimestamp {
+	if !shouldDownloadFile(to) {
 		return false, nil
 	}
 
@@ -255,6 +255,21 @@ func mkdir(path string) error {
 	mkdirLock.Lock()
 	defer mkdirLock.Unlock()
 	return os.MkdirAll(path, 0700)
+}
+
+// storesFileTemplate indicates how tell a stores data file.
+var storesFileTemplate = regexp.MustCompile("(^|\\W)Stores\\d")
+
+// isStoresFile checks if a file's name looks like a stores data file.
+func isStoresFile(name string) bool {
+	return storesFileTemplate.FindAllString(name, 1) != nil
+}
+
+// shouldDownloadFile tests if in the current cofiguration this file should be
+// downloaded.
+func shouldDownloadFile(name string) bool {
+	ts := fileTimestamp(name)
+	return ts != -1 && (ts >= fromTimestamp || isStoresFile(name))
 }
 
 // ----- TIMESTAMP HANDLING ---------------------------------------------------
