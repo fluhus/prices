@@ -61,7 +61,7 @@ COMMENT ON COLUMN stores.chain_id IS 'Chain code, as provided by GS1.';
 COMMENT ON COLUMN stores.subchain_id IS 'Subchain number.';
 COMMENT ON COLUMN stores.reported_store_id IS 'Store number issued by the chain.';
 
-COPY stores FROM '/home/amit/prices/data_parsed/stores.txt' WITH (FORMAT csv);
+COPY stores FROM '/home/amit/prices/data_parsed/stores.txt' WITH (FORMAT csv, NULL 'NULL');
 
 CREATE TABLE IF NOT EXISTS stores_meta (
   timestamp        int,
@@ -84,7 +84,7 @@ COMMENT ON COLUMN stores_meta.store_id IS 'References stores.store_id. (safe)';
 COMMENT ON COLUMN stores_meta.bikoret_no IS '???';
 COMMENT ON COLUMN stores_meta.store_type IS '1 for physical, 2 for online, 3 for both.';
 
-COPY stores_meta FROM '/home/amit/prices/data_parsed/stores_meta.txt' WITH (FORMAT csv);
+COPY stores_meta FROM '/home/amit/prices/data_parsed/stores_meta.txt' WITH (FORMAT csv, NULL 'NULL');
 
 CREATE TABLE IF NOT EXISTS items (
   item_id    integer,
@@ -99,7 +99,7 @@ COMMENT ON COLUMN items.item_type IS '0 for internal codes, 1 for barcodes.';
 COMMENT ON COLUMN items.item_code IS 'Barcode number or internal code.';
 COMMENT ON COLUMN items.chain_id IS 'Empty string for universal.';
 
-COPY items FROM '/home/amit/prices/data_parsed/items.txt' WITH (FORMAT csv);
+COPY items FROM '/home/amit/prices/data_parsed/items.txt' WITH (FORMAT csv, NULL 'NULL');
 
 CREATE TABLE IF NOT EXISTS items_meta (
   timestamp                     int,
@@ -124,7 +124,7 @@ COMMENT ON COLUMN items_meta.quantity_in_package IS 'Quantity of units in a pack
 COMMENT ON COLUMN items_meta.allow_discount IS 'Is the item allowed in promotions.';
 COMMENT ON COLUMN items_meta.item_status IS '???';
 
-COPY items_meta FROM '/home/amit/prices/data_parsed/items_meta.txt' WITH (FORMAT csv);
+COPY items_meta FROM '/home/amit/prices/data_parsed/items_meta.txt' WITH (FORMAT csv, NULL 'NULL');
 
 CREATE TABLE IF NOT EXISTS prices (
   timestamp             int,
@@ -145,7 +145,7 @@ COMMENT ON COLUMN prices.unit_of_measure_price IS 'Price in shekels as reported 
 COMMENT ON COLUMN prices.unit_of_measure IS 'Gram, liter, etc.';
 COMMENT ON COLUMN prices.quantity IS 'How many grams/liters etc.';
 
-COPY prices FROM '/home/amit/prices/data_parsed/prices.txt' WITH (FORMAT csv);
+COPY prices FROM '/home/amit/prices/data_parsed/prices.txt' WITH (FORMAT csv, NULL 'NULL');
 
 CREATE TABLE IF NOT EXISTS promos (
   promo_id                     integer,
@@ -197,7 +197,7 @@ COMMENT ON COLUMN promos.additional_min_basket_amount IS '???';
 COMMENT ON COLUMN promos.number_of_items IS 'Number of items that take part in the promotion. Should be equivalent to count(*) on the promo_id in promos_items, but some of the promos are not reported there. (safe)';
 COMMENT ON COLUMN promos.not_in_promos_items IS '0 if reported in promos_items, 1 if not. (safe)';
 
-COPY promos FROM '/home/amit/prices/data_parsed/promos.txt' WITH (FORMAT csv);
+COPY promos FROM '/home/amit/prices/data_parsed/promos.txt' WITH (FORMAT csv, NULL 'NULL');
 
 CREATE TABLE IF NOT EXISTS promos_stores (
   promo_id int NOT NULL,
@@ -208,7 +208,7 @@ COMMENT ON TABLE promos_stores IS 'Reports what stores take part in every promo.
 COMMENT ON COLUMN promos_stores.promo_id IS 'References promos.promo_id. (safe)';
 COMMENT ON COLUMN promos_stores.store_id IS 'References stores.store_id. (safe)';
 
-COPY promos_stores FROM '/home/amit/prices/data_parsed/promos_stores.txt' WITH (FORMAT csv);
+COPY promos_stores FROM '/home/amit/prices/data_parsed/promos_stores.txt' WITH (FORMAT csv, NULL 'NULL');
 
 CREATE TABLE IF NOT EXISTS promos_items (
   promo_id     int NOT NULL,
@@ -222,7 +222,7 @@ CAVEAT: promos that include more than 100 items are not reported here, because t
 COMMENT ON COLUMN promos_items.promo_id IS 'References promos.promo_id. (safe)';
 COMMENT ON COLUMN promos_items.item_id IS 'References items.item_id. (safe)';
 
-COPY promos_items FROM '/home/amit/prices/data_parsed/promos_items.txt' WITH (FORMAT csv);
+COPY promos_items FROM '/home/amit/prices/data_parsed/promos_items.txt' WITH (FORMAT csv, NULL 'NULL');
 
 CREATE TEMP TABLE promos_to (
 -- A temporary table for updating the timestamp_to field in promos. The
@@ -231,7 +231,7 @@ CREATE TEMP TABLE promos_to (
   promo_id     int,
   timestamp_to int
 );
-COPY promos_to FROM '/home/amit/prices/data_parsed/promos_to.txt' WITH (FORMAT csv);
+COPY promos_to FROM '/home/amit/prices/data_parsed/promos_to.txt' WITH (FORMAT csv, NULL 'NULL');
 CREATE INDEX promos_to_index ON promos_to(promo_id, timestamp_to);
 
 UPDATE promos SET timestamp_to = (
