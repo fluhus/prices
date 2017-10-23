@@ -67,9 +67,10 @@ func (p *Price) hash() int {
 	)
 }
 
-// Returns the identifier of an price entry, by item-id and store-id.
+// Returns the identifier of a price entry, by item-id and store-id.
 func (p *Price) id() int {
-	return p.ItemId<<32 + p.StoreId
+	//return p.ItemId<<32 + p.StoreId
+	return hash(p.ItemId, p.StoreId)
 }
 
 // Reports the given prices.
