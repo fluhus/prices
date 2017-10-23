@@ -1,7 +1,7 @@
 -- Set cache size to 2 GB.
 PRAGMA page_size = 4096;
 PRAGMA default_cache_size = 524288;
-.separator "	"
+.separator ","
 
 
 ----- TABLES -------------------------------------------------------------------
