@@ -11,11 +11,6 @@ import (
 	"github.com/fluhus/gostuff/xmlnode"
 )
 
-// Version of the parser, to detect data that were parsed with an outdated
-// parser so they can be reprocessed. For readability and uniqueness, the
-// version is the time when the parser was last modified.
-const parserVersion = "23/3/2016 17:00"
-
 // Parses entire XML files and returns maps that map each required field to its
 // value.
 type parser struct {

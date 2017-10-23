@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/fluhus/gostuff/ezpprof"
 	"github.com/fluhus/prices/parse/bouncer"
@@ -16,12 +17,17 @@ import (
 )
 
 // TODO(amit): Switch to logging with the log package instead of prints.
+// TODO(amit): Change ".items" suffix to something more self-descriptive. Perhaps ".parsed"?
 
-// Determines whether CPU profiling should be performed.
-const profileCpu = false
+const (
+	profileCpu       = false    // Determines whether CPU profiling should be performed.
+	profileMem       = false    // Determines whether memory profiling should be performed.
+	parsedFileSuffix = ".items" // Suffix of parsed intermediates.
+)
 
-// Determines whether memory profiling should be performed.
-const profileMem = false
+var (
+	numOfThreads int
+)
 
 func main() {
 	parseArgs()
@@ -43,61 +49,79 @@ func main() {
 		}()
 	}
 
-	// Init bouncer.
-	if !args.Check {
-		bouncer.Initialize(args.OutDir)
-		defer bouncer.Finalize()
-	}
-
-	// Prepare threads.
-	numOfThreads := runtime.NumCPU()
-	fmt.Println("Running on", numOfThreads, "threads.")
-	fileChan := make(chan *fileAndTime, numOfThreads)
-	doneChan := make(chan int, numOfThreads)
+	// Prepare thread stuff.
+	numOfThreads = runtime.NumCPU()
 	errChan := make(chan error, numOfThreads)
+	var wait sync.WaitGroup
 
-	// Pushes file names to worker threads.
-	go func() {
-		for _, file := range inputFiles {
-			fileChan <- file
-		}
-		close(fileChan)
-	}()
+	pe("Running on", numOfThreads, "threads.")
 
 	// Prints errors to stderr. Each processed file is reported here, including success.
+	ndone := 0 // TODO(amit): Find a better solution than this common counter.
 	go func() {
-		i := 0
+		defer wait.Done()
 		for err := range errChan {
-			i++
-			pef("%v (%v/%v %v%%)\n", err, i, len(inputFiles), i*100/len(inputFiles))
+			ndone++
+			pef("%v (%v/%v %v%%)\n", err, ndone, len(inputFiles), ndone*100/len(inputFiles))
 		}
-		doneChan <- 0
+	}()
+	defer func() {
+		wait.Add(1)
+		close(errChan)
+		wait.Wait()
 	}()
 
-	// Start worker threads.
+	// Parse input files.
+	pe("Parsing raw data.")
+	fileChan := inputFilesChan(inputFiles)
 	for i := 0; i < numOfThreads; i++ {
+		wait.Add(1)
 		go func() {
+			defer wait.Done()
 			for file := range fileChan {
-				err := processFile(file)
+				err := parseFile(file.file)
 				if err != nil {
 					errChan <- fmt.Errorf("%v %s", err, file.file)
 					continue
 				}
-				errChan <- fmt.Errorf("success %s", file.file)
+				errChan <- fmt.Errorf("success parsing %s", file.file)
 			}
-
-			doneChan <- 0
 		}()
 	}
+	wait.Wait()
 
-	// Wait for parser threads to finish.
-	for i := 0; i < numOfThreads; i++ {
-		<-doneChan
+	if args.Check {
+		return
 	}
 
-	// Wait for printer threads.
-	close(errChan)
-	<-doneChan
+	// Init bouncer.
+	bouncer.Initialize(args.OutDir)
+	defer bouncer.Finalize()
+
+	// Report data into tables.
+	pe("Creating tables.")
+	ndone = 0
+	fileChan = inputFilesChan(inputFiles)
+	for i := 0; i < numOfThreads; i++ {
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			for file := range fileChan {
+				pfile := file.file + parsedFileSuffix // Name of parsed file.
+				if !fileExists(pfile) {
+					errChan <- fmt.Errorf("no parsed file for %s", file.file)
+					continue
+				}
+				err := reportParsedFile(pfile, file.time)
+				if err != nil {
+					errChan <- fmt.Errorf("%v %s", err, file.file)
+					continue
+				}
+				errChan <- fmt.Errorf("success reporting %s", file.file)
+			}
+		}()
+	}
+	wait.Wait()
 }
 
 // Println to stderr.
@@ -110,46 +134,25 @@ func pef(s string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, s, a...)
 }
 
-// Does the entire processing for a single file.
-func processFile(file *fileAndTime) error {
-	// Extract data-type.
-	typ := fileType(file.file)
+// parseFile parses a raw data file and serializes the result. Skips if a
+// serialized output already exists and not force.
+func parseFile(file string) error {
+	// Check if already parsed.
+	if !args.ForceRaw && fileExists(file+parsedFileSuffix) {
+		// TODO(amit): Log?
+		return nil
+	}
+
+	// Check file type.
+	typ := fileType(file)
 	if typ == "" {
-		return fmt.Errorf(
-			"could not infer data type (stores/prices/promos).")
+		return fmt.Errorf("failed to infer data type (stores/prices/promos).")
 	}
 
-	// Attempt to read an already serialized file.
-	var r reporter
-	if !args.Check {
-		r = reporters[typ]
-	}
-
-	// Try to load a parsed file.
-	var err error
-	if !args.ForceRaw {
-		// TODO(amit): Change ".items" suffix to something more self-descriptive.
-		// Perhaps ".parsed"?
-		err = reportSerializedFile(file.file+".items", r, file.time)
-	}
-
-	// Parse raw file.
-	if args.ForceRaw || err != nil {
-		err = parseFile(file.file, parsers[typ])
-		if err != nil {
-			return err
-		}
-	}
-
-	return reportSerializedFile(file.file+".items", r, file.time)
-}
-
-// Parses a raw data file and serializes the result.
-func parseFile(file string, prsr *parser) error {
 	// Load input XML.
 	data, err := load(file)
 	if err != nil {
-		return fmt.Errorf("error reading raw file: %v", err)
+		return fmt.Errorf("failed to read raw file: %v", err)
 	}
 
 	// Make syntax & encoding corrections.
@@ -158,42 +161,33 @@ func parseFile(file string, prsr *parser) error {
 	// Passing chain-ID because Co-Op don't include that field in their
 	// XMLs.
 	chainId := fileChainId(file)
-	items, err := prsr.parse(data, map[string]string{"chain_id": chainId})
+	items, err := parsers[typ].parse(data, map[string]string{"chain_id": chainId})
 	if err != nil {
-		return fmt.Errorf("error parsing file: %v", err)
+		return fmt.Errorf("failed to parse file: %v", err)
 	}
 	if len(items) == 0 {
-		return fmt.Errorf("error parsing file: 0 items found.")
+		return fmt.Errorf("failed to parse file: 0 items found.")
 	}
 
 	// Save processed file.
-	meta := map[string]string{"version": parserVersion}
-	items = append([]map[string]string{meta}, items...)
-
-	err = serializer.Serialize(file+".items", items)
+	err = serializer.Serialize(file+parsedFileSuffix, items)
 	if err != nil {
-		return fmt.Errorf("error serializing: %v", err)
+		return fmt.Errorf("failed to serialize: %v", err)
 	}
 
 	return nil
 }
 
-// Reads a serialized file and reports it to the given reporter. If reporter
-// is nil, reads without reporting (for check mode).
-func reportSerializedFile(file string, r reporter, tim int64) error {
-	d := serializer.NewDeserializer(file)
+// reportParsedFile reads a serialized file and reports it.
+func reportParsedFile(file string, tim int64) error {
+	typ := fileType(file)
+	if typ == "" {
+		// Should not happen because parser wouldn't have parsed if no type.
+		panic(fmt.Sprintf("No file type for serialized file. %v", file))
+	}
 
-	// Read metadata.
-	meta := d.Next()
-	if meta == nil {
-		return d.Err()
-	}
-	if meta["version"] != parserVersion {
-		// This means that the parser was updated after the file was serialized,
-		// so this serialized file is invalid.
-		return fmt.Errorf("mismatching parser version: expected '%s' actual '%s'.",
-			parserVersion, meta["version"])
-	}
+	r := reporters[typ]
+	d := serializer.NewDeserializer(file)
 
 	// Go over items.
 	for item := d.Next(); item != nil; item = d.Next() {
@@ -235,4 +229,23 @@ func fileChainId(file string) string {
 	}
 
 	return match[1]
+}
+
+// fileExists checks if a file or directory exists.
+func fileExists(f string) bool {
+	_, err := os.Stat(f)
+	return err == nil
+}
+
+// inputFilesChan returns a channel that gives the input files by their order,
+// and closes it when they are over.
+func inputFilesChan(files []*fileAndTime) chan *fileAndTime {
+	result := make(chan *fileAndTime, numOfThreads*1000)
+	go func() {
+		for _, f := range files {
+			result <- f
+		}
+		close(result)
+	}()
+	return result
 }
