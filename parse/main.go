@@ -26,9 +26,18 @@ const (
 )
 
 var (
-	numOfThreads int
+	numOfThreads int // Shared across functions.
 )
 
+// What goes on here:
+// 1. Handling some logistics of input files and threading.
+// 2. Parsing the raw XMLs and writing parsed data to intermediate files.
+// 3. Going over the intermediates and reporting them as table rows.
+//
+// Before that, it parsed and reported each file as a whole. That caused
+// out-of-memory crashes, since parsing and reporting each takes a lot of
+// memory. So doing them serially helps reducing the memory consumption of the
+// process.
 func main() {
 	parseArgs()
 	inputFiles, err := organizeInputFiles()
@@ -71,7 +80,7 @@ func main() {
 		wait.Wait()
 	}()
 
-	// Parse input files.
+	// Parse raw XMLs.
 	pe("Parsing raw data.")
 	fileChan := inputFilesChan(inputFiles)
 	for i := 0; i < numOfThreads; i++ {
@@ -98,7 +107,7 @@ func main() {
 	bouncer.Initialize(args.OutDir)
 	defer bouncer.Finalize()
 
-	// Report data into tables.
+	// Report parsed data into tables.
 	pe("Creating tables.")
 	ndone = 0
 	fileChan = inputFilesChan(inputFiles)
@@ -124,12 +133,12 @@ func main() {
 	wait.Wait()
 }
 
-// Println to stderr.
+// pe is Println to stderr.
 func pe(a ...interface{}) {
 	fmt.Fprintln(os.Stderr, a...)
 }
 
-// Printf to stderr.
+// pef is Printf to stderr.
 func pef(s string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, s, a...)
 }
@@ -204,8 +213,9 @@ func reportParsedFile(file string, tim int64) error {
 	}
 }
 
-// Infers the type of data in the given file. Can be a full path. Returns either
-// "prices", "stores", "promos", or an empty string if cannot infer.
+// fileType infers the type of data in the given file. Can be a full path.
+// Returns either "prices", "stores", "promos", or an empty string if cannot
+// infer.
 func fileType(file string) string {
 	base := filepath.Base(file)
 	switch {
@@ -220,8 +230,8 @@ func fileType(file string) string {
 	}
 }
 
-// Infers the chain-ID of a file according to its name. Returns an empty string
-// if failed.
+// fileChainId infers the chain-ID of a file according to its name. Returns an
+// empty string if failed.
 func fileChainId(file string) string {
 	match := regexp.MustCompile("\\D(7290\\d+)").FindStringSubmatch(file)
 	if match == nil || len(match[1]) != 13 {
