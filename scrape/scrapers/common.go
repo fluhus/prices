@@ -6,6 +6,7 @@ package scrapers
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -26,6 +27,9 @@ const (
 	// User agent to use when scraping.
 	userAgent = "AmitLavonBot/1.0 (doctor_troll@walla.co.il) " +
 		"Price Transparency Project (github.com/fluhus/prices)"
+
+	// HTTP timeout to keep requests from taking forever.
+	httpTimeout = 10 * time.Second
 )
 
 // ----- SCRAPER TYPE ---------------------------------------------------------
@@ -106,6 +110,7 @@ func httpGet(url string, c *http.Client) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+	req = req.WithContext(makeContext())
 	if c == nil {
 		c = http.DefaultClient
 	}
@@ -120,6 +125,7 @@ func httpPost(url string, values urllib.Values, c *http.Client) (*http.Response,
 	if err != nil {
 		return nil, err
 	}
+	req = req.WithContext(makeContext())
 	if values != nil && len(values) > 0 {
 		// Allowing to send POST data by URL, if no values.
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -270,6 +276,13 @@ func isStoresFile(name string) bool {
 func shouldDownloadFile(name string) bool {
 	ts := fileTimestamp(name)
 	return ts != -1 && (ts >= fromTimestamp || isStoresFile(name))
+}
+
+// makeContext creates a context with common settings to this client.
+// All HTTP requests should use this context.
+func makeContext() context.Context {
+	ctx, _ := context.WithTimeout(context.Background(), httpTimeout)
+	return ctx
 }
 
 // ----- TIMESTAMP HANDLING ---------------------------------------------------
