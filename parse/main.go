@@ -48,13 +48,13 @@ func main() {
 
 	// Start profiling?
 	if profileCpu {
-		ezpprof.Start(filepath.Join(args.OutDir, "items.cpu.pprof"))
+		ezpprof.Start(filepath.Join(args.OutDir, "parse.cpu.pprof"))
 		defer ezpprof.Stop()
 	}
 	if profileMem {
 		defer func() {
 			runtime.GC()
-			ezpprof.Heap(filepath.Join(args.OutDir, "items.mem.pprof"))
+			ezpprof.Heap(filepath.Join(args.OutDir, "parse.mem.pprof"))
 		}()
 	}
 
