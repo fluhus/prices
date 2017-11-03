@@ -128,7 +128,7 @@ func parseSchema(text []byte) (*schema, error) {
 
 		t, err := parseTable(texts[i], names[i])
 		if err != nil {
-			return nil, fmt.Errorf("Table 1: %v", err)
+			return nil, fmt.Errorf("table %v: %v", i+1, err)
 		}
 		if string(t.Name) == "documentation" {
 			result.Doc = t.Doc
@@ -173,7 +173,7 @@ func parseTable(text, name []byte) (*table, error) {
 
 			// There must be a field to document.
 			if len(result.Fields) == 0 {
-				return nil, fmt.Errorf("Field doc with no fields before it: %s",
+				return nil, fmt.Errorf("field doc with no fields before it: %s",
 					brow)
 			}
 
@@ -204,7 +204,7 @@ func parseTable(text, name []byte) (*table, error) {
 			result.Fields = append(result.Fields, f)
 
 		default:
-			return nil, fmt.Errorf("Row doesn't match any pattern: %s", brow)
+			return nil, fmt.Errorf("row doesn't match any pattern: %s", brow)
 		}
 	}
 
