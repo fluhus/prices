@@ -3,6 +3,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -12,24 +13,36 @@ import (
 	"github.com/fluhus/flug"
 )
 
+// TODO(amit): Make error messages start with lowercase.
+// TODO(amit): Use templates in html and latex generation.
+// TODO(amit): Add markdown?
+
 func main() {
 	parseArgs()
 
 	// Read schema.
-	pe("Reading SQLite schema from stdin...\n(run with -help argument for help)")
+	pe("Reading SQLite schema from stdin...\n(run with -h argument for help)")
 	text, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		pe("Error reading schema:", err)
 		os.Exit(2)
 	}
+	if args.Verbose {
+		pe("Read", len(text), "characters.")
+	}
 
 	// Parse tables.
-	tables, err := parseSchema(text)
+	text = bytes.Replace(text, []byte("\r"), nil, -1)
+	db, err := parseSchema(text)
 	if err != nil {
 		pe("Error parsing schema:", err)
 		os.Exit(2)
 	}
-	for _, t := range tables {
+	if args.Verbose {
+		pe("Parsed", len(db.Tables), "tables")
+	}
+
+	for _, t := range db.Tables {
 		switch args.Format {
 		case "html":
 			fmt.Printf("%s", t.html())
@@ -43,9 +56,10 @@ func main() {
 }
 
 var args = struct {
-	Help   bool   `flug:"help,Show help message."`
-	Format string `flug:"format,Output format: text, html, latex, or json."`
-}{false, "text"}
+	Help    bool   `flug:"h,Show help message and exit."`
+	Format  string `flug:"f,Output format: html, latex, or json."`
+	Verbose bool   `flug:"v,Verbose, print debug messages."`
+}{false, "text", false}
 
 // parseArgs parses command line arguments. Exits on error.
 func parseArgs() {
@@ -61,33 +75,43 @@ func parseArgs() {
 		os.Exit(1)
 	}
 	switch args.Format {
-	case "text", "html", "latex", "json":
+	case "html", "latex", "json":
 	default:
 		pef("Error: unsupported format: %q\n", args.Format)
 		os.Exit(1)
 	}
 }
 
+// A schema is a completely parsed schema of the database.
+type schema struct {
+	Doc    []byte
+	Tables []*table
+}
+
 // A table is a single table in the database.
 type table struct {
-	name   []byte
-	doc    []byte
-	fields []*field
+	Name   []byte
+	Doc    []byte
+	Fields []*field
 }
 
 // A field is a single column in a table.
 type field struct {
-	name []byte
-	typ  []byte
-	doc  []byte
-	safe bool
+	Name []byte
+	Type []byte
+	Doc  []byte
+	Safe bool
 }
 
 // parseSchema parses an SQLite schema and returns its object representation.
-func parseSchema(text []byte) ([]*table, error) {
+func parseSchema(text []byte) (*schema, error) {
 	// Split to tables.
 	re := regexp.MustCompile("(?ims)^CREATE TABLE (\\w*) \\(\\s*(.*?)\\s*^\\);$")
 	matches := re.FindAllSubmatch(text, -1)
+	if args.Verbose {
+		pe("Found", len(matches), "tables.")
+	}
+
 	names := make([][]byte, len(matches))
 	texts := make([][]byte, len(matches))
 	for i := range matches {
@@ -95,14 +119,24 @@ func parseSchema(text []byte) ([]*table, error) {
 		texts[i] = matches[i][2]
 	}
 
-	result := make([]*table, len(texts))
+	result := &schema{}
+	var tables []*table
 	for i := range texts {
-		var err error
-		result[i], err = parseTable(texts[i], names[i])
+		if args.Verbose {
+			pe("Parsing table:", string(names[i]))
+		}
+
+		t, err := parseTable(texts[i], names[i])
 		if err != nil {
 			return nil, fmt.Errorf("Table 1: %v", err)
 		}
+		if string(t.Name) == "documentation" {
+			result.Doc = t.Doc
+			continue
+		}
+		tables = append(tables, t)
 	}
+	result.Tables = tables
 
 	return result, nil
 }
@@ -118,7 +152,7 @@ func parseTable(text, name []byte) (*table, error) {
 
 	// Initialize table.
 	result := &table{}
-	result.name = name
+	result.Name = name
 
 	// Split to rows.
 	rows := splitter.Split(string(text), -1)
@@ -129,27 +163,27 @@ func parseTable(text, name []byte) (*table, error) {
 		switch {
 		case tableDoc.Match(brow):
 			match := tableDoc.FindSubmatch(brow)
-			if len(result.doc) > 0 && len(match[1]) > 0 {
-				result.doc = append(result.doc, ' ')
+			if len(result.Doc) > 0 && len(match[1]) > 0 {
+				result.Doc = append(result.Doc, ' ')
 			}
-			result.doc = append(result.doc, match[1]...)
+			result.Doc = append(result.Doc, match[1]...)
 
 		case fieldDoc.Match(brow):
 			match := fieldDoc.FindSubmatch(brow)
 
 			// There must be a field to document.
-			if len(result.fields) == 0 {
+			if len(result.Fields) == 0 {
 				return nil, fmt.Errorf("Field doc with no fields before it: %s",
 					brow)
 			}
 
-			f := result.fields[len(result.fields)-1]
-			if len(f.doc) > 0 && len(match[1]) > 0 {
-				f.doc = append(f.doc, ' ')
+			f := result.Fields[len(result.Fields)-1]
+			if len(f.Doc) > 0 && len(match[1]) > 0 {
+				f.Doc = append(f.Doc, ' ')
 			}
-			f.doc = append(f.doc, match[1]...)
+			f.Doc = append(f.Doc, match[1]...)
 			if len(match[2]) > 0 {
-				f.safe = true
+				f.Safe = true
 			}
 
 		case fieldRow.Match(brow):
@@ -161,13 +195,13 @@ func parseTable(text, name []byte) (*table, error) {
 				continue
 			}
 
-			f.name = match[1]
-			f.typ = match[2]
-			f.doc = match[3]
+			f.Name = match[1]
+			f.Type = match[2]
+			f.Doc = match[3]
 			if len(match[4]) > 0 {
-				f.safe = true
+				f.Safe = true
 			}
-			result.fields = append(result.fields, f)
+			result.Fields = append(result.Fields, f)
 
 		default:
 			return nil, fmt.Errorf("Row doesn't match any pattern: %s", brow)
@@ -178,27 +212,9 @@ func parseTable(text, name []byte) (*table, error) {
 }
 
 // String returns a string representation of a table, for debugging.
-func (t *table) String() string {
-	buf := bytes.NewBuffer(nil)
-
-	fmt.Fprintf(buf, "TABLE: %s\n", t.name)
-	fmt.Fprintf(buf, "%s\n\n", t.doc)
-	fmt.Fprintf(buf, "FIELDS:\n")
-	if len(t.fields) == 0 {
-		fmt.Fprintf(buf, "(none)\n")
-	}
-	for _, f := range t.fields {
-		if f.safe {
-			fmt.Fprintf(buf, "%s (%s, safe)\n", f.name, f.typ)
-		} else {
-			fmt.Fprintf(buf, "%s (%s)\n", f.name, f.typ)
-		}
-		if len(f.doc) > 0 {
-			fmt.Fprintf(buf, "%s\n", f.doc)
-		}
-	}
-
-	return buf.String()
+func (s *schema) String() string {
+	j, _ := json.Marshal(s)
+	return string(j)
 }
 
 // html returns an HTML representation of a table.
@@ -206,8 +222,8 @@ func (t *table) html() []byte {
 	buf := bytes.NewBuffer(nil)
 
 	// Create title and doc.
-	fmt.Fprintf(buf, "<h3>%s</h3>\n", t.name)
-	fmt.Fprintf(buf, "%s\n", t.doc)
+	fmt.Fprintf(buf, "<h3>%s</h3>\n", t.Name)
+	fmt.Fprintf(buf, "%s\n", t.Doc)
 
 	// Create table and header.
 	fmt.Fprintf(buf, "<div class=\"panel panel-default\">\n")
@@ -216,14 +232,14 @@ func (t *table) html() []byte {
 		"style=\"width:100%%\">Description</th></tr>\n")
 
 	// Print fields.
-	for _, f := range t.fields {
+	for _, f := range t.Fields {
 		class := ""
-		if f.safe {
+		if f.Safe {
 			class = "glyphicon glyphicon-ok"
 		}
 		fmt.Fprintf(buf, "<tr><td><strong>%s<strong></td><td><span "+
 			"class=\"%s\" aria-hidden=\"true\""+
-			"></span></td><td>%s</td></tr>\n", f.name, class, f.doc)
+			"></span></td><td>%s</td></tr>\n", f.Name, class, f.Doc)
 	}
 
 	// Finish table.
@@ -237,17 +253,17 @@ func (t *table) latex() []byte {
 	buf := bytes.NewBuffer(nil)
 
 	// Create title and doc.
-	fmt.Fprintf(buf, "\\subsection*{%s}\n", quoteLatex(t.name))
-	fmt.Fprintf(buf, "%s\n", quoteLatex(t.doc))
+	fmt.Fprintf(buf, "\\subsection*{%s}\n", quoteLatex(t.Name))
+	fmt.Fprintf(buf, "%s\n", quoteLatex(t.Doc))
 
 	// Create table and header.
 	fmt.Fprintf(buf, "\\begin{tabularx}{\\linewidth}{|l|X|}\n")
 	fmt.Fprintf(buf, "\\hline Field & Description \\\\\n")
 
 	// Print fields.
-	for _, f := range t.fields {
+	for _, f := range t.Fields {
 		fmt.Fprintf(buf, "\\hline %s & %s \\\\\n",
-			quoteLatex(f.name), quoteLatex(f.doc))
+			quoteLatex(f.Name), quoteLatex(f.Doc))
 	}
 
 	// Finish table.
