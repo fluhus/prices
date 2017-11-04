@@ -17,7 +17,6 @@ import (
 )
 
 // TODO(amit): Make error messages start with lowercase.
-// TODO(amit): Use templates in html and latex generation.
 // TODO(amit): Add markdown?
 
 func main() {
@@ -47,6 +46,8 @@ func main() {
 	}
 
 	switch args.Format {
+	case "text":
+		fmt.Println(db)
 	case "html":
 		fmt.Println(db.html())
 	case "latex":
@@ -66,7 +67,7 @@ func main() {
 
 var args = struct {
 	Help    bool   `flug:"h,Show help message and exit."`
-	Format  string `flug:"f,Output format: html, latex, or json."`
+	Format  string `flug:"f,Output format: text, html, latex, or json."`
 	Verbose bool   `flug:"v,Verbose, print debug messages."`
 }{false, "text", false}
 
@@ -84,7 +85,7 @@ func parseArgs() {
 		os.Exit(1)
 	}
 	switch args.Format {
-	case "html", "latex", "json":
+	case "text", "html", "latex", "json":
 	default:
 		pef("Error: unsupported format: %q\n", args.Format)
 		os.Exit(1)
@@ -219,10 +220,15 @@ func parseTable(text, name string) (*table, error) {
 	return result, nil
 }
 
-// String returns a string representation of a table, for debugging.
+// String returns a string representation of a schema.
 func (s *schema) String() string {
-	j, _ := json.Marshal(s)
-	return string(j)
+	tmp := template.Must(template.New("").Parse(textTemplate))
+	buf := bytes.NewBuffer(nil)
+	err := tmp.Execute(buf, s)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	return buf.String()
 }
 
 // html returns an HTML representation of a schema.
@@ -276,6 +282,20 @@ func pe(a ...interface{}) {
 func pef(s string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, s, a...)
 }
+
+var textTemplate = `GENERAL INFORMATION
+{{.Doc}}
+
+{{range .Tables -}}
+TABLE: {{.Name}}
+{{.Doc}}
+
+FIELDS:
+{{- range .Fields}}
+  {{.Name}}: {{.Doc}}{{if .Safe}} (safe){{end}}
+{{- end}}
+
+{{end}}`
 
 var htmlTemplate = `<h3>General Information</h3>
 <div>{{.Doc}}</div>
