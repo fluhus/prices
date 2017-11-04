@@ -51,6 +51,13 @@ func main() {
 		fmt.Println(db.html())
 	case "latex":
 		fmt.Println(db.latex())
+	case "json":
+		j, err := json.MarshalIndent(db, "", "\t")
+		if err != nil {
+			pe("Failed to convert to JSON:", err)
+			os.Exit(2)
+		}
+		fmt.Println(string(j))
 	default:
 		pe("NOT SUPPORTED YET: " + args.Format)
 		os.Exit(2)
@@ -86,23 +93,23 @@ func parseArgs() {
 
 // A schema is a completely parsed schema of the database.
 type schema struct {
-	Doc    string
-	Tables []*table
+	Doc    string   `json:"doc"`
+	Tables []*table `json:"tables"`
 }
 
 // A table is a single table in the database.
 type table struct {
-	Name   string
-	Doc    string
-	Fields []*field
+	Name   string   `json:"name"`
+	Doc    string   `json:"doc"`
+	Fields []*field `json:"fields"`
 }
 
 // A field is a single column in a table.
 type field struct {
-	Name string
-	Type string
-	Doc  string
-	Safe bool
+	Name string `json:"name"`
+	Type string `json:"type"`
+	Doc  string `json:"doc"`
+	Safe bool   `json:"safe"`
 }
 
 // parseSchema parses an SQLite schema and returns its object representation.
