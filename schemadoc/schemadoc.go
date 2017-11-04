@@ -11,6 +11,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"text/template"
 
 	"github.com/fluhus/flug"
 )
@@ -48,6 +49,8 @@ func main() {
 	switch args.Format {
 	case "html":
 		fmt.Println(db.html())
+	case "latex":
+		fmt.Println(db.latex())
 	default:
 		pe("NOT SUPPORTED YET: " + args.Format)
 		os.Exit(2)
@@ -226,30 +229,18 @@ func (s *schema) html() string {
 	return buf.String()
 }
 
-// TODO(amit): Conver the latex function to work on schema and use a template.
-
-// latex returns a LaTeX representation of a table.
-func (t *table) latex() []byte {
+// latex returns a LaTeX representation of a schema.
+func (s *schema) latex() string {
+	tmp := template.Must(template.
+		New("").
+		Funcs(template.FuncMap{"latex": escapeLatex}).
+		Parse(latexTemplate))
 	buf := bytes.NewBuffer(nil)
-
-	// Create title and doc.
-	fmt.Fprintf(buf, "\\subsection*{%s}\n", quoteLatex(t.Name))
-	fmt.Fprintf(buf, "%s\n", quoteLatex(t.Doc))
-
-	// Create table and header.
-	fmt.Fprintf(buf, "\\begin{tabularx}{\\linewidth}{|l|X|}\n")
-	fmt.Fprintf(buf, "\\hline Field & Description \\\\\n")
-
-	// Print fields.
-	for _, f := range t.Fields {
-		fmt.Fprintf(buf, "\\hline %s & %s \\\\\n",
-			quoteLatex(f.Name), quoteLatex(f.Doc))
+	err := tmp.Execute(buf, s)
+	if err != nil {
+		return "Error: " + err.Error()
 	}
-
-	// Finish table.
-	fmt.Fprintf(buf, "\\hline \\end{tabularx}\n\n")
-
-	return buf.Bytes()
+	return buf.String()
 }
 
 // latexQuotes contains characters that should be escaped in LaTeX.
@@ -257,10 +248,12 @@ var latexQuotes = map[string]string{
 	"&": "\\&",
 	"_": "\\_",
 	"%": "\\%",
+	"{": "\\{",
+	"}": "\\}",
 }
 
-// quoteLatex takes raw text and escapes special LaTeX characters.
-func quoteLatex(text string) string {
+// escapeLatex takes raw text and escapes special LaTeX characters.
+func escapeLatex(text string) string {
 	for s, r := range latexQuotes {
 		text = strings.Replace(text, s, r, -1)
 	}
@@ -298,4 +291,20 @@ var htmlTemplate = `<h3>General Information</h3>
   {{- end}}
 </table>
 </div>
+{{end}}`
+
+var latexTemplate = `\\subsection{General Information}
+{{latex .Doc}}
+
+{{range .Tables -}}
+\\subsection{ {{- latex .Name -}} }
+{{latex .Doc}}
+
+\\begin{tabularx}{\\linewidth}{|l|X|}
+\\hline Field & Description \\\\
+{{range .Fields -}}
+\\hline {{latex .Name}} & {{latex .Doc}} \\\\
+{{end -}}
+\\hline \\end{tabularx}
+
 {{end}}`
