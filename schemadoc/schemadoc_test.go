@@ -7,7 +7,7 @@ import (
 
 func TestParse(t *testing.T) {
 	for i, test := range tests {
-		got, err := parseSchema([]byte(test.input))
+		got, err := parseSchema(test.input)
 		if err != nil {
 			t.Fatalf("#%v: failed to parse test schema: %v", i+1, err)
 		}
@@ -29,14 +29,14 @@ var tests = []struct {
 );
 `,
 		&schema{
-			Doc: nil,
+			Doc: "",
 			Tables: []*table{
 				{
-					Name: []byte("amit"),
-					Doc:  []byte("Hello"),
+					Name: "amit",
+					Doc:  "Hello",
 					Fields: []*field{
-						{[]byte("a"), []byte("integer"), []byte("World"), false},
-						{[]byte("bb"), []byte("text"), []byte("How are you?"), true},
+						{"a", "integer", "World", false},
+						{"bb", "text", "How are you?", true},
 					},
 				},
 			},
@@ -60,14 +60,14 @@ CREATE TABLE amit (
 );
 `,
 		&schema{
-			Doc: []byte("Bli Bla Blu"),
+			Doc: "Bli Bla Blu",
 			Tables: []*table{
 				{
-					Name: []byte("amit"),
-					Doc:  []byte("Hello"),
+					Name: "amit",
+					Doc:  "Hello",
 					Fields: []*field{
-						{[]byte("a"), []byte("integer"), []byte("World"), false},
-						{[]byte("bb"), []byte("text"), []byte("How are you?"), true},
+						{"a", "integer", "World", false},
+						{"bb", "text", "How are you?", true},
 					},
 				},
 			},
@@ -83,16 +83,16 @@ CREATE TABLE amit (
 );
 `,
 		&schema{
-			Doc: nil,
+			Doc: "",
 			Tables: []*table{
 				{
-					Name: []byte("stores"),
-					Doc:  []byte("Identifies every store in the data."),
+					Name: "stores",
+					Doc:  "Identifies every store in the data.",
 					Fields: []*field{
-						{[]byte("store_id"), []byte("integer"), []byte(""), true},
-						{[]byte("chain_id"), []byte("text"), []byte("Chain code, as provided by GS1."), false},
-						{[]byte("subchain_id"), []byte("text"), []byte("Subchain number."), false},
-						{[]byte("reported_store_id"), []byte("text"), []byte("Store number issued by the chain."), false},
+						{"store_id", "integer", "", true},
+						{"chain_id", "text", "Chain code, as provided by GS1.", false},
+						{"subchain_id", "text", "Subchain number.", false},
+						{"reported_store_id", "text", "Store number issued by the chain.", false},
 					},
 				},
 			},

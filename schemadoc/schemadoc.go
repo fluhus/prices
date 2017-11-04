@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	htemplate "html/template"
 	"io/ioutil"
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/fluhus/flug"
 )
@@ -22,17 +24,18 @@ func main() {
 
 	// Read schema.
 	pe("Reading SQLite schema from stdin...\n(run with -h argument for help)")
-	text, err := ioutil.ReadAll(os.Stdin)
+	textBytes, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		pe("Error reading schema:", err)
 		os.Exit(2)
 	}
 	if args.Verbose {
-		pe("Read", len(text), "characters.")
+		pe("Read", len(textBytes), "characters.")
 	}
 
 	// Parse tables.
-	text = bytes.Replace(text, []byte("\r"), nil, -1)
+	text := string(textBytes)
+	text = strings.Replace(text, "\r", "", -1)
 	db, err := parseSchema(text)
 	if err != nil {
 		pe("Error parsing schema:", err)
@@ -42,16 +45,12 @@ func main() {
 		pe("Parsed", len(db.Tables), "tables")
 	}
 
-	for _, t := range db.Tables {
-		switch args.Format {
-		case "html":
-			fmt.Printf("%s", t.html())
-		case "latex":
-			fmt.Printf("%s", t.latex())
-		default:
-			pe("NOT SUPPORTED YET: " + args.Format)
-			os.Exit(2)
-		}
+	switch args.Format {
+	case "html":
+		fmt.Println(db.html())
+	default:
+		pe("NOT SUPPORTED YET: " + args.Format)
+		os.Exit(2)
 	}
 }
 
@@ -84,36 +83,36 @@ func parseArgs() {
 
 // A schema is a completely parsed schema of the database.
 type schema struct {
-	Doc    []byte
+	Doc    string
 	Tables []*table
 }
 
 // A table is a single table in the database.
 type table struct {
-	Name   []byte
-	Doc    []byte
+	Name   string
+	Doc    string
 	Fields []*field
 }
 
 // A field is a single column in a table.
 type field struct {
-	Name []byte
-	Type []byte
-	Doc  []byte
+	Name string
+	Type string
+	Doc  string
 	Safe bool
 }
 
 // parseSchema parses an SQLite schema and returns its object representation.
-func parseSchema(text []byte) (*schema, error) {
+func parseSchema(text string) (*schema, error) {
 	// Split to tables.
 	re := regexp.MustCompile("(?ims)^CREATE TABLE (\\w*) \\(\\s*(.*?)\\s*^\\);$")
-	matches := re.FindAllSubmatch(text, -1)
+	matches := re.FindAllStringSubmatch(text, -1)
 	if args.Verbose {
 		pe("Found", len(matches), "tables.")
 	}
 
-	names := make([][]byte, len(matches))
-	texts := make([][]byte, len(matches))
+	names := make([]string, len(matches))
+	texts := make([]string, len(matches))
 	for i := range matches {
 		names[i] = matches[i][1]
 		texts[i] = matches[i][2]
@@ -123,7 +122,7 @@ func parseSchema(text []byte) (*schema, error) {
 	var tables []*table
 	for i := range texts {
 		if args.Verbose {
-			pe("Parsing table:", string(names[i]))
+			pe("Parsing table:", names[i])
 		}
 
 		t, err := parseTable(texts[i], names[i])
@@ -142,7 +141,7 @@ func parseSchema(text []byte) (*schema, error) {
 }
 
 // parseTable parses an SQLite table and returns its object representation.
-func parseTable(text, name []byte) (*table, error) {
+func parseTable(text, name string) (*table, error) {
 	// Regexps for capturing different type of information.
 	tableDoc := regexp.MustCompile("^--\\s*(.*)$")
 	fieldRow := regexp.MustCompile("^\\s*(\\w*)\\s*(\\w*).*?(?:--\\s*(.*?)\\s*(\\(safe\\))?)?$")
@@ -155,43 +154,42 @@ func parseTable(text, name []byte) (*table, error) {
 	result.Name = name
 
 	// Split to rows.
-	rows := splitter.Split(string(text), -1)
+	rows := splitter.Split(text, -1)
 
 	// Parse!
-	for i := range rows {
-		brow := []byte(rows[i])
+	for _, row := range rows {
 		switch {
-		case tableDoc.Match(brow):
-			match := tableDoc.FindSubmatch(brow)
+		case tableDoc.MatchString(row):
+			match := tableDoc.FindStringSubmatch(row)
 			if len(result.Doc) > 0 && len(match[1]) > 0 {
-				result.Doc = append(result.Doc, ' ')
+				result.Doc += " "
 			}
-			result.Doc = append(result.Doc, match[1]...)
+			result.Doc += match[1]
 
-		case fieldDoc.Match(brow):
-			match := fieldDoc.FindSubmatch(brow)
+		case fieldDoc.MatchString(row):
+			match := fieldDoc.FindStringSubmatch(row)
 
 			// There must be a field to document.
 			if len(result.Fields) == 0 {
 				return nil, fmt.Errorf("field doc with no fields before it: %s",
-					brow)
+					row)
 			}
 
 			f := result.Fields[len(result.Fields)-1]
 			if len(f.Doc) > 0 && len(match[1]) > 0 {
-				f.Doc = append(f.Doc, ' ')
+				f.Doc += " "
 			}
-			f.Doc = append(f.Doc, match[1]...)
+			f.Doc += match[1]
 			if len(match[2]) > 0 {
 				f.Safe = true
 			}
 
-		case fieldRow.Match(brow):
+		case fieldRow.MatchString(row):
 			f := &field{}
-			match := fieldRow.FindSubmatch(brow)
+			match := fieldRow.FindStringSubmatch(row)
 
 			// Check if stumbled on a unique or a check.
-			if len(match[1]) == 0 || nonFieldName.Match(match[1]) {
+			if len(match[1]) == 0 || nonFieldName.MatchString(match[1]) {
 				continue
 			}
 
@@ -204,7 +202,7 @@ func parseTable(text, name []byte) (*table, error) {
 			result.Fields = append(result.Fields, f)
 
 		default:
-			return nil, fmt.Errorf("row doesn't match any pattern: %s", brow)
+			return nil, fmt.Errorf("row doesn't match any pattern: %s", row)
 		}
 	}
 
@@ -217,36 +215,18 @@ func (s *schema) String() string {
 	return string(j)
 }
 
-// html returns an HTML representation of a table.
-func (t *table) html() []byte {
+// html returns an HTML representation of a schema.
+func (s *schema) html() string {
+	tmp := htemplate.Must(htemplate.New("").Parse(htmlTemplate))
 	buf := bytes.NewBuffer(nil)
-
-	// Create title and doc.
-	fmt.Fprintf(buf, "<h3>%s</h3>\n", t.Name)
-	fmt.Fprintf(buf, "%s\n", t.Doc)
-
-	// Create table and header.
-	fmt.Fprintf(buf, "<div class=\"panel panel-default\">\n")
-	fmt.Fprintf(buf, "<table class=\"table table-bordered\">\n")
-	fmt.Fprintf(buf, "<tr><th>Field</th><th>Safe</th><th "+
-		"style=\"width:100%%\">Description</th></tr>\n")
-
-	// Print fields.
-	for _, f := range t.Fields {
-		class := ""
-		if f.Safe {
-			class = "glyphicon glyphicon-ok"
-		}
-		fmt.Fprintf(buf, "<tr><td><strong>%s<strong></td><td><span "+
-			"class=\"%s\" aria-hidden=\"true\""+
-			"></span></td><td>%s</td></tr>\n", f.Name, class, f.Doc)
+	err := tmp.Execute(buf, s)
+	if err != nil {
+		return "Error: " + err.Error()
 	}
-
-	// Finish table.
-	fmt.Fprintf(buf, "</table>\n</div>\n")
-
-	return buf.Bytes()
+	return buf.String()
 }
+
+// TODO(amit): Conver the latex function to work on schema and use a template.
 
 // latex returns a LaTeX representation of a table.
 func (t *table) latex() []byte {
@@ -280,9 +260,9 @@ var latexQuotes = map[string]string{
 }
 
 // quoteLatex takes raw text and escapes special LaTeX characters.
-func quoteLatex(text []byte) []byte {
+func quoteLatex(text string) string {
 	for s, r := range latexQuotes {
-		text = bytes.Replace(text, []byte(s), []byte(r), -1)
+		text = strings.Replace(text, s, r, -1)
 	}
 	return text
 }
@@ -296,3 +276,26 @@ func pe(a ...interface{}) {
 func pef(s string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, s, a...)
 }
+
+var htmlTemplate = `<h3>General Information</h3>
+<div>{{.Doc}}</div>
+{{range .Tables -}}
+<h3>{{.Name}}</h3>
+{{.Doc}}
+<div class="panel panel-default">
+<table class="table table-bordered">
+  <tr>
+    <th>Field</th>
+    <th>Safe</th>
+    <th style="width:100%">Description</th>
+  </tr>
+  {{range .Fields -}}
+  <tr>
+    <td><strong>{{.Name}}</strong></td>
+    <td><span {{if .Safe}}class="glyphicon glyphicon-ok"{{end}} aria-hidden="true"></span></td>
+    <td>{{.Doc}}</td>
+  </tr>
+  {{- end}}
+</table>
+</div>
+{{end}}`
