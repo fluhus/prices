@@ -4,6 +4,11 @@ Contribution
 Thank you for your interest in contributing to the Prices project.
 We welcome developers, analysts, designers, and anyone who wishes to join.
 
+1. [What we Need Help With](#what-we-need-help-with)
+1. [Recommended Background](#recommended-background)
+1. [Technical How To's](#technical-how-to-s)
+1. [Contribution Guidelines](#contribution-guidelines)
+
 What we Need Help With
 ----------------------
 
@@ -33,6 +38,35 @@ Recommended Background
 * For frontend, knowledge of client and server languages - javascript, python/java/go.
 * For backend coding, knowledge in the Go language, understanding HTTP.
 * For backend maintenance, proficiency Linux and Bash, familiarity with Postgres.
+
+Technical How To's
+------------------
+
+### Requirements
+
+1. [Go](http://golang.org/) compiler added to your system path, to compile the go code.
+2. Any databse program ([SQLite](http://sqlite.org/) recommended).
+
+### How to Build
+
+**No need to clone this repository yourself.**
+
+1. Update GOPATH:
+   * **Windows (cmd)** - `set GOPATH=\path\to\your\project`
+   * **Linux (bash)** - `export GOPATH=/path/to/your/project`
+2. Download the code: `go get github.com/fluhus/prices/...`
+3. A `bin` folder will be created in the project's folder, containing all generated binaries.
+
+### How to Use
+
+#### Downloading Price Data
+
+1. Run `bin/scrape`. The program downloads all files from all known vendors.
+
+#### Creating the Database
+
+1. Run `bin/parse`. The program parses XML files and outputs tab-separated text files.
+2. Import the generated files to your database.
 
 Contribution Guidelines
 -----------------------
