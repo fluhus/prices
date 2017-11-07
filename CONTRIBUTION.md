@@ -7,6 +7,8 @@ We welcome developers, analysts, designers, and anyone who wishes to join.
 What we Need Help With
 ----------------------
 
+### Anything you think might be interesting. Let us know!
+
 ### Data
 
 1. Help clean up the data and make it easier to process, for apps and further analysis.
@@ -24,13 +26,11 @@ What we Need Help With
 1. Help with adding more scrapers as new chains join.
 2. Help with maintaining the database, scraping and parsing routines.
 
-### And anything else you think might be interesting. Let us know!
-
-Required Background
--------------------
+Recommended Background
+----------------------
 
 * For data analysis and cleanup, knowledge in SQL, basic statistics.
-* For frontend, knowledge of client and server languages - javascript, python/java.
+* For frontend, knowledge of client and server languages - javascript, python/java/go.
 * For backend coding, knowledge in the Go language, understanding HTTP.
 * For backend maintenance, proficiency Linux and Bash, familiarity with Postgres.
 
