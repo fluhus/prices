@@ -6,7 +6,7 @@ We welcome developers, analysts, designers, and anyone who wishes to join.
 
 1. [What we Need Help With](#what-we-need-help-with)
 1. [Recommended Background](#recommended-background)
-1. [Technical How To's](#technical-how-to-s)
+1. [Technical How To's](#technical-how-tos)
 1. [Contribution Guidelines](#contribution-guidelines)
 
 What we Need Help With
