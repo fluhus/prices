@@ -23,7 +23,7 @@ What we Need Help With
 
 ### Back End (Go Language)
 
-1. Help with adding more scrapers as new chains join.
+1. Adding more scrapers as new chains join.
 2. Help with maintaining the database, scraping and parsing routines.
 
 Recommended Background
