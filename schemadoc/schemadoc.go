@@ -171,8 +171,10 @@ func parseTable(text, name string) (*table, error) {
 		switch {
 		case tableDoc.MatchString(row):
 			match := tableDoc.FindStringSubmatch(row)
-			if len(result.Doc) > 0 && len(match[1]) > 0 {
+			if len(result.Doc) > 0 && len(match[1]) > 0 && result.Doc[len(result.Doc)-1] != '\n' {
 				result.Doc += " "
+			} else if len(result.Doc) > 0 && len(match[1]) == 0 {
+				result.Doc += "\n\n"
 			}
 			result.Doc += match[1]
 
@@ -350,16 +352,13 @@ var markdownTemplate = `General Information
 ===================
 
 {{.Doc}}
-
-{{range .Tables -}}
+{{range .Tables}}
 ## {{.Name}}
 
 {{.Doc}}
 
 **Fields**
-
-{{range .Fields -}}
+{{range .Fields}}
 * **{{.Name}}:** {{.Doc}}{{if .Safe}} (safe){{end}}
-{{end}}
-
-{{end}}`
+{{- end}}
+{{- end}}`
