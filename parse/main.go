@@ -13,7 +13,7 @@ import (
 
 	"github.com/fluhus/gostuff/ezpprof"
 	"github.com/fluhus/prices/parse/bouncer"
-	"github.com/fluhus/prices/serializer"
+	"github.com/fluhus/prices/parse/serializer"
 )
 
 // TODO(amit): Switch to logging with the log package instead of prints.
