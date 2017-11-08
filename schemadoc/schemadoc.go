@@ -16,9 +16,6 @@ import (
 	"github.com/fluhus/flug"
 )
 
-// TODO(amit): Make error messages start with lowercase.
-// TODO(amit): Add markdown?
-
 func main() {
 	parseArgs()
 
@@ -52,6 +49,8 @@ func main() {
 		fmt.Println(db.html())
 	case "latex":
 		fmt.Println(db.latex())
+	case "markdown":
+		fmt.Println(db.markdown())
 	case "json":
 		j, err := json.MarshalIndent(db, "", "\t")
 		if err != nil {
@@ -67,7 +66,7 @@ func main() {
 
 var args = struct {
 	Help    bool   `flug:"h,Show help message and exit."`
-	Format  string `flug:"f,Output format: text, html, latex, or json."`
+	Format  string `flug:"f,Output format: text, html, latex, json or markdown."`
 	Verbose bool   `flug:"v,Verbose, print debug messages."`
 }{false, "text", false}
 
@@ -85,7 +84,7 @@ func parseArgs() {
 		os.Exit(1)
 	}
 	switch args.Format {
-	case "text", "html", "latex", "json":
+	case "text", "html", "latex", "json", "markdown":
 	default:
 		pef("Error: unsupported format: %q\n", args.Format)
 		os.Exit(1)
@@ -256,6 +255,17 @@ func (s *schema) latex() string {
 	return buf.String()
 }
 
+// markdown returns a Markdown representation of a schema.
+func (s *schema) markdown() string {
+	tmp := template.Must(template.New("").Parse(markdownTemplate))
+	buf := bytes.NewBuffer(nil)
+	err := tmp.Execute(buf, s)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	return buf.String()
+}
+
 // latexQuotes contains characters that should be escaped in LaTeX.
 var latexQuotes = map[string]string{
 	"&": "\\&",
@@ -333,5 +343,23 @@ var latexTemplate = `\\subsection{General Information}
 \\hline {{latex .Name}} & {{latex .Doc}} \\\\
 {{end -}}
 \\hline \\end{tabularx}
+
+{{end}}`
+
+var markdownTemplate = `General Information
+===================
+
+{{.Doc}}
+
+{{range .Tables -}}
+## {{.Name}}
+
+{{.Doc}}
+
+**Fields**
+
+{{range .Fields -}}
+* **{{.Name}}:** {{.Doc}}{{if .Safe}} (safe){{end}}
+{{end}}
 
 {{end}}`
