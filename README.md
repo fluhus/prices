@@ -1,13 +1,24 @@
 Israeli Supermarket Price Project
 =================================
 
-```
-go get github.com/fluhus/prices/...
-```
-
 This is a collection of tools and scripts to download and manage price data from Israeli vendors.
 
+1. [Quick Start](#quick-start)
+1. [About The Project](#about-the-project)
 1. [Contributors](#contributors)
+
+Quick Start
+-----------
+
+1. Get the code: `go get github.com/fluhus/prices/...`
+1. [Query our data](data.obudget.org/queries/1271/source)
+1. [Data schema](https://github.com/fluhus/prices/blob/master/schema.md)
+1. [Contributing to the project](https://github.com/fluhus/prices/blob/master/CONTRIBUTION.md)
+
+About The Project
+-----------------
+
+> TODO
 
 Contributors
 ------------
