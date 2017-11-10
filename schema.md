@@ -1,5 +1,8 @@
+Database Schema
+===============
+
 General Information
-===================
+-------------------
 
 See XML specifications here: https://drive.google.com/file/d/0Bw2XXw9aHzlCT0xRMV9WSnZIS0E/view
 
@@ -9,7 +12,10 @@ PLEASE BE WARNED: Vendors report garbage. Unless stated otherwise, any piece of 
 
 Data fields that were created or curated by us are marked explicitly as safe.
 
-## chains
+Tables
+------
+
+### chains
 
 Maps chain code to chain name.
 
@@ -17,7 +23,7 @@ Maps chain code to chain name.
 
 * **chain_id:** Chain code, as provided by GS1. (safe)
 * **chain_name:** Chain name in English. (safe)
-## stores
+### stores
 
 Identifies every store in the data. Each store may appear once.
 
@@ -27,7 +33,7 @@ Identifies every store in the data. Each store may appear once.
 * **chain_id:** Chain code, as provided by GS1.
 * **subchain_id:** Subchain number.
 * **reported_store_id:** Store number issued by the chain.
-## stores_meta
+### stores_meta
 
 Metadata about stores. Each store may appear several times.
 
@@ -45,7 +51,7 @@ Metadata about stores. Each store may appear several times.
 * **zip_code:** 
 * **last_update_date:** 
 * **last_update_time:** 
-## items
+### items
 
 Identifies every commodity item in the data. Each item may appear once.
 
@@ -55,7 +61,7 @@ Identifies every commodity item in the data. Each item may appear once.
 * **item_type:** 0 for internal codes, 1 for barcodes.
 * **item_code:** Barcode number or internal code.
 * **chain_id:** Empty string for universal.
-## items_meta
+### items_meta
 
 Contains all metadata about each item. Each item may appear several times.
 
@@ -72,7 +78,7 @@ Contains all metadata about each item. Each item may appear several times.
 * **quantity_in_package:** Quantity of units in a package.
 * **allow_discount:** Is the item allowed in promotions.
 * **item_status:** ???
-## prices
+### prices
 
 Contains all reported prices for all items.
 
@@ -85,7 +91,7 @@ Contains all reported prices for all items.
 * **unit_of_measure_price:** Price in shekels as reported in raw data.
 * **unit_of_measure:** Gram, liter, etc.
 * **quantity:** How many grams/liters etc.
-## promos
+### promos
 
 Identifies every promotion in the data. Promo id and metadata are saved together since they are unique. A change in the metadata will be registered as a new promo.
 
@@ -119,7 +125,7 @@ Identifies every promotion in the data. Promo id and metadata are saved together
 * **remarks:** 
 * **number_of_items:** Number of items that take part in the promotion. Should be equivalent to count(*) on the promo_id in promos_items, but some of the promos are not reported there. (safe)
 * **not_in_promos_items:** 0 if reported in promos_items, 1 if not. (safe)
-## promos_stores
+### promos_stores
 
 Reports what stores take part in every promo. A single promo may have several rows, one for each store.
 
@@ -127,7 +133,7 @@ Reports what stores take part in every promo. A single promo may have several ro
 
 * **promo_id:** References promos.promo_id. (safe)
 * **store_id:** References stores.store_id. (safe)
-## promos_items
+### promos_items
 
 Reports what items take part in every promo. A single promo may have several rows, one for each item.
 

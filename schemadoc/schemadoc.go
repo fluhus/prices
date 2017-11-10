@@ -348,12 +348,18 @@ var latexTemplate = `\\subsection{General Information}
 
 {{end}}`
 
-var markdownTemplate = `General Information
-===================
+var markdownTemplate = `Database Schema
+===============
+
+General Information
+-------------------
 
 {{.Doc}}
+
+Tables
+------
 {{range .Tables}}
-## {{.Name}}
+### {{.Name}}
 
 {{.Doc}}
 
