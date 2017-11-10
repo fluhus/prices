@@ -8,6 +8,7 @@ We welcome developers, analysts, designers, and anyone who wishes to join.
 1. [Recommended Background](#recommended-background)
 1. [Technical How To's](#technical-how-tos)
 1. [Contribution Guidelines](#contribution-guidelines)
+1. [Contributors](#contributors)
 
 What we Need Help With
 ----------------------
@@ -72,3 +73,37 @@ Contribution Guidelines
 -----------------------
 
 > TODO
+
+Contributors
+------------
+
+This project started at the Hebrew University of Jerusalem, carried out by
+Amit Lavon, under the supervision of Dr. Aviv Zohar and Prof. Noam Nissan.
+Now it is maintained independently by Amit Lavon.
+
+Lists are ordered alphabetically.
+
+### Coding
+
+* Amit Lavon
+
+### Schema Design
+
+* Amit Lavon
+* Dr. Aviv Zohar
+* Ayelet Sapirstein
+* Dr. Dafna Shahaf
+* Gali Noti
+* Prof. Noam Nissan
+* Prof. Sara Cohen
+* Yoni Sidi
+
+### Testing & Data Curation
+
+* Amit Lavon
+* Asaf Kott
+* Ayelet Sapirstein
+* Dr. Dafna Shahaf
+* Emanuel Marcu
+* Gali Noti
+* Yoni Sidi
