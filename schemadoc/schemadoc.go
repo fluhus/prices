@@ -13,7 +13,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/fluhus/flug"
+	"github.com/fluhus/gostuff/flug"
 )
 
 func main() {

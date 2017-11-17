@@ -6,7 +6,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/fluhus/flug"
+	"github.com/fluhus/gostuff/flug"
 )
 
 var args struct {

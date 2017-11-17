@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fluhus/flug"
+	"github.com/fluhus/gostuff/flug"
 	"github.com/fluhus/prices/scrape/scrapers"
 )
 
