@@ -182,7 +182,8 @@ func (a *nibitScraper) download(cl *http.Client, date, dir string) error {
 	for i := 0; i < numberOfThreads; i++ {
 		go func() {
 			for info := range infos {
-				_, err := downloadIfNotExists(nibitDownload+info.name,
+				_, err := downloadIfNotExists(
+					nibitDownload+a.chain+"/"+info.name,
 					filepath.Join(dir, info.name), cl)
 				if err != nil {
 					done <- fmt.Errorf("Failed to download '%s': %v",
