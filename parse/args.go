@@ -4,6 +4,7 @@ package main
 
 import (
 	"flag"
+	"runtime"
 	"os"
 
 	"github.com/fluhus/gostuff/flug"
@@ -14,6 +15,7 @@ var args struct {
 	Check    bool   `flug:"c,Only check input files, do not create output tables."`
 	OutDir   string `flug:"o,Output directory. Default is current."`
 	ForceRaw bool   `flug:"f,Force parsing of raw files, instead of reading serialized data."`
+	NumThreads int `flug:"t,Number of threads to run on. Default is number of CPUs."`
 	Help     bool
 }
 
@@ -33,6 +35,10 @@ func parseArgs() {
 
 	// Parse flags.
 	flag.Parse()
+
+	if args.NumThreads == 0 {
+		args.NumThreads = runtime.NumCPU()
+	}
 
 	args.Files = flag.Args()
 	if len(args.Files) == 0 {

@@ -25,10 +25,6 @@ const (
 	parsedFileSuffix = ".items" // Suffix of parsed intermediates.
 )
 
-var (
-	numOfThreads int // Shared across functions.
-)
-
 // What goes on here:
 // 1. Handling some logistics of input files and threading.
 // 2. Parsing the raw XMLs and writing parsed data to intermediate files.
@@ -59,11 +55,10 @@ func main() {
 	}
 
 	// Prepare thread stuff.
-	numOfThreads = runtime.NumCPU()
-	errChan := make(chan error, numOfThreads)
+	errChan := make(chan error, args.NumThreads)
 	var wait sync.WaitGroup
 
-	pe("Running on", numOfThreads, "threads.")
+	pe("Running on", args.NumThreads, "threads.")
 
 	// Prints errors to stderr. Each processed file is reported here, including success.
 	ndone := 0 // TODO(amit): Find a better solution than this common counter.
@@ -83,7 +78,7 @@ func main() {
 	// Parse raw XMLs.
 	pe("Parsing raw data.")
 	fileChan := inputFilesChan(inputFiles)
-	for i := 0; i < numOfThreads; i++ {
+	for i := 0; i < args.NumThreads; i++ {
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
@@ -111,7 +106,7 @@ func main() {
 	pe("Creating tables.")
 	ndone = 0
 	fileChan = inputFilesChan(inputFiles)
-	for i := 0; i < numOfThreads; i++ {
+	for i := 0; i < args.NumThreads; i++ {
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
@@ -250,7 +245,7 @@ func fileExists(f string) bool {
 // inputFilesChan returns a channel that gives the input files by their order,
 // and closes it when they are over.
 func inputFilesChan(files []*fileAndTime) chan *fileAndTime {
-	result := make(chan *fileAndTime, numOfThreads*1000)
+	result := make(chan *fileAndTime, args.NumThreads*1000)
 	go func() {
 		for _, f := range files {
 			result <- f
