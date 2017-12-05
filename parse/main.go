@@ -36,6 +36,7 @@ const (
 // process.
 func main() {
 	parseArgs()
+	pe("Reading input files.")
 	inputFiles, err := organizeInputFiles()
 	if err != nil {
 		pe(err)
