@@ -20,6 +20,9 @@ import (
 func dirFiles(path string) ([]string, error) {
 	var result []string
 	err := filepath.Walk(path, func(walkPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return fmt.Errorf("error walking %s: %s", walkPath, err)
+		}
 		if !info.IsDir() {
 			result = append(result, filepath.Join(walkPath))
 		}

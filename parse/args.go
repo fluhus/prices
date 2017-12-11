@@ -4,19 +4,20 @@ package main
 
 import (
 	"flag"
-	"runtime"
 	"os"
+	"runtime"
 
 	"github.com/fluhus/gostuff/flug"
 )
 
 var args struct {
-	Files    []string
-	Check    bool   `flug:"c,Only check input files, do not create output tables."`
-	OutDir   string `flug:"o,Output directory. Default is current."`
-	ForceRaw bool   `flug:"f,Force parsing of raw files, instead of reading serialized data."`
-	NumThreads int `flug:"t,Number of threads to run on. Default is number of CPUs."`
-	Help     bool
+	Files       []string
+	SkipTables  bool   `flug:"st,Only parse input files, do not create output tables."`
+	SkipParsing bool   `flug:"sp,Skip parsing, create tables only from existing parsed data."`
+	OutDir      string `flug:"o,Output directory. Default is current."`
+	ForceRaw    bool   `flug:"f,Force parsing of raw files, instead of reading serialized data."`
+	NumThreads  int    `flug:"t,Number of threads to run on. Default is number of CPUs."`
+	Help        bool
 }
 
 // TODO(amit): Expand file arguments to a full, sorted input file list.
@@ -38,6 +39,12 @@ func parseArgs() {
 
 	if args.NumThreads == 0 {
 		args.NumThreads = runtime.NumCPU()
+	}
+
+	if args.SkipTables && args.SkipParsing {
+		pe("Cannot skip both parsing and table creation.")
+		printArgError()
+		os.Exit(1)
 	}
 
 	args.Files = flag.Args()

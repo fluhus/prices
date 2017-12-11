@@ -39,7 +39,7 @@ func main() {
 	pe("Reading input files.")
 	inputFiles, err := organizeInputFiles()
 	if err != nil {
-		pe(err)
+		pe("Could not read input files:", err)
 		os.Exit(2)
 	}
 
@@ -80,6 +80,12 @@ func main() {
 	pe("Parsing raw data.")
 	fileChan := inputFilesChan(inputFiles)
 	for i := 0; i < args.NumThreads; i++ {
+		// TODO(amit): This isn't a good way to handle the argument.
+		// Need to extract parsing and table creation to functions.
+		if args.SkipParsing {
+			break
+		}
+
 		wait.Add(1)
 		go func() {
 			defer wait.Done()
@@ -95,7 +101,7 @@ func main() {
 	}
 	wait.Wait()
 
-	if args.Check {
+	if args.SkipTables {
 		return
 	}
 
