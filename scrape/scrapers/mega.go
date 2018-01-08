@@ -117,7 +117,7 @@ func (a *megaScraper) getFiles(dir string) ([]string, error) {
 	}
 
 	// Parse file names.
-	re := regexp.MustCompile("<a href=\"([^\"]*\\.gz)\"")
+	re := regexp.MustCompile("<a href=\"([^\"]*\\.(?:gz|xml))\"")
 	match := re.FindAllSubmatch(body, -1)
 
 	if len(match) == 0 {
