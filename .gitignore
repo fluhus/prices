@@ -2,3 +2,4 @@ try/
 bin/
 pkg/
 src/golang.org/
+**/__pycache__
