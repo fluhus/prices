@@ -3,7 +3,7 @@ from typing import Iterable, Dict, List
 
 import sqlite
 
-_QUERY_FILE = "price_lookup.sql"
+_QUERY_FILE = "prices_lookup.sql"
 _SQL_PRICE_QUERY = open(_QUERY_FILE).read()
 
 
